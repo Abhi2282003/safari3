@@ -174,6 +174,11 @@ export default function SeatBookings() {
 
   const handleLuggageSave = async (data: { destination: string; quantity: number; totalAmount: number }) => {
     try {
+      console.log('Saving luggage:', { 
+        journeyDate: format(selectedDate, 'yyyy-MM-dd'),
+        busName: busName.trim(),
+        ...data 
+      });
       await saveLuggageBooking({
         id: editingLuggage?.id,
         journeyDate: format(selectedDate, 'yyyy-MM-dd'),
@@ -187,8 +192,9 @@ export default function SeatBookings() {
       toast.success(editingLuggage ? 'Luggage updated' : 'Luggage added');
       setLuggageDialogOpen(false);
       setEditingLuggage(null);
-    } catch (error) {
-      toast.error('Failed to save luggage');
+    } catch (error: any) {
+      console.error('Luggage save error:', error);
+      toast.error(error.message || 'Failed to save luggage');
     }
   };
 
