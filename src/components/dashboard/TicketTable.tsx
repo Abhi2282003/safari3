@@ -121,7 +121,7 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
               <TableHead className="font-semibold text-center">Tourists</TableHead>
               <TableHead className="font-semibold text-right">Amount</TableHead>
               <TableHead className="font-semibold text-center">Status</TableHead>
-              <TableHead className="font-semibold">Received By</TableHead>
+              <TableHead className="font-semibold">Paid By</TableHead>
               <TableHead className="font-semibold text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
