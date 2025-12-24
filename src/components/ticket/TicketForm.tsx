@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { Ticket, TravelsConfig } from '@/types/ticket';
-import { generateTicketNo, saveTicket, getTicketById, getReceivers, getTravels } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTickets, useReceivers, useTravels, TravelsConfig } from '@/hooks/useTickets';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -30,7 +31,6 @@ interface TicketFormProps {
   mode?: 'create' | 'edit';
 }
 
-// Helper to calculate reporting time (15 mins before departure)
 const calculateReportingTime = (depTime: string): string => {
   if (!depTime) return '';
   const [hours, mins] = depTime.split(':').map(Number);
@@ -41,13 +41,16 @@ const calculateReportingTime = (depTime: string): string => {
 
 export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { getTicketById, saveTicket } = useTickets();
+  const { receivers } = useReceivers();
+  const { travels } = useTravels();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [receivers, setReceivers] = useState<{ id: string; name: string; active: boolean }[]>([]);
-  const [travelsList, setTravelsList] = useState<TravelsConfig[]>([]);
   
   const [formData, setFormData] = useState({
     passengerName: '',
     passengerPhone: '',
+    passengerAddress: '',
     toursTo: '',
     journeyDate: new Date(),
     bookingDate: new Date(),
@@ -66,15 +69,13 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
   });
 
   useEffect(() => {
-    setReceivers(getReceivers());
-    setTravelsList(getTravels().filter(t => t.active));
-    
     if (mode === 'edit' && ticketId) {
       const ticket = getTicketById(ticketId);
       if (ticket) {
         setFormData({
           passengerName: ticket.passengerName,
           passengerPhone: ticket.passengerPhone,
+          passengerAddress: ticket.passengerAddress || '',
           toursTo: ticket.toursTo,
           journeyDate: new Date(ticket.journeyDate),
           bookingDate: new Date(ticket.bookingDateTime),
@@ -93,16 +94,9 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         });
       }
     }
-  }, [ticketId, mode]);
+  }, [ticketId, mode, getTicketById]);
 
-  const handleDepTimeChange = (time: string) => {
-    setFormData(prev => ({
-      ...prev,
-      depTime: time,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.passengerName.trim()) {
@@ -132,27 +126,24 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
 
     try {
       const existingTicket = ticketId ? getTicketById(ticketId) : null;
-      
       const surcharges = parseFloat(formData.surcharges) || 0;
-      // Total amount includes surcharges
       const totalAmount = baseAmount + surcharges;
-      
-      // Calculate reporting time as 15 mins before departure
       const repTime = calculateReportingTime(formData.depTime);
       
-      const ticket: Ticket = {
-        id: existingTicket?.id || crypto.randomUUID(),
-        ticketNo: existingTicket?.ticketNo || generateTicketNo(),
+      const ticketData = {
+        id: existingTicket?.id,
+        ticketNo: existingTicket?.ticketNo,
         bookingDateTime: formData.bookingDate.toISOString(),
         journeyDate: formData.journeyDate.toISOString(),
         passengerName: formData.passengerName.trim(),
         passengerPhone: formData.passengerPhone.trim(),
+        passengerAddress: formData.passengerAddress.trim() || undefined,
         toursTo: formData.toursTo.trim(),
         noOfTourist: tourists,
         seatNo: formData.seatNo.trim() || undefined,
         repTime: repTime || undefined,
         depTime: formData.depTime.trim() || undefined,
-        amount: totalAmount, // Store total (base + surcharges)
+        amount: totalAmount,
         surcharges: surcharges || undefined,
         travelsName: formData.travelsName === '__other__' ? formData.customTravelsName : (formData.travelsName || undefined),
         busName: formData.busName.trim() || undefined,
@@ -160,13 +151,12 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         branch: formData.branch.trim() || undefined,
         bookedBy: formData.bookedBy || undefined,
         withFamily: formData.withFamily,
-        collectionStatus: existingTicket?.collectionStatus || 'Unpaid',
+        collectionStatus: existingTicket?.collectionStatus || 'Unpaid' as const,
       };
 
-      saveTicket(ticket);
-      
+      const newId = await saveTicket(ticketData);
       toast.success(mode === 'edit' ? 'Ticket updated successfully' : 'Ticket created successfully');
-      navigate(`/ticket/${ticket.id}`);
+      navigate(`/ticket/${newId || ticketId}`);
     } catch (error) {
       toast.error('Failed to save ticket');
     } finally {
@@ -175,6 +165,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
   };
 
   const activeReceivers = receivers.filter(r => r.active);
+  const activeTravels = travels.filter(t => t.active);
 
   return (
     <form onSubmit={handleSubmit}>
@@ -200,13 +191,9 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
               <Checkbox
                 id="withFamily"
                 checked={formData.withFamily}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, withFamily: checked === true }))
-                }
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, withFamily: checked === true }))}
               />
-              <Label htmlFor="withFamily" className="text-sm font-normal">
-                With Family/Friends
-              </Label>
+              <Label htmlFor="withFamily" className="text-sm font-normal">With Family/Friends</Label>
             </div>
 
             <div className="grid gap-2">
@@ -218,6 +205,17 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
                 onChange={(e) => setFormData(prev => ({ ...prev, passengerPhone: e.target.value }))}
                 placeholder="Enter phone number"
                 required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={formData.passengerAddress}
+                onChange={(e) => setFormData(prev => ({ ...prev, passengerAddress: e.target.value }))}
+                placeholder="Enter passenger address"
+                rows={2}
               />
             </div>
 
@@ -258,52 +256,27 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
                 <Label>Journey Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !formData.journeyDate && 'text-muted-foreground'
-                      )}
-                    >
+                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !formData.journeyDate && 'text-muted-foreground')}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.journeyDate ? format(formData.journeyDate, 'dd MMM yyyy') : 'Select date'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.journeyDate}
-                      onSelect={(date) => date && setFormData(prev => ({ ...prev, journeyDate: date }))}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
+                    <Calendar mode="single" selected={formData.journeyDate} onSelect={(date) => date && setFormData(prev => ({ ...prev, journeyDate: date }))} initialFocus className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
               </div>
-
               <div className="grid gap-2">
                 <Label>Booking Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !formData.bookingDate && 'text-muted-foreground'
-                      )}
-                    >
+                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !formData.bookingDate && 'text-muted-foreground')}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.bookingDate ? format(formData.bookingDate, 'dd MMM yyyy') : 'Select date'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.bookingDate}
-                      onSelect={(date) => date && setFormData(prev => ({ ...prev, bookingDate: date }))}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
+                    <Calendar mode="single" selected={formData.bookingDate} onSelect={(date) => date && setFormData(prev => ({ ...prev, bookingDate: date }))} initialFocus className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -312,194 +285,93 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="seatNo">Seat No.</Label>
-                <Input
-                  id="seatNo"
-                  value={formData.seatNo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, seatNo: e.target.value }))}
-                  placeholder="e.g., A1, B2"
-                />
+                <Input id="seatNo" value={formData.seatNo} onChange={(e) => setFormData(prev => ({ ...prev, seatNo: e.target.value }))} placeholder="e.g., A1, B2" />
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="busNo">Bus No.</Label>
-                <Input
-                  id="busNo"
-                  value={formData.busNo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, busNo: e.target.value }))}
-                  placeholder="e.g., MH12AB1234"
-                />
+                <Input id="busNo" value={formData.busNo} onChange={(e) => setFormData(prev => ({ ...prev, busNo: e.target.value }))} placeholder="e.g., MH12AB1234" />
               </div>
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="depTime">Departure Time</Label>
-              <Input
-                id="depTime"
-                type="time"
-                value={formData.depTime}
-                onChange={(e) => handleDepTimeChange(e.target.value)}
-              />
-              {formData.depTime && (
-                <p className="text-xs text-muted-foreground">
-                  Reporting Time: {calculateReportingTime(formData.depTime)} (15 mins before departure)
-                </p>
-              )}
+              <Input id="depTime" type="time" value={formData.depTime} onChange={(e) => setFormData(prev => ({ ...prev, depTime: e.target.value }))} />
+              {formData.depTime && <p className="text-xs text-muted-foreground">Reporting Time: {calculateReportingTime(formData.depTime)} (15 mins before)</p>}
             </div>
           </CardContent>
         </Card>
 
-        {/* Additional Details */}
+        {/* Bus & Travel Details */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Bus & Travel Details</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg">Bus & Travel Details</CardTitle></CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="travelsName">Travels Name</Label>
+                <Label>Travels Name</Label>
                 {formData.travelsName === '__other__' ? (
                   <div className="flex gap-2">
-                    <Input
-                      id="customTravelsName"
-                      value={formData.customTravelsName || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customTravelsName: e.target.value }))}
-                      placeholder="Enter travels name"
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, travelsName: '', customTravelsName: '' }))}
-                    >
-                      Cancel
-                    </Button>
+                    <Input value={formData.customTravelsName} onChange={(e) => setFormData(prev => ({ ...prev, customTravelsName: e.target.value }))} placeholder="Enter travels name" className="flex-1" />
+                    <Button type="button" variant="outline" size="sm" onClick={() => setFormData(prev => ({ ...prev, travelsName: '', customTravelsName: '' }))}>Cancel</Button>
                   </div>
                 ) : (
-                  <Select
-                    value={formData.travelsName}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, travelsName: value, customTravelsName: '' }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select travels" />
-                    </SelectTrigger>
+                  <Select value={formData.travelsName} onValueChange={(value) => setFormData(prev => ({ ...prev, travelsName: value, customTravelsName: '' }))}>
+                    <SelectTrigger><SelectValue placeholder="Select travels" /></SelectTrigger>
                     <SelectContent>
-                      {travelsList.map((travel) => (
-                        <SelectItem key={travel.id} value={travel.name}>
-                          {travel.name} ({travel.commissionPercent}%)
-                        </SelectItem>
-                      ))}
+                      {activeTravels.map((travel) => (<SelectItem key={travel.id} value={travel.name}>{travel.name} ({travel.commissionPercent}%)</SelectItem>))}
                       <SelectItem value="__other__">Other (10%)</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="busName">Bus Name</Label>
-                <Input
-                  id="busName"
-                  value={formData.busName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, busName: e.target.value }))}
-                  placeholder="e.g., Sleeper Coach"
-                />
+                <Input id="busName" value={formData.busName} onChange={(e) => setFormData(prev => ({ ...prev, busName: e.target.value }))} placeholder="e.g., Sleeper Coach" />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="branch">Branch</Label>
-                <Input
-                  id="branch"
-                  value={formData.branch}
-                  onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value }))}
-                  placeholder="Optional"
-                />
+                <Input id="branch" value={formData.branch} onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value }))} placeholder="Optional" />
               </div>
-
               <div className="grid gap-2">
-                <Label htmlFor="bookedBy">Booked By</Label>
-                <Select
-                  value={formData.bookedBy}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, bookedBy: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select person" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeReceivers.map((receiver) => (
-                      <SelectItem key={receiver.id} value={receiver.name}>
-                        {receiver.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                <Label>Booked By</Label>
+                <Select value={formData.bookedBy} onValueChange={(value) => setFormData(prev => ({ ...prev, bookedBy: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
+                  <SelectContent>{activeReceivers.map((r) => (<SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Amount */}
+        {/* Payment */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Payment</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg">Payment</CardTitle></CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="amount">Base Amount (₹) *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={formData.amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                  placeholder="Enter base amount"
-                  className="text-lg font-semibold"
-                  required
-                />
+                <Input id="amount" type="number" min={0} step={0.01} value={formData.amount} onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))} placeholder="Enter base amount" className="text-lg font-semibold" required />
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="surcharges">Surcharges (₹)</Label>
-                <Input
-                  id="surcharges"
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={formData.surcharges}
-                  onChange={(e) => setFormData(prev => ({ ...prev, surcharges: e.target.value }))}
-                  placeholder="Additional charges"
-                  className="text-lg"
-                />
+                <Input id="surcharges" type="number" min={0} step={0.01} value={formData.surcharges} onChange={(e) => setFormData(prev => ({ ...prev, surcharges: e.target.value }))} placeholder="0" />
               </div>
             </div>
-
-            <div className="p-4 bg-primary/10 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Total Amount:</span>
-                <span className="text-2xl font-bold text-primary">
-                  ₹{((parseFloat(formData.amount) || 0) + (parseFloat(formData.surcharges) || 0)).toLocaleString()}
-                </span>
+            {(formData.amount || formData.surcharges) && (
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="flex justify-between text-sm"><span>Base Amount:</span><span>₹{parseFloat(formData.amount) || 0}</span></div>
+                {parseFloat(formData.surcharges) > 0 && <div className="flex justify-between text-sm"><span>Surcharges:</span><span>₹{parseFloat(formData.surcharges)}</span></div>}
+                <div className="flex justify-between font-bold mt-2 pt-2 border-t"><span>Total:</span><span>₹{(parseFloat(formData.amount) || 0) + (parseFloat(formData.surcharges) || 0)}</span></div>
               </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              Payment status can be updated after saving the ticket.
-            </p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Actions */}
-      <div className="mt-6 flex items-center justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-          {isSubmitting ? 'Saving...' : mode === 'edit' ? 'Update Ticket' : 'Create Ticket'}
-        </Button>
+      <div className="mt-6 flex justify-end gap-4">
+        <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
+        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : mode === 'edit' ? 'Update Ticket' : 'Create Ticket'}</Button>
       </div>
     </form>
   );

@@ -30,37 +30,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getTicketsByDate, getDailyStats } from '@/lib/storage';
-import { TicketWithPayment } from '@/types/ticket';
+import { useTickets, useTravels, calculateStats, TicketWithPayment } from '@/hooks/useTickets';
 import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [tickets, setTickets] = useState<TicketWithPayment[]>([]);
+  const { tickets, loading, getTicketsByDate, fetchTickets, savePayment } = useTickets();
+  const { travels } = useTravels();
   const [filteredTickets, setFilteredTickets] = useState<TicketWithPayment[]>([]);
-const [stats, setStats] = useState({
-    totalTickets: 0,
-    totalCollection: 0,
-    totalUnpaid: 0,
-    paidCount: 0,
-    unpaidCount: 0,
-  });
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
 
-  const loadData = () => {
-    const dateTickets = getTicketsByDate(selectedDate);
-    setTickets(dateTickets);
-    setStats(getDailyStats(selectedDate));
-  };
+  const dateTickets = getTicketsByDate(selectedDate);
+  const stats = calculateStats(dateTickets, travels);
 
   useEffect(() => {
-    loadData();
-  }, [selectedDate]);
-
-  useEffect(() => {
-    let result = [...tickets];
+    let result = [...dateTickets];
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -83,10 +69,9 @@ const [stats, setStats] = useState({
     );
 
     setFilteredTickets(result);
-  }, [tickets, searchQuery, statusFilter]);
+  }, [dateTickets, searchQuery, statusFilter]);
 
   const handleExport = () => {
-    // Simple CSV export
     const headers = ['Ticket No', 'Booking Time', 'Journey Date', 'Tours To', 'Passenger', 'Phone', 'Tourists', 'Amount', 'Status', 'Received By'];
     const rows = filteredTickets.map(t => [
       t.ticketNo,
@@ -109,6 +94,19 @@ const [stats, setStats] = useState({
     a.download = `tickets-${format(selectedDate, 'yyyy-MM-dd')}.csv`;
     a.click();
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-muted-foreground">Loading tickets...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -204,7 +202,7 @@ const [stats, setStats] = useState({
         {/* Ticket Table */}
         <TicketTable 
           tickets={filteredTickets} 
-          onRefresh={loadData}
+          onRefresh={fetchTickets}
           onMarkPaid={(ticket) => setPaymentTicket(ticket)}
         />
 
@@ -213,7 +211,7 @@ const [stats, setStats] = useState({
           ticket={paymentTicket}
           open={!!paymentTicket}
           onOpenChange={(open) => !open && setPaymentTicket(null)}
-          onSuccess={loadData}
+          onSuccess={fetchTickets}
         />
       </div>
     </Layout>
