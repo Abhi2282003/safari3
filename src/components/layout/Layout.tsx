@@ -14,12 +14,13 @@ export function Layout({ children }: LayoutProps) {
         <img 
           src={companyLogo} 
           alt="" 
-          className="w-96 h-96 object-contain"
+          className="w-64 h-64 lg:w-96 lg:h-96 object-contain"
         />
       </div>
       
       <Sidebar />
-      <main className="ml-64 min-h-screen relative z-10">
+      {/* Add padding-top for mobile header, margin-left for desktop sidebar */}
+      <main className="pt-14 lg:pt-0 lg:ml-64 min-h-screen relative z-10">
         {children}
       </main>
     </div>

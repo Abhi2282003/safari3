@@ -108,8 +108,8 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
 
   return (
     <>
-      <div className="rounded-lg border bg-card">
-        <Table>
+      <div className="rounded-lg border bg-card overflow-x-auto">
+        <Table className="min-w-[1000px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">Ticket No</TableHead>
