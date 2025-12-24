@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Eye, Printer, CreditCard, Pencil, Trash2, MoreHorizontal } from 'lucide-react';
+import { Eye, Printer, CreditCard, Pencil, Trash2, MoreHorizontal, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TicketWithPayment } from '@/types/ticket';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PasswordDialog } from '@/components/shared/PasswordDialog';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TicketTableProps {
   tickets: TicketWithPayment[];
@@ -42,6 +43,7 @@ interface TicketTableProps {
 
 export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: TicketTableProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -106,6 +108,145 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
     );
   }
 
+  // Mobile Card View
+  if (isMobile) {
+    return (
+      <>
+        <div className="space-y-3">
+          {tickets.map((ticket) => {
+            const baseAmount = ticket.surcharges ? ticket.amount - ticket.surcharges : ticket.amount;
+            return (
+              <div 
+                key={ticket.id} 
+                className="rounded-lg border bg-card p-4 shadow-sm"
+                onClick={() => navigate(`/ticket/${ticket.id}`)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-mono text-sm font-medium text-primary">{ticket.ticketNo}</p>
+                    <p className="font-semibold mt-1">{ticket.passengerName}</p>
+                  </div>
+                  <Badge 
+                    variant={ticket.collectionStatus === 'Paid' ? 'default' : 'destructive'}
+                    className={ticket.collectionStatus === 'Paid' ? 'status-paid' : 'status-unpaid'}
+                  >
+                    {ticket.collectionStatus === 'Paid' ? '✓ Paid' : '✗ Unpaid'}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div>
+                    <p className="text-muted-foreground">Tours To</p>
+                    <p className="font-medium truncate">{ticket.toursTo}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Journey Date</p>
+                    <p className="font-medium">{format(new Date(ticket.journeyDate), 'dd MMM')}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Tourists</p>
+                    <p className="font-medium">{ticket.noOfTourist}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Amount</p>
+                    <p className="font-semibold text-primary">₹{baseAmount.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t">
+                  <a 
+                    href={`tel:${ticket.passengerPhone}`} 
+                    className="flex items-center gap-1 text-sm text-muted-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Phone className="h-3 w-3" />
+                    {ticket.passengerPhone}
+                  </a>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/ticket/${ticket.id}`); }}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handlePrint(ticket.id); }}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print Ticket
+                      </DropdownMenuItem>
+                      {ticket.collectionStatus === 'Unpaid' && (
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMarkPaid(ticket); }}>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Mark as Paid
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditPassword(ticket.id); }}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Ticket
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={(e) => { e.stopPropagation(); handleDeletePassword(ticket.id); }}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Password Dialog for Edit */}
+        <PasswordDialog
+          open={!!editId}
+          onOpenChange={() => setEditId(null)}
+          onSuccess={handleEditConfirmed}
+          title="Edit Ticket"
+          description="Enter admin password to edit this ticket."
+        />
+
+        {/* Password Dialog for Delete */}
+        <PasswordDialog
+          open={!!pendingDeleteId}
+          onOpenChange={() => setPendingDeleteId(null)}
+          onSuccess={handleDeleteConfirmed}
+          title="Delete Ticket"
+          description="Enter admin password to delete this ticket."
+        />
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this ticket? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDelete} 
+                className="bg-destructive hover:bg-destructive/90"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
+
+  // Desktop Table View
   return (
     <>
       <div className="rounded-lg border bg-card overflow-x-auto">

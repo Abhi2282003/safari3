@@ -278,10 +278,10 @@ export default function SeatBookings() {
 
   return (
     <Layout>
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Seat Bookings</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Seat Bookings</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Enter bus number to view/manage seat layout
           </p>
         </div>
@@ -292,14 +292,14 @@ export default function SeatBookings() {
             <CardTitle className="text-base">Select Date & Bus</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
                 <Label>Journey Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start gap-2 mt-1">
                       <CalendarIcon className="h-4 w-4" />
-                      {format(selectedDate, 'PPP')}
+                      {format(selectedDate, 'EEE, dd MMM yyyy')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -318,9 +318,9 @@ export default function SeatBookings() {
                 </Popover>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 <Button variant="outline" size="sm" onClick={() => { setSelectedDate(addDays(selectedDate, -1)); setBusConfirmed(false); }}>
-                  Previous
+                  Prev
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => { setSelectedDate(new Date()); setBusConfirmed(false); }}>
                   Today
@@ -331,8 +331,8 @@ export default function SeatBookings() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
                 <Label>Bus Number / Name</Label>
                 <Input
                   value={busName}
@@ -341,15 +341,17 @@ export default function SeatBookings() {
                   className="mt-1"
                 />
               </div>
-              <Button onClick={() => busName.trim() && setBusConfirmed(true)} disabled={!busName.trim()}>
-                <Bus className="h-4 w-4 mr-2" />
-                Load Bus
-              </Button>
+              <div className="sm:self-end">
+                <Button onClick={() => busName.trim() && setBusConfirmed(true)} disabled={!busName.trim()} className="w-full sm:w-auto">
+                  <Bus className="h-4 w-4 mr-2" />
+                  Load Bus
+                </Button>
+              </div>
             </div>
 
             {availableBuses.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                <span className="text-sm text-muted-foreground">Available buses:</span>
+                <span className="text-sm text-muted-foreground">Available:</span>
                 {availableBuses.map((b) => (
                   <Badge
                     key={b}
@@ -367,14 +369,14 @@ export default function SeatBookings() {
 
         {/* Bus Layout (shown only when bus is confirmed) */}
         {busConfirmed && (
-          <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-            {/* Left: Summary */}
-            <div className="space-y-4">
+          <div className="grid gap-4 lg:gap-6 lg:grid-cols-[280px_1fr]">
+            {/* Left: Summary - on mobile shown after the seat grid */}
+            <div className="space-y-4 order-2 lg:order-1">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Bus className="h-4 w-4" />
-                    {busName} Summary
+                    <span className="truncate">{busName} Summary</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
@@ -382,19 +384,21 @@ export default function SeatBookings() {
                     <span>Booked Seats</span>
                     <span className="font-medium">{busSummary.total} / {TOTAL_SEATS}</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Online</span>
-                    <span>{busSummary.online}</span>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 bg-blue-500/10 rounded">
+                      <p className="text-lg font-semibold text-blue-600">{busSummary.online}</p>
+                      <p className="text-xs text-muted-foreground">Online</p>
+                    </div>
+                    <div className="p-2 bg-amber-500/10 rounded">
+                      <p className="text-lg font-semibold text-amber-600">{busSummary.agent}</p>
+                      <p className="text-xs text-muted-foreground">Agent</p>
+                    </div>
+                    <div className="p-2 bg-green-500/10 rounded">
+                      <p className="text-lg font-semibold text-green-600">{busSummary.self}</p>
+                      <p className="text-xs text-muted-foreground">Self</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Agent</span>
-                    <span>{busSummary.agent}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Self</span>
-                    <span>{busSummary.self}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
+                  <div className="flex justify-between text-muted-foreground pt-2 border-t">
                     <span>Luggage Items</span>
                     <span>{busSummary.luggageCount}</span>
                   </div>
@@ -463,17 +467,17 @@ export default function SeatBookings() {
               </div>
             </div>
 
-            {/* Right: Seat grid */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bus className="h-5 w-5" />
-                  {busName} - {format(selectedDate, 'EEE, dd MMM yyyy')}
+            {/* Right: Seat grid - shown first on mobile */}
+            <Card className="order-1 lg:order-2">
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Bus className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="truncate">{busName}</span>
                 </CardTitle>
-                <CardDescription>Click on a seat to book or edit</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Tap a seat to book or edit</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-6 gap-2 max-w-lg">
+                <div className="grid grid-cols-6 gap-1.5 sm:gap-2 max-w-sm sm:max-w-lg mx-auto">
                   {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
                     const booking = getBookingForSeat(seatNum);
 
@@ -487,13 +491,13 @@ export default function SeatBookings() {
                         key={seatNum}
                         onClick={() => handleSeatClick(seatNum)}
                         className={cn(
-                          'aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-colors relative',
+                          'aspect-square rounded-md sm:rounded-lg flex flex-col items-center justify-center text-xs sm:text-sm font-medium transition-colors relative',
                           bgClass
                         )}
                       >
                         <span>{seatNum}</span>
                         {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                          <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full" />
                         )}
                       </button>
                     );

@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
   Ticket, 
@@ -10,7 +10,9 @@ import {
   Search,
   Download,
   Filter,
-  Users
+  Users,
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -19,6 +21,8 @@ import { PaymentDialog } from '@/components/dashboard/PaymentDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Popover,
   PopoverContent,
@@ -32,15 +36,50 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTickets, useTravels, calculateStats, TicketWithPayment } from '@/hooks/useTickets';
+import { useSeatBookings, useAgents } from '@/hooks/useSeatBookings';
 import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { tickets, loading, fetchTickets, savePayment, deleteTicket } = useTickets();
   const { travels } = useTravels();
+  const { seatBookings } = useSeatBookings();
+  const { agents } = useAgents();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
+
+  // Calculate pending agent collections
+  const pendingAgentCollections = useMemo(() => {
+    const agentMap = new Map<string, { name: string; pending: number; bookingsCount: number }>();
+
+    seatBookings
+      .filter((b) => b.bookingType === 'agent' && b.agentId && b.agentCollectionStatus === 'pending')
+      .forEach((booking) => {
+        const agentId = booking.agentId!;
+        if (!agentMap.has(agentId)) {
+          const agent = agents.find(a => a.id === agentId);
+          agentMap.set(agentId, {
+            name: booking.agentName || agent?.name || 'Unknown',
+            pending: 0,
+            bookingsCount: 0,
+          });
+        }
+
+        const agentData = agentMap.get(agentId)!;
+        agentData.pending += booking.amountFromAgent;
+        agentData.bookingsCount += 1;
+      });
+
+    return Array.from(agentMap.entries())
+      .map(([id, data]) => ({ id, ...data }))
+      .sort((a, b) => b.pending - a.pending);
+  }, [seatBookings, agents]);
+
+  const totalPendingFromAgents = useMemo(() => {
+    return pendingAgentCollections.reduce((sum, a) => sum + a.pending, 0);
+  }, [pendingAgentCollections]);
 
   // Memoize the date tickets to prevent infinite loops
   const dateTickets = useMemo(() => {
@@ -136,18 +175,18 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground mt-1">
-                Tickets for {format(selectedDate, 'EEEE, dd MMMM yyyy')}
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                Tickets for {format(selectedDate, 'EEE, dd MMM yyyy')}
               </p>
             </div>
-            <Link to="/new-ticket">
-              <Button className="gap-2">
+            <Link to="/new-ticket" className="w-full sm:w-auto">
+              <Button className="gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
                 New Ticket
               </Button>
@@ -156,39 +195,39 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
           <StatCard
             title="Tickets Today"
             value={stats.totalTickets}
-            icon={<Ticket className="h-6 w-6" />}
+            icon={<Ticket className="h-5 w-5 sm:h-6 sm:w-6" />}
             trend={`${stats.paidCount} paid, ${stats.unpaidCount} unpaid`}
           />
           <StatCard
             title="Total Collection"
             value={`₹${stats.totalCollection.toLocaleString()}`}
-            icon={<IndianRupee className="h-6 w-6" />}
+            icon={<IndianRupee className="h-5 w-5 sm:h-6 sm:w-6" />}
             variant="success"
           />
           <StatCard
             title="Pending Amount"
             value={`₹${stats.totalUnpaid.toLocaleString()}`}
-            icon={<AlertCircle className="h-6 w-6" />}
+            icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
             variant="destructive"
           />
         </div>
 
         {/* Booked By Summary */}
         {bookedBySummary.length > 0 && (
-          <div className="mb-8 rounded-lg border bg-card p-4">
+          <div className="mb-6 rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 mb-4">
               <Users className="h-5 w-5 text-primary" />
               <h3 className="font-semibold text-foreground">Booked By Summary</h3>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {bookedBySummary.map(([name, data]) => (
                 <div key={name} className="p-3 rounded-md bg-muted/50">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-medium text-foreground">{name}</p>
+                    <p className="font-medium text-foreground truncate">{name}</p>
                     <p className="font-semibold text-primary">₹{data.total.toLocaleString()}</p>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{data.count} ticket{data.count > 1 ? 's' : ''}</p>
@@ -205,52 +244,106 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto justify-start gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {format(selectedDate, 'dd MMM yyyy')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+        {/* Pending Agent Collections */}
+        {pendingAgentCollections.length > 0 && (
+          <Card className="mb-6 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Pending Agent Collections
+                </CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/agent-collections')}
+                  className="text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
+                >
+                  View All
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                Total: ₹{totalPendingFromAgents.toLocaleString()} from {pendingAgentCollections.length} agent{pendingAgentCollections.length > 1 ? 's' : ''}
+              </p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {pendingAgentCollections.slice(0, 8).map((agent) => (
+                  <div 
+                    key={agent.id} 
+                    className="flex items-center justify-between p-3 rounded-md bg-white/50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{agent.name}</p>
+                      <p className="text-xs text-muted-foreground">{agent.bookingsCount} booking{agent.bookingsCount > 1 ? 's' : ''}</p>
+                    </div>
+                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-600 shrink-0">
+                      ₹{agent.pending.toLocaleString()}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {pendingAgentCollections.length > 8 && (
+                <p className="text-sm text-center text-muted-foreground mt-3">
+                  +{pendingAgentCollections.length - 8} more agents
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search ticket, name, phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+        {/* Filters */}
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto justify-start gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {format(selectedDate, 'dd MMM yyyy')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search ticket, name, phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
 
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-            <SelectTrigger className="w-full sm:w-[140px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Paid">Paid</SelectItem>
-              <SelectItem value="Unpaid">Unpaid</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-3">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="flex-1 sm:w-[140px] sm:flex-none">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Paid">Paid</SelectItem>
+                <SelectItem value="Unpaid">Unpaid</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button variant="outline" onClick={handleExport} className="gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+            <Button variant="outline" onClick={handleExport} className="gap-2 flex-1 sm:flex-none">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
+            </Button>
+          </div>
         </div>
 
         {/* Ticket Table */}
