@@ -89,9 +89,12 @@ export function useLuggageBookings() {
         .eq('id', booking.id);
       if (error) throw error;
     } else {
-      const { error } = await supabase
+      console.log('Inserting luggage booking:', payload);
+      const { data, error } = await supabase
         .from('luggage_bookings')
-        .insert(payload);
+        .insert(payload)
+        .select();
+      console.log('Insert result:', { data, error });
       if (error) throw error;
     }
 
