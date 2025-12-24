@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -28,7 +29,8 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentDialogProps) {
-  const [paidBy, setPaidBy] = useState('');
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverMobile, setReceiverMobile] = useState('');
   const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Other'>('Cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -63,19 +65,25 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
 
   const handleSubmit = async () => {
     if (!ticket) return;
-    if (!paidBy) {
-      toast.error('Please select who collected the payment');
+    if (!receiverName.trim()) {
+      toast.error('Please enter receiver name');
       return;
     }
 
+    // Combine name and mobile for the paidBy field
+    const paidByInfo = receiverMobile.trim() 
+      ? `${receiverName.trim()} (${receiverMobile.trim()})`
+      : receiverName.trim();
+
     setIsSubmitting(true);
     try {
-      await onSubmit(paidBy, paymentMode, payableAmount);
+      await onSubmit(paidByInfo, paymentMode, payableAmount);
       toast.success('Payment recorded successfully');
       onOpenChange(false);
       
       // Reset form
-      setPaidBy('');
+      setReceiverName('');
+      setReceiverMobile('');
       setPaymentMode('Cash');
     } catch (error) {
       console.error('Error recording payment:', error);
@@ -83,6 +91,10 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleReceiverSelect = (name: string) => {
+    setReceiverName(name);
   };
 
   return (
@@ -114,20 +126,46 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
             </div>
           </div>
 
+          {/* Quick Select from saved receivers */}
+          {activeReceivers.length > 0 && (
+            <div className="grid gap-2">
+              <Label>Quick Select (Optional)</Label>
+              <Select onValueChange={handleReceiverSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select from saved receivers" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeReceivers.map((receiver) => (
+                    <SelectItem key={receiver.id} value={receiver.name}>
+                      {receiver.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Manual Receiver Name Input */}
           <div className="grid gap-2">
-            <Label htmlFor="paidBy">Paid By</Label>
-            <Select value={paidBy} onValueChange={setPaidBy}>
-              <SelectTrigger id="paidBy">
-                <SelectValue placeholder="Select who collected payment" />
-              </SelectTrigger>
-              <SelectContent>
-                {activeReceivers.map((receiver) => (
-                  <SelectItem key={receiver.id} value={receiver.name}>
-                    {receiver.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="receiverName">Received By (Name) *</Label>
+            <Input
+              id="receiverName"
+              value={receiverName}
+              onChange={(e) => setReceiverName(e.target.value)}
+              placeholder="Enter receiver name"
+            />
+          </div>
+
+          {/* Manual Receiver Mobile Input */}
+          <div className="grid gap-2">
+            <Label htmlFor="receiverMobile">Receiver Mobile (Optional)</Label>
+            <Input
+              id="receiverMobile"
+              value={receiverMobile}
+              onChange={(e) => setReceiverMobile(e.target.value)}
+              placeholder="Enter mobile number"
+              type="tel"
+            />
           </div>
 
           <div className="grid gap-2">
