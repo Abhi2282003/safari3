@@ -51,6 +51,12 @@ export interface PickupLocation {
   active: boolean;
 }
 
+export interface DestinationCity {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 export interface CompanySettings {
   name: string;
   address: string;

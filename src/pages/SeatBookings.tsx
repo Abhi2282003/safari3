@@ -24,10 +24,10 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CalendarIcon, Loader2, Bus, User, IndianRupee, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Bus, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatBooking } from '@/hooks/useSeatBookings';
-import { useTravels } from '@/hooks/useTickets';
+import { useDestinations } from '@/hooks/useDestinations';
 
 const TOTAL_SEATS = 36;
 
@@ -39,13 +39,13 @@ export default function SeatBookings() {
 
   const { seatBookings, loading, getSeatsByDate, saveSeatBooking, markCollected, deleteSeatBooking } = useSeatBookings();
   const { agents } = useAgents();
-  const { travels } = useTravels();
+  const { destinations } = useDestinations();
 
   const [formData, setFormData] = useState({
     bookingType: 'self' as BookingType,
     agentId: '',
     bookingAmount: '',
-    travelsName: '',
+    destination: '',
     busName: '',
     passengerName: '',
     notes: '',
@@ -65,7 +65,7 @@ export default function SeatBookings() {
         bookingType: existing.bookingType,
         agentId: existing.agentId || '',
         bookingAmount: existing.bookingAmount.toString(),
-        travelsName: existing.travelsName || '',
+        destination: (existing as any).destination || '',
         busName: existing.busName || '',
         passengerName: existing.passengerName || '',
         notes: existing.notes || '',
@@ -76,7 +76,7 @@ export default function SeatBookings() {
         bookingType: 'self',
         agentId: '',
         bookingAmount: '',
-        travelsName: travels[0]?.name || '',
+        destination: destinations[0]?.name || '',
         busName: '',
         passengerName: '',
         notes: '',
@@ -110,7 +110,7 @@ export default function SeatBookings() {
         amountToOwner: 0,
         amountFromAgent: 0,
         agentCollectionStatus: 'pending',
-        travelsName: formData.travelsName || undefined,
+        destination: formData.destination || undefined,
         busName: formData.busName || undefined,
         passengerName: formData.passengerName || undefined,
         notes: formData.notes || undefined,
@@ -248,15 +248,15 @@ export default function SeatBookings() {
                   <span className="font-medium">{daySummary.total} / {TOTAL_SEATS}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Online (5%)</span>
+                  <span>Online</span>
                   <span>{daySummary.online}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Agent (5%)</span>
+                  <span>Agent</span>
                   <span>{daySummary.agent}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Self (15%)</span>
+                  <span>Self</span>
                   <span>{daySummary.self}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between font-medium text-primary">
@@ -279,15 +279,15 @@ export default function SeatBookings() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-blue-500" />
-                <span>Online (5%)</span>
+                <span>Online</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-amber-500" />
-                <span>Agent (5%)</span>
+                <span>Agent</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-green-500" />
-                <span>Self (15%)</span>
+                <span>Self</span>
               </div>
             </div>
           </div>
@@ -357,9 +357,9 @@ export default function SeatBookings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="online">Online (5% commission)</SelectItem>
-                    <SelectItem value="agent">Agent (15% total, 5% ours)</SelectItem>
-                    <SelectItem value="self">Self (15% commission)</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="self">Self</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -396,18 +396,18 @@ export default function SeatBookings() {
               </div>
 
               <div className="grid gap-2">
-                <Label>Travels Name</Label>
+                <Label>Destination</Label>
                 <Select
-                  value={formData.travelsName}
-                  onValueChange={(v) => setFormData({ ...formData, travelsName: v })}
+                  value={formData.destination}
+                  onValueChange={(v) => setFormData({ ...formData, destination: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select travels" />
+                    <SelectValue placeholder="Select destination" />
                   </SelectTrigger>
                   <SelectContent>
-                    {travels.filter((t) => t.active).map((travel) => (
-                      <SelectItem key={travel.id} value={travel.name}>
-                        {travel.name}
+                    {destinations.filter((d) => d.active).map((dest) => (
+                      <SelectItem key={dest.id} value={dest.name}>
+                        {dest.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -430,10 +430,6 @@ export default function SeatBookings() {
                     <div className="flex justify-between">
                       <span>Booking Amount</span>
                       <span>₹{parseFloat(formData.bookingAmount).toFixed(0)}</span>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Commission ({amounts.commissionPercent}%)</span>
-                      <span>₹{(parseFloat(formData.bookingAmount) * amounts.commissionPercent / 100).toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between text-primary font-medium">
                       <span>Our Earning</span>
