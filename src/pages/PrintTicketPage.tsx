@@ -8,7 +8,6 @@ import { TicketWithPayment, CompanySettings, Ticket, Payment } from '@/types/tic
 import { useReactToPrint } from 'react-to-print';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSettings } from '@/lib/storage';
 
 export default function PrintTicketPage() {
   const { id } = useParams<{ id: string }>();
@@ -98,16 +97,14 @@ export default function PrintTicketPage() {
             ticketHeight: settingsData.ticket_height || 140,
           });
         } else {
-          // Fallback to localStorage settings (where user saved them)
-          const localSettings = getSettings();
+          // Default settings if none exist in database
           setSettings({
-            name: localSettings.name || 'ROYAL TRAVELS',
-            address: localSettings.address || '',
-            phone: localSettings.phone || '',
-            logoUrl: localSettings.logoUrl || undefined,
-            footerNote: localSettings.footerNote || 'Wish you a Happy Journey!',
-            ticketWidth: localSettings.ticketWidth || 280,
-            ticketHeight: localSettings.ticketHeight || 140,
+            name: 'ROYAL TRAVELS',
+            address: '',
+            phone: '',
+            footerNote: 'Wish you a Happy Journey!',
+            ticketWidth: 280,
+            ticketHeight: 140,
           });
         }
       } catch (error) {

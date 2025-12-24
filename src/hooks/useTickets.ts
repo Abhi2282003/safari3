@@ -64,33 +64,11 @@ export interface CompanySettings {
   ticketHeight?: number;
 }
 
-// Generate ticket number
-export async function generateTicketNo(userId: string): Promise<string> {
-  const today = format(new Date(), 'yyyyMMdd');
-  
-  // Upsert counter for today
-  const { data: existing } = await supabase
-    .from('ticket_counters')
-    .select('counter_value')
-    .eq('user_id', userId)
-    .eq('counter_date', format(new Date(), 'yyyy-MM-dd'))
-    .maybeSingle();
-
-  let counter = 1;
-  if (existing) {
-    counter = existing.counter_value + 1;
-    await supabase
-      .from('ticket_counters')
-      .update({ counter_value: counter })
-      .eq('user_id', userId)
-      .eq('counter_date', format(new Date(), 'yyyy-MM-dd'));
-  } else {
-    await supabase
-      .from('ticket_counters')
-      .insert({ user_id: userId, counter_date: format(new Date(), 'yyyy-MM-dd'), counter_value: 1 });
-  }
-
-  return `ROYAL-${today}-${counter.toString().padStart(4, '0')}`;
+// Generate ticket number using database function
+export async function generateTicketNo(): Promise<string> {
+  const { data, error } = await supabase.rpc('next_ticket_no');
+  if (error) throw error;
+  return data as string;
 }
 
 // Get next ticket number (preview without incrementing)
@@ -107,6 +85,7 @@ export async function getNextTicketNumber(userId: string): Promise<string> {
   const counter = (existing?.counter_value ?? 0) + 1;
   return `ROYAL-${today}-${counter.toString().padStart(4, '0')}`;
 }
+
 
 export function useTickets() {
   const { user } = useAuth();
@@ -214,7 +193,7 @@ export function useTickets() {
   const saveTicket = async (ticket: Omit<Ticket, 'id' | 'ticketNo'> & { id?: string; ticketNo?: string }) => {
     if (!user) return null;
 
-    const ticketNo = ticket.ticketNo || (await generateTicketNo(user.id));
+    const ticketNo = ticket.ticketNo || (await generateTicketNo());
 
     const dbTicket = {
       user_id: user.id,
