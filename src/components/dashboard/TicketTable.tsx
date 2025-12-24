@@ -121,6 +121,7 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
               <TableHead className="font-semibold text-center">Tourists</TableHead>
               <TableHead className="font-semibold text-right">Amount</TableHead>
               <TableHead className="font-semibold text-center">Status</TableHead>
+              <TableHead className="font-semibold">Booked By</TableHead>
               <TableHead className="font-semibold">Paid By</TableHead>
               <TableHead className="font-semibold text-right">Actions</TableHead>
             </TableRow>
@@ -155,6 +156,9 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
                     >
                       {ticket.collectionStatus === 'Paid' ? '✓ Paid' : '✗ Unpaid'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {ticket.bookedBy || '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {ticket.payment?.receivedByName || '—'}
