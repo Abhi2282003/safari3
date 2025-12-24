@@ -117,6 +117,36 @@ export function useLuggageBookings() {
     );
   };
 
+  const getLuggageProfitSummary = (startDate: Date, endDate: Date) => {
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+    
+    const filtered = luggageBookings.filter(
+      (b) => b.journeyDate >= startStr && b.journeyDate <= endStr
+    );
+
+    // Group by date
+    const byDate: { [date: string]: { count: number; totalAmount: number; profit: number } } = {};
+    
+    filtered.forEach((b) => {
+      if (!byDate[b.journeyDate]) {
+        byDate[b.journeyDate] = { count: 0, totalAmount: 0, profit: 0 };
+      }
+      byDate[b.journeyDate].count += b.quantity;
+      byDate[b.journeyDate].totalAmount += b.totalAmount;
+      byDate[b.journeyDate].profit += b.ourEarning;
+    });
+
+    return {
+      byDate,
+      totals: {
+        count: filtered.reduce((sum, b) => sum + b.quantity, 0),
+        totalAmount: filtered.reduce((sum, b) => sum + b.totalAmount, 0),
+        profit: filtered.reduce((sum, b) => sum + b.ourEarning, 0),
+      },
+    };
+  };
+
   return {
     luggageBookings,
     loading,
@@ -124,5 +154,6 @@ export function useLuggageBookings() {
     saveLuggageBooking,
     deleteLuggageBooking,
     getLuggageByDateAndBus,
+    getLuggageProfitSummary,
   };
 }
