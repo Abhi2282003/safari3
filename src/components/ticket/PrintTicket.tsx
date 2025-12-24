@@ -45,8 +45,11 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
             className="flex-1 overflow-hidden border-2 border-gray-800 relative flex flex-col"
             style={{ borderRadius: "3mm" }}
           >
-            {/* Watermark Logo - Visible */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            {/* Watermark Logo - Lower position */}
+            <div 
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+              style={{ paddingTop: "15mm" }}
+            >
               <img
                 src={settings.logoUrl || companyLogo}
                 alt=""
@@ -55,10 +58,10 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
               />
             </div>
 
-            {/* Header - Centered Company Info */}
+            {/* Header - Logo in corner, company info centered */}
             <header className="bg-gray-900 text-white relative z-10 py-2 px-3">
-              <div className="flex items-center justify-center gap-4">
-                {/* Logo */}
+              <div className="flex items-center gap-3">
+                {/* Logo - Corner */}
                 <div 
                   className="shrink-0 bg-white p-1 shadow"
                   style={{ width: "18mm", height: "18mm", borderRadius: "2mm" }}
@@ -71,7 +74,7 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                 </div>
 
                 {/* Company Info - Center */}
-                <div className="text-center">
+                <div className="flex-1 text-center">
                   <h1 className="text-2xl font-black uppercase tracking-wide leading-none">
                     {settings.name}
                   </h1>
@@ -126,7 +129,7 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                         <span className="font-black text-base">{ticket.toursTo}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-gray-600">Date: </span>
+                        <span className="text-xs text-gray-600">Journey: </span>
                         <span className="font-bold">{format(new Date(ticket.journeyDate), "dd/MM/yyyy")}</span>
                       </div>
                     </div>
@@ -140,6 +143,10 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                         <span className="mx-2">|</span>
                         <span className="text-xs text-gray-600">Dep: </span>
                         <span className="font-bold">{ticket.depTime || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-600">Booked: </span>
+                        <span className="font-bold">{format(new Date(ticket.bookingDateTime), "dd/MM/yy")}</span>
                       </div>
                     </div>
                   </div>
@@ -186,18 +193,21 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
             <div className="border-l-2 border-dashed border-gray-400 h-full"></div>
           </div>
 
-          {/* Boarding Pass */}
+          {/* Boarding Pass - Larger */}
           <aside 
             className="shrink-0 border-2 border-gray-800 relative flex flex-col overflow-hidden"
-            style={{ width: "65mm", borderRadius: "3mm" }}
+            style={{ width: "72mm", borderRadius: "3mm" }}
           >
-            {/* Watermark */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            {/* Watermark - Lower */}
+            <div 
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+              style={{ paddingTop: "12mm" }}
+            >
               <img 
                 src={settings.logoUrl || companyLogo} 
                 alt="" 
                 className="opacity-15" 
-                style={{ width: "40mm", height: "40mm", objectFit: "contain" }} 
+                style={{ width: "42mm", height: "42mm", objectFit: "contain" }} 
               />
             </div>
 
