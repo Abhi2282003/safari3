@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    /* Navy Blue Professional Theme */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Deep Navy Primary */
+    --primary: 215 50% 23%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Light Gray Secondary */
+    --secondary: 210 15% 95%;
+    --secondary-foreground: 215 25% 25%;
+
+    --muted: 210 15% 92%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Warm Amber Accent */
+    --accent: 38 92% 50%;
+    --accent-foreground: 215 50% 15%;
+
+    /* Status Colors */
+    --success: 142 70% 40%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 215 50% 15%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 215 50% 23%;
+
+    --radius: 0.5rem;
+
+    /* Custom Properties */
+    --ticket-border: 215 30% 75%;
+    --ticket-bg: 45 30% 97%;
+    --ticket-accent: 215 50% 23%;
+
+    --sidebar-background: 215 50% 18%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 215 50% 15%;
+    --sidebar-accent: 215 45% 28%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 40% 25%;
+    --sidebar-ring: 38 92% 50%;
+  }
+
+  .dark {
+    --background: 215 30% 10%;
+    --foreground: 210 40% 98%;
+
+    --card: 215 30% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 30% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 38 92% 50%;
+    --primary-foreground: 215 50% 10%;
+
+    --secondary: 215 25% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 215 50% 10%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 38 92% 50%;
+
+    --ticket-border: 215 25% 30%;
+    --ticket-bg: 215 30% 15%;
+    --ticket-accent: 38 92% 50%;
+
+    --sidebar-background: 215 35% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 215 50% 10%;
+    --sidebar-accent: 215 30% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 30% 15%;
+    --sidebar-ring: 38 92% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .ticket-number {
+    font-family: 'JetBrains Mono', monospace;
+    @apply font-semibold tracking-wide;
+  }
+
+  .status-paid {
+    @apply bg-success text-success-foreground;
+  }
+
+  .status-unpaid {
+    @apply bg-destructive text-destructive-foreground;
+  }
+
+  .card-stat {
+    @apply relative overflow-hidden;
+  }
+
+  .card-stat::before {
+    content: '';
+    @apply absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10;
+    background: currentColor;
+  }
+
+  /* Print Styles */
+  @media print {
+    body {
+      @apply bg-white text-black;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    .ticket-print {
+      @apply bg-white text-black;
+      page-break-inside: avoid;
+    }
+  }
+
+  .print-only {
+    display: none;
+  }
+
+  /* Ticket dashed border effect */
+  .ticket-divider {
+    border-left: 2px dashed hsl(var(--ticket-border));
+    background-image: radial-gradient(circle, hsl(var(--background)) 6px, transparent 6px);
+    background-size: 100% 24px;
+    background-position: center;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
