@@ -15,6 +15,7 @@ export default function PrintTicketPage() {
   const [ticket, setTicket] = useState<TicketWithPayment | null>(null);
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,6 +110,7 @@ export default function PrintTicketPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
+        setFetchedAt(new Date());
         setLoading(false);
       }
     };
@@ -161,6 +163,11 @@ export default function PrintTicketPage() {
               <p className="text-muted-foreground">
                 Ticket: <span className="font-mono">{ticket.ticketNo}</span>
               </p>
+              {fetchedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Synced: {fetchedAt.toLocaleString()}
+                </p>
+              )}
             </div>
             <Button onClick={() => handlePrint()} size="lg" className="gap-2">
               <Printer className="h-5 w-5" />
