@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Upload } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,13 +60,15 @@ export default function Settings() {
   const [newTravelPercent, setNewTravelPercent] = useState('10');
   const [newPickupName, setNewPickupName] = useState('');
   const [newDestinationName, setNewDestinationName] = useState('');
+  const [newAgentName, setNewAgentName] = useState('');
+  const [newAgentPhone, setNewAgentPhone] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTravelId, setDeleteTravelId] = useState<string | null>(null);
   const [deletePickupId, setDeletePickupId] = useState<string | null>(null);
   const [deleteDestinationId, setDeleteDestinationId] = useState<string | null>(null);
+  const [deleteAgentId, setDeleteAgentId] = useState<string | null>(null);
+  const [showClearAgentsDialog, setShowClearAgentsDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isImportingAgents, setIsImportingAgents] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -540,120 +541,79 @@ export default function Settings() {
     }
   };
 
-  // Agent import from file
-  const [importProgress, setImportProgress] = useState<string>('');
-  
-  const handleImportAgents = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  // Agent management
+  const handleAddAgent = async () => {
+    if (!user) return;
+    if (!newAgentName.trim()) {
+      toast.error('Please enter agent name');
+      return;
+    }
 
-    setIsImportingAgents(true);
-    setImportProgress('Reading file...');
-    
     try {
-      let lines: string[] = [];
-      
-      // Check if it's an Excel file
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json<any>(firstSheet, { header: 1 });
-        
-        // Flatten all cells into lines (handles single column or multiple columns)
-        lines = data.flat().map((cell: any) => String(cell || '').trim()).filter((s: string) => s.length > 0);
-      } else {
-        // Text/CSV file
-        const text = await file.text();
-        lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-      }
-      
-      setImportProgress(`Found ${lines.length} entries, checking for duplicates...`);
-      
-      // Get existing agent names (lowercase for comparison) - also dedupe within file
-      const existingNames = new Set(agents.map(a => a.name.toLowerCase()));
-      const seenInFile = new Set<string>();
-      
-      // Filter out duplicates, empty names, and dedupe within file
-      const newAgentNames: string[] = [];
-      for (const line of lines) {
-        const name = line.replace(/^["']|["']$/g, '').trim();
-        const nameLower = name.toLowerCase();
-        if (name.length > 0 && name.length <= 100 && !existingNames.has(nameLower) && !seenInFile.has(nameLower)) {
-          newAgentNames.push(name);
-          seenInFile.add(nameLower);
-        }
-      }
-      
-      const duplicatesCount = lines.length - newAgentNames.length;
-      
-      if (newAgentNames.length === 0) {
-        toast.info('No new agents to import (all duplicates or empty)');
-        setImportProgress('');
-        return;
-      }
-
-      setImportProgress(`Importing ${newAgentNames.length} agents...`);
-
-      // Batch insert in chunks of 500 for faster import
-      const chunkSize = 500;
-      let imported = 0;
-      
-      for (let i = 0; i < newAgentNames.length; i += chunkSize) {
-        const chunk = newAgentNames.slice(i, i + chunkSize);
-        const { error } = await supabase
-          .from('agents')
-          .insert(chunk.map(name => ({
-            user_id: user.id,
-            name,
-            active: true,
-          })));
-        
-        if (error) throw error;
-        imported += chunk.length;
-        setImportProgress(`Imported ${imported} of ${newAgentNames.length}...`);
-      }
-
-      toast.success(`Imported ${imported} agents (${duplicatesCount} duplicates skipped)`);
-      
-      setImportProgress('Refreshing list...');
-      
-      // Refresh agents count only (don't load all 5000 into memory)
-      const { count } = await supabase
+      const { data, error } = await supabase
         .from('agents')
-        .select('*', { count: 'exact', head: true })
+        .insert({
+          user_id: user.id,
+          name: newAgentName.trim(),
+          phone: newAgentPhone.trim() || null,
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setAgents([{ id: data.id, name: data.name, phone: data.phone || undefined, active: data.active ?? true }, ...agents]);
+      setAgentsTotalCount(agentsTotalCount + 1);
+      setNewAgentName('');
+      setNewAgentPhone('');
+      toast.success('Agent added successfully');
+    } catch (error) {
+      console.error('Error adding agent:', error);
+      toast.error('Failed to add agent');
+    }
+  };
+
+  const handleDeleteAgent = async () => {
+    if (!deleteAgentId || !user) return;
+    try {
+      const { error } = await supabase
+        .from('agents')
+        .delete()
+        .eq('id', deleteAgentId)
         .eq('user_id', user.id);
 
-      // Load first batch for display
-      const { data: agentsData } = await supabase
-        .from('agents')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true })
-        .limit(100);
+      if (error) throw error;
 
-      if (agentsData) {
-        setAgents(agentsData.map(a => ({
-          id: a.id,
-          name: a.name,
-          phone: a.phone || undefined,
-          active: a.active ?? true,
-        })));
-      }
-      
-      // Update total count display
-      if (count !== null) {
-        setAgentsTotalCount(count);
-      }
+      setAgents(agents.filter(a => a.id !== deleteAgentId));
+      setAgentsTotalCount(agentsTotalCount - 1);
+      toast.success('Agent deleted');
     } catch (error) {
-      console.error('Error importing agents:', error);
-      toast.error('Failed to import agents');
+      console.error('Error deleting agent:', error);
+      toast.error('Failed to delete agent');
     } finally {
-      setIsImportingAgents(false);
-      setImportProgress('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setDeleteAgentId(null);
+    }
+  };
+
+  const handleClearAllAgents = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('agents')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setAgents([]);
+      setAgentsTotalCount(0);
+      toast.success('All agents cleared');
+    } catch (error) {
+      console.error('Error clearing agents:', error);
+      toast.error('Failed to clear agents');
+    } finally {
+      setShowClearAgentsDialog(false);
     }
   };
 
@@ -799,36 +759,43 @@ export default function Settings() {
                 Agents ({agentsTotalCount})
               </CardTitle>
               <CardDescription>
-                Import agents from Excel (.xlsx), CSV, or text file. Duplicates are skipped.
+                Add agents manually with name and phone number
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col gap-2 mb-4">
-                <div className="flex gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".txt,.csv,.xlsx,.xls"
-                    onChange={handleImportAgents}
-                    className="hidden"
-                  />
+              {/* Add New Agent */}
+              <div className="flex gap-2 mb-4">
+                <Input
+                  value={newAgentName}
+                  onChange={(e) => setNewAgentName(e.target.value)}
+                  placeholder="Agent name"
+                  className="flex-1"
+                />
+                <Input
+                  value={newAgentPhone}
+                  onChange={(e) => setNewAgentPhone(e.target.value)}
+                  placeholder="Phone number"
+                  className="w-40"
+                />
+                <Button onClick={handleAddAgent} className="gap-2 shrink-0">
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+
+              {/* Clear All */}
+              {agentsTotalCount > 0 && (
+                <div className="flex gap-2 mb-4">
                   <Button 
-                    onClick={() => fileInputRef.current?.click()} 
-                    disabled={isImportingAgents}
-                    className="gap-2"
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setShowClearAgentsDialog(true)}
                   >
-                    {isImportingAgents ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    {isImportingAgents ? 'Importing...' : 'Import from File'}
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All Agents
                   </Button>
                 </div>
-                {importProgress && (
-                  <p className="text-sm text-muted-foreground">{importProgress}</p>
-                )}
-              </div>
+              )}
               
               {agents.length > 0 ? (
                 <div className="rounded-lg border max-h-64 overflow-y-auto">
@@ -836,13 +803,16 @@ export default function Settings() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Agent Name</TableHead>
+                        <TableHead>Phone</TableHead>
                         <TableHead className="text-center">Active</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {agents.slice(0, 50).map((agent) => (
                         <TableRow key={agent.id}>
                           <TableCell className="font-medium">{agent.name}</TableCell>
+                          <TableCell>{agent.phone || '-'}</TableCell>
                           <TableCell className="text-center">
                             <Switch
                               checked={agent.active}
@@ -857,6 +827,16 @@ export default function Settings() {
                               }}
                             />
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteAgentId(agent.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -869,7 +849,7 @@ export default function Settings() {
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-8">
-                  No agents added yet. Import from a file to get started.
+                  No agents added yet. Add agents manually above.
                 </p>
               )}
             </CardContent>
@@ -1231,6 +1211,42 @@ export default function Settings() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteDestination} className="bg-destructive hover:bg-destructive/90">
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Agent Dialog */}
+        <AlertDialog open={!!deleteAgentId} onOpenChange={() => setDeleteAgentId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this agent? This won't affect existing bookings.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAgent} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Clear All Agents Dialog */}
+        <AlertDialog open={showClearAgentsDialog} onOpenChange={setShowClearAgentsDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Clear All Agents</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete ALL agents? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleClearAllAgents} className="bg-destructive hover:bg-destructive/90">
+                Clear All
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

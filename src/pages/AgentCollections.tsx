@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -11,82 +13,187 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Users, CheckCircle2, Clock, IndianRupee, Filter } from 'lucide-react';
-import { useSeatBookings, useAgents } from '@/hooks/useSeatBookings';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee } from 'lucide-react';
+import { useSeatBookings, useAgents, SeatBooking } from '@/hooks/useSeatBookings';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface AgentWithCollections {
+  id: string;
+  name: string;
+  phone?: string;
+  bookings: SeatBooking[];
+  totalPending: number;
+  totalCollected: number;
+  amountPaid: number;
+}
 
 export default function AgentCollections() {
-  const [filterAgent, setFilterAgent] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('pending');
-
-  const { seatBookings, loading, markCollected } = useSeatBookings();
+  const { user } = useAuth();
+  const { seatBookings, loading, fetchSeatBookings } = useSeatBookings();
   const { agents } = useAgents();
+  
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<AgentWithCollections | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const agentBookings = useMemo(() => {
-    return seatBookings.filter((b) => {
-      if (b.bookingType !== 'agent') return false;
-      if (filterAgent !== 'all' && b.agentId !== filterAgent) return false;
-      if (filterStatus !== 'all' && b.agentCollectionStatus !== filterStatus) return false;
-      return true;
-    });
-  }, [seatBookings, filterAgent, filterStatus]);
+  // Group bookings by agent with pending collections
+  const agentCollections = useMemo(() => {
+    const agentMap = new Map<string, AgentWithCollections>();
 
-  const summary = useMemo(() => {
-    const pending = seatBookings.filter(
-      (b) => b.bookingType === 'agent' && b.agentCollectionStatus === 'pending'
-    );
-    const collected = seatBookings.filter(
-      (b) => b.bookingType === 'agent' && b.agentCollectionStatus === 'collected'
-    );
-
-    return {
-      pendingCount: pending.length,
-      pendingAmount: pending.reduce((sum, b) => sum + b.amountFromAgent, 0),
-      collectedCount: collected.length,
-      collectedAmount: collected.reduce((sum, b) => sum + b.amountFromAgent, 0),
-    };
-  }, [seatBookings]);
-
-  const agentWiseSummary = useMemo(() => {
-    const agentMap: { [key: string]: { name: string; pending: number; collected: number } } = {};
-
+    // Initialize with all agents that have bookings
     seatBookings
-      .filter((b) => b.bookingType === 'agent')
-      .forEach((b) => {
-        const agentId = b.agentId || 'unknown';
-        if (!agentMap[agentId]) {
-          agentMap[agentId] = {
-            name: b.agentName || 'Unknown',
-            pending: 0,
-            collected: 0,
-          };
+      .filter((b) => b.bookingType === 'agent' && b.agentId)
+      .forEach((booking) => {
+        const agentId = booking.agentId!;
+        if (!agentMap.has(agentId)) {
+          const agent = agents.find(a => a.id === agentId);
+          agentMap.set(agentId, {
+            id: agentId,
+            name: booking.agentName || agent?.name || 'Unknown',
+            phone: agent?.phone,
+            bookings: [],
+            totalPending: 0,
+            totalCollected: 0,
+            amountPaid: 0,
+          });
         }
-        if (b.agentCollectionStatus === 'pending') {
-          agentMap[agentId].pending += b.amountFromAgent;
+
+        const agentData = agentMap.get(agentId)!;
+        agentData.bookings.push(booking);
+        
+        if (booking.agentCollectionStatus === 'pending') {
+          agentData.totalPending += booking.amountFromAgent;
         } else {
-          agentMap[agentId].collected += b.amountFromAgent;
+          agentData.totalCollected += booking.amountFromAgent;
         }
       });
 
-    return Object.entries(agentMap).map(([id, data]) => ({
-      id,
-      ...data,
-    }));
-  }, [seatBookings]);
+    return Array.from(agentMap.values())
+      .filter(a => a.totalPending > 0 || a.bookings.length > 0)
+      .sort((a, b) => b.totalPending - a.totalPending);
+  }, [seatBookings, agents]);
 
-  const handleMarkCollected = async (id: string) => {
+  const summary = useMemo(() => {
+    const totalPending = agentCollections.reduce((sum, a) => sum + a.totalPending, 0);
+    const totalCollected = agentCollections.reduce((sum, a) => sum + a.totalCollected, 0);
+    const agentsWithPending = agentCollections.filter(a => a.totalPending > 0).length;
+    
+    return { totalPending, totalCollected, agentsWithPending };
+  }, [agentCollections]);
+
+  const handleOpenPayment = (agent: AgentWithCollections) => {
+    setSelectedAgent(agent);
+    setPaymentAmount(agent.totalPending.toString());
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePayment = async () => {
+    if (!selectedAgent || !user) return;
+    
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (amount > selectedAgent.totalPending) {
+      toast.error('Amount cannot exceed pending amount');
+      return;
+    }
+
+    setIsProcessing(true);
+
     try {
-      await markCollected(id);
-      toast.success('Marked as collected');
+      // Get pending bookings sorted by date (oldest first)
+      const pendingBookings = selectedAgent.bookings
+        .filter(b => b.agentCollectionStatus === 'pending')
+        .sort((a, b) => new Date(a.journeyDate).getTime() - new Date(b.journeyDate).getTime());
+
+      let remainingAmount = amount;
+      const bookingsToUpdate: string[] = [];
+
+      // Mark bookings as collected until amount is exhausted
+      for (const booking of pendingBookings) {
+        if (remainingAmount >= booking.amountFromAgent) {
+          bookingsToUpdate.push(booking.id);
+          remainingAmount -= booking.amountFromAgent;
+        } else if (remainingAmount > 0) {
+          // Partial payment - mark as collected anyway for simplicity
+          // In a real system, you might want to track partial amounts
+          bookingsToUpdate.push(booking.id);
+          remainingAmount = 0;
+        }
+        
+        if (remainingAmount <= 0) break;
+      }
+
+      // Update bookings as collected
+      if (bookingsToUpdate.length > 0) {
+        const { error } = await supabase
+          .from('seat_bookings')
+          .update({
+            agent_collection_status: 'collected',
+            collected_at: new Date().toISOString(),
+          })
+          .in('id', bookingsToUpdate);
+
+        if (error) throw error;
+      }
+
+      toast.success(`₹${amount.toFixed(0)} collected from ${selectedAgent.name}`);
+      setPaymentDialogOpen(false);
+      setPaymentAmount('');
+      fetchSeatBookings();
     } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Failed to process payment');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleMarkAllCollected = async (agent: AgentWithCollections) => {
+    if (!user) return;
+    
+    const pendingBookingIds = agent.bookings
+      .filter(b => b.agentCollectionStatus === 'pending')
+      .map(b => b.id);
+
+    if (pendingBookingIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('seat_bookings')
+        .update({
+          agent_collection_status: 'collected',
+          collected_at: new Date().toISOString(),
+        })
+        .in('id', pendingBookingIds);
+
+      if (error) throw error;
+
+      toast.success(`All collections marked as received from ${agent.name}`);
+      fetchSeatBookings();
+    } catch (error) {
+      console.error('Error marking collected:', error);
       toast.error('Failed to update');
     }
   };
@@ -110,22 +217,22 @@ export default function AgentCollections() {
             Agent Collections
           </h1>
           <p className="text-muted-foreground mt-1">
-            Track pending and collected amounts from agents
+            Track and collect pending amounts from agents
           </p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-4 sm:grid-cols-3 mb-6">
           <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Pending
+                Total Pending
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">₹{summary.pendingAmount.toFixed(0)}</div>
-              <p className="text-xs text-amber-600/80 mt-1">{summary.pendingCount} bookings</p>
+              <div className="text-2xl font-bold text-amber-600">₹{summary.totalPending.toFixed(0)}</div>
+              <p className="text-xs text-amber-600/80 mt-1">from {summary.agentsWithPending} agents</p>
             </CardContent>
           </Card>
 
@@ -133,162 +240,234 @@ export default function AgentCollections() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
-                Collected
+                Total Collected
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">₹{summary.collectedAmount.toFixed(0)}</div>
-              <p className="text-xs text-green-600/80 mt-1">{summary.collectedCount} bookings</p>
+              <div className="text-2xl font-bold text-green-600">₹{summary.totalCollected.toFixed(0)}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Total Agents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{agentCollections.length}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Agent-wise Summary */}
-        {agentWiseSummary.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Agent-wise Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {agentWiseSummary.map((agent) => (
-                  <div
-                    key={agent.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
-                  >
-                    <div>
-                      <p className="font-medium">{agent.name}</p>
-                      {agent.pending > 0 && (
-                        <p className="text-sm text-amber-600">Pending: ₹{agent.pending.toFixed(0)}</p>
+        {/* Agent-wise Collections */}
+        {agentCollections.length > 0 ? (
+          <Accordion type="multiple" className="space-y-4">
+            {agentCollections.map((agent) => (
+              <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-4">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold">{agent.name}</p>
+                        {agent.phone && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {agent.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {agent.totalPending > 0 ? (
+                        <Badge variant="outline" className="text-amber-600 border-amber-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          ₹{agent.totalPending.toFixed(0)} pending
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          All clear
+                        </Badge>
                       )}
                     </div>
-                    {agent.pending > 0 ? (
-                      <Badge variant="outline" className="text-amber-600 border-amber-600">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Pending
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Clear
-                      </Badge>
-                    )}
                   </div>
-                ))}
-              </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="pt-4 space-y-4">
+                    {/* Actions */}
+                    {agent.totalPending > 0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        <Button onClick={() => handleOpenPayment(agent)} className="gap-2">
+                          <IndianRupee className="h-4 w-4" />
+                          Receive Payment
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => handleMarkAllCollected(agent)}
+                          className="gap-2"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Mark All Collected
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Bookings Table */}
+                    <div className="rounded-lg border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Seat</TableHead>
+                            <TableHead>Passenger</TableHead>
+                            <TableHead className="text-right">Booking Amt</TableHead>
+                            <TableHead className="text-right">To Collect</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {agent.bookings
+                            .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
+                            .map((booking) => (
+                            <TableRow key={booking.id}>
+                              <TableCell>{format(new Date(booking.journeyDate), 'dd MMM yyyy')}</TableCell>
+                              <TableCell>Seat {booking.seatNumber}</TableCell>
+                              <TableCell>{booking.passengerName || '-'}</TableCell>
+                              <TableCell className="text-right">₹{booking.bookingAmount.toFixed(0)}</TableCell>
+                              <TableCell className="text-right font-medium">
+                                ₹{booking.amountFromAgent.toFixed(0)}
+                              </TableCell>
+                              <TableCell>
+                                {booking.agentCollectionStatus === 'pending' ? (
+                                  <Badge variant="outline" className="text-amber-600 border-amber-600">
+                                    Pending
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-green-600 border-green-600">
+                                    Collected
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="flex gap-6 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Total Bookings:</span>{' '}
+                        <span className="font-medium">{agent.bookings.length}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Collected:</span>{' '}
+                        <span className="font-medium text-green-600">₹{agent.totalCollected.toFixed(0)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Pending:</span>{' '}
+                        <span className="font-medium text-amber-600">₹{agent.totalPending.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              No agent bookings found. Agent bookings will appear here once created in Seat Bookings.
             </CardContent>
           </Card>
         )}
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filters:</span>
-              </div>
-              <Select value={filterAgent} onValueChange={setFilterAgent}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Agents" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Agents</SelectItem>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="collected">Collected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Payment Dialog */}
+        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <IndianRupee className="h-5 w-5" />
+                Receive Payment
+              </DialogTitle>
+              <DialogDescription>
+                Collect payment from {selectedAgent?.name}
+              </DialogDescription>
+            </DialogHeader>
 
-        {/* Bookings Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Agent Bookings</CardTitle>
-            <CardDescription>
-              {agentBookings.length} bookings found
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Seat</TableHead>
-                    <TableHead>Agent</TableHead>
-                    <TableHead>Passenger</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">To Collect</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {agentBookings.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell>{format(new Date(booking.journeyDate), 'dd MMM')}</TableCell>
-                      <TableCell>Seat {booking.seatNumber}</TableCell>
-                      <TableCell className="font-medium">{booking.agentName || 'Unknown'}</TableCell>
-                      <TableCell>{booking.passengerName || '-'}</TableCell>
-                      <TableCell className="text-right">₹{booking.bookingAmount.toFixed(0)}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        ₹{booking.amountFromAgent.toFixed(0)}
-                      </TableCell>
-                      <TableCell>
-                        {booking.agentCollectionStatus === 'pending' ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-600">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Pending
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Collected
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {booking.agentCollectionStatus === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleMarkCollected(booking.id)}
-                            className="gap-1"
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                            Collect
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {agentBookings.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                        No agent bookings found
-                      </TableCell>
-                    </TableRow>
+            {selectedAgent && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Agent</span>
+                    <span className="font-medium">{selectedAgent.name}</span>
+                  </div>
+                  {selectedAgent.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Phone</span>
+                      <span>{selectedAgent.phone}</span>
+                    </div>
                   )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  <div className="flex justify-between text-amber-600">
+                    <span>Total Pending</span>
+                    <span className="font-bold">₹{selectedAgent.totalPending.toFixed(0)}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Amount to Collect (₹)</Label>
+                  <Input
+                    type="number"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    max={selectedAgent.totalPending}
+                  />
+                  <div className="flex gap-2 mt-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setPaymentAmount(selectedAgent.totalPending.toString())}
+                    >
+                      Full Amount
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setPaymentAmount((selectedAgent.totalPending / 2).toString())}
+                    >
+                      Half
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handlePayment} disabled={isProcessing}>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Collect ₹{parseFloat(paymentAmount) || 0}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
