@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Upload } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,13 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface Agent {
+  id: string;
+  name: string;
+  phone?: string;
+  active: boolean;
+}
+
 export default function Settings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -46,6 +53,7 @@ export default function Settings() {
   const [travels, setTravels] = useState<TravelsConfig[]>([]);
   const [pickups, setPickups] = useState<PickupLocation[]>([]);
   const [destinations, setDestinations] = useState<DestinationCity[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [newReceiverName, setNewReceiverName] = useState('');
   const [newTravelName, setNewTravelName] = useState('');
   const [newTravelPercent, setNewTravelPercent] = useState('10');
@@ -56,6 +64,8 @@ export default function Settings() {
   const [deletePickupId, setDeletePickupId] = useState<string | null>(null);
   const [deleteDestinationId, setDeleteDestinationId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImportingAgents, setIsImportingAgents] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -143,6 +153,22 @@ export default function Settings() {
           id: d.id,
           name: d.name,
           active: d.active ?? true,
+        })));
+      }
+
+      // Fetch agents from Supabase
+      const { data: agentsData } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (agentsData) {
+        setAgents(agentsData.map(a => ({
+          id: a.id,
+          name: a.name,
+          phone: a.phone || undefined,
+          active: a.active ?? true,
         })));
       }
     } catch (error) {
@@ -504,6 +530,77 @@ export default function Settings() {
     }
   };
 
+  // Agent import from file
+  const handleImportAgents = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsImportingAgents(true);
+    
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+      
+      // Get existing agent names (lowercase for comparison)
+      const existingNames = new Set(agents.map(a => a.name.toLowerCase()));
+      
+      // Filter out duplicates and empty names
+      const newAgentNames = lines
+        .map(name => name.replace(/^["']|["']$/g, '').trim()) // Remove quotes
+        .filter(name => name.length > 0 && name.length <= 100)
+        .filter(name => !existingNames.has(name.toLowerCase()));
+      
+      if (newAgentNames.length === 0) {
+        toast.info('No new agents to import (all duplicates or empty)');
+        return;
+      }
+
+      // Batch insert in chunks of 100
+      const chunkSize = 100;
+      let imported = 0;
+      
+      for (let i = 0; i < newAgentNames.length; i += chunkSize) {
+        const chunk = newAgentNames.slice(i, i + chunkSize);
+        const { error } = await supabase
+          .from('agents')
+          .insert(chunk.map(name => ({
+            user_id: user.id,
+            name,
+            active: true,
+          })));
+        
+        if (error) throw error;
+        imported += chunk.length;
+      }
+
+      toast.success(`Imported ${imported} agents (${lines.length - imported} duplicates skipped)`);
+      
+      // Refresh agents list
+      const { data: agentsData } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (agentsData) {
+        setAgents(agentsData.map(a => ({
+          id: a.id,
+          name: a.name,
+          phone: a.phone || undefined,
+          active: a.active ?? true,
+        })));
+      }
+    } catch (error) {
+      console.error('Error importing agents:', error);
+      toast.error('Failed to import agents');
+    } finally {
+      setIsImportingAgents(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -635,6 +732,85 @@ export default function Settings() {
                   {isSaving ? 'Saving...' : 'Save Ticket Size'}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Agents Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Agents ({agents.length})
+              </CardTitle>
+              <CardDescription>
+                Import agents from a text/CSV file (one name per line). Duplicates are skipped.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mb-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.csv"
+                  onChange={handleImportAgents}
+                  className="hidden"
+                />
+                <Button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={isImportingAgents}
+                  className="gap-2"
+                >
+                  {isImportingAgents ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {isImportingAgents ? 'Importing...' : 'Import from File'}
+                </Button>
+              </div>
+              
+              {agents.length > 0 ? (
+                <div className="rounded-lg border max-h-64 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Agent Name</TableHead>
+                        <TableHead className="text-center">Active</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {agents.slice(0, 50).map((agent) => (
+                        <TableRow key={agent.id}>
+                          <TableCell className="font-medium">{agent.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={agent.active}
+                              onCheckedChange={async () => {
+                                await supabase
+                                  .from('agents')
+                                  .update({ active: !agent.active })
+                                  .eq('id', agent.id);
+                                setAgents(agents.map(a => 
+                                  a.id === agent.id ? { ...a, active: !a.active } : a
+                                ));
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {agents.length > 50 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      Showing first 50 of {agents.length} agents
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No agents added yet. Import from a file to get started.
+                </p>
+              )}
             </CardContent>
           </Card>
 
