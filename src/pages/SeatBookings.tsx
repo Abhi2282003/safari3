@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { format, addDays } from 'date-fns';
+import { useReactToPrint } from 'react-to-print';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,38 +25,63 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CalendarIcon, Loader2, Bus, CheckCircle2, Search } from 'lucide-react';
+import { CalendarIcon, Loader2, Bus, CheckCircle2, Search, Package, FileText, Plus, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatBooking } from '@/hooks/useSeatBookings';
+import { useLuggageBookings, LuggageBooking } from '@/hooks/useLuggageBookings';
 import { useDestinations } from '@/hooks/useDestinations';
+import { BusMemo } from '@/components/seatBookings/BusMemo';
+import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
 
 const TOTAL_SEATS = 36;
+const MEMO_PASSWORD = 'safari123';
 
 export default function SeatBookings() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [busName, setBusName] = useState('');
+  const [busConfirmed, setBusConfirmed] = useState(false);
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [editingBooking, setEditingBooking] = useState<SeatBooking | null>(null);
+  
+  const [luggageDialogOpen, setLuggageDialogOpen] = useState(false);
+  const [editingLuggage, setEditingLuggage] = useState<LuggageBooking | null>(null);
+  
+  const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
+  const [memoPassword, setMemoPassword] = useState('');
 
   const { seatBookings, loading, getSeatsByDate, saveSeatBooking, markCollected, deleteSeatBooking } = useSeatBookings();
+  const { luggageBookings, loading: luggageLoading, saveLuggageBooking, deleteLuggageBooking, getLuggageByDateAndBus } = useLuggageBookings();
   const { agents } = useAgents();
   const { destinations } = useDestinations();
+  
+  const memoRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     bookingType: 'self' as BookingType,
     agentId: '',
     bookingAmount: '',
     destination: '',
-    busName: '',
     passengerName: '',
     notes: '',
   });
   const [agentSearchQuery, setAgentSearchQuery] = useState('');
 
-  const dayBookings = useMemo(() => getSeatsByDate(selectedDate), [selectedDate, seatBookings]);
+  // Get bookings for selected date AND bus
+  const busBookings = useMemo(() => {
+    if (!busConfirmed || !busName.trim()) return [];
+    return getSeatsByDate(selectedDate).filter((b) => b.busName === busName.trim());
+  }, [selectedDate, busName, busConfirmed, seatBookings]);
+
+  // Get luggage for this bus
+  const busLuggage = useMemo(() => {
+    if (!busConfirmed || !busName.trim()) return [];
+    return getLuggageByDateAndBus(selectedDate, busName.trim());
+  }, [selectedDate, busName, busConfirmed, luggageBookings]);
 
   const getBookingForSeat = (seatNumber: number): SeatBooking | undefined => {
-    return dayBookings.find((b) => b.seatNumber === seatNumber);
+    return busBookings.find((b) => b.seatNumber === seatNumber);
   };
 
   const handleSeatClick = (seatNumber: number) => {
@@ -67,7 +93,6 @@ export default function SeatBookings() {
         agentId: existing.agentId || '',
         bookingAmount: existing.bookingAmount.toString(),
         destination: (existing as any).destination || '',
-        busName: existing.busName || '',
         passengerName: existing.passengerName || '',
         notes: existing.notes || '',
       });
@@ -78,7 +103,6 @@ export default function SeatBookings() {
         agentId: '',
         bookingAmount: '',
         destination: destinations[0]?.name || '',
-        busName: '',
         passengerName: '',
         notes: '',
       });
@@ -113,7 +137,7 @@ export default function SeatBookings() {
         originalAmountFromAgent: 0,
         agentCollectionStatus: 'pending',
         destination: formData.destination || undefined,
-        busName: formData.busName || undefined,
+        busName: busName.trim(),
         passengerName: formData.passengerName || undefined,
         notes: formData.notes || undefined,
       });
@@ -146,31 +170,96 @@ export default function SeatBookings() {
     }
   };
 
+  const handleLuggageSave = async (data: { destination: string; quantity: number; totalAmount: number }) => {
+    try {
+      await saveLuggageBooking({
+        id: editingLuggage?.id,
+        journeyDate: format(selectedDate, 'yyyy-MM-dd'),
+        busName: busName.trim(),
+        destination: data.destination,
+        quantity: data.quantity,
+        totalAmount: data.totalAmount,
+        ourEarning: 0,
+        amountToOwner: 0,
+      });
+      toast.success(editingLuggage ? 'Luggage updated' : 'Luggage added');
+      setLuggageDialogOpen(false);
+      setEditingLuggage(null);
+    } catch (error) {
+      toast.error('Failed to save luggage');
+    }
+  };
+
+  const handleLuggageDelete = async () => {
+    if (!editingLuggage) return;
+    try {
+      await deleteLuggageBooking(editingLuggage.id);
+      toast.success('Luggage deleted');
+      setLuggageDialogOpen(false);
+      setEditingLuggage(null);
+    } catch (error) {
+      toast.error('Failed to delete luggage');
+    }
+  };
+
+  const handlePrint = useReactToPrint({
+    contentRef: memoRef,
+    documentTitle: `Bus-Memo-${busName}-${format(selectedDate, 'yyyy-MM-dd')}`,
+  });
+
+  const handleGenerateMemo = () => {
+    setMemoPassword('');
+    setMemoPasswordDialog(true);
+  };
+
+  const handleMemoPasswordSubmit = () => {
+    if (memoPassword === MEMO_PASSWORD) {
+      setMemoPasswordDialog(false);
+      setTimeout(() => handlePrint(), 100);
+    } else {
+      toast.error('Incorrect password');
+    }
+  };
+
   const amounts = useMemo(() => {
     const amount = parseFloat(formData.bookingAmount) || 0;
     return calculateBookingAmounts(formData.bookingType, amount);
   }, [formData.bookingType, formData.bookingAmount]);
 
-  const daySummary = useMemo(() => {
-    const online = dayBookings.filter((b) => b.bookingType === 'online');
-    const agent = dayBookings.filter((b) => b.bookingType === 'agent');
-    const self = dayBookings.filter((b) => b.bookingType === 'self');
-    const totalProfit = dayBookings.reduce((sum, b) => sum + b.ourEarning, 0);
-    const pendingFromAgents = agent
-      .filter((b) => b.agentCollectionStatus === 'pending')
-      .reduce((sum, b) => sum + b.amountFromAgent, 0);
+  const busSummary = useMemo(() => {
+    const online = busBookings.filter((b) => b.bookingType === 'online');
+    const agent = busBookings.filter((b) => b.bookingType === 'agent');
+    const self = busBookings.filter((b) => b.bookingType === 'self');
+    
+    const totalSeatAmount = busBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
+    const totalLuggageAmount = busLuggage.reduce((sum, b) => sum + b.totalAmount, 0);
+    const totalSeatCommission = busBookings.reduce((sum, b) => sum + b.ourEarning, 0);
+    const totalLuggageCommission = busLuggage.reduce((sum, b) => sum + b.ourEarning, 0);
+    
+    const payToOwner = totalSeatAmount + totalLuggageAmount - totalSeatCommission - totalLuggageCommission;
 
     return {
-      total: dayBookings.length,
+      total: busBookings.length,
       online: online.length,
       agent: agent.length,
       self: self.length,
-      totalProfit,
-      pendingFromAgents,
+      luggageCount: busLuggage.length,
+      grandTotal: totalSeatAmount + totalLuggageAmount,
+      payToOwner,
     };
-  }, [dayBookings]);
+  }, [busBookings, busLuggage]);
 
-  if (loading) {
+  // Get all buses for this date
+  const dateBuses = useMemo(() => {
+    const allBookings = getSeatsByDate(selectedDate);
+    const busSet = new Set<string>();
+    allBookings.forEach((b) => {
+      if (b.busName) busSet.add(b.busName);
+    });
+    return Array.from(busSet);
+  }, [selectedDate, seatBookings]);
+
+  if (loading || luggageLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center">
@@ -186,21 +275,22 @@ export default function SeatBookings() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Seat Bookings</h1>
           <p className="text-muted-foreground mt-1">
-            Track each seat booking with commission breakdown
+            Enter bus number to view/manage seat layout
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-          {/* Left: Date selector & summary */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Select Date</CardTitle>
-              </CardHeader>
-              <CardContent>
+        {/* Date & Bus Selection */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Select Date & Bus</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-[200px]">
+                <Label>Journey Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start gap-2">
+                    <Button variant="outline" className="w-full justify-start gap-2 mt-1">
                       <CalendarIcon className="h-4 w-4" />
                       {format(selectedDate, 'PPP')}
                     </Button>
@@ -209,139 +299,219 @@ export default function SeatBookings() {
                     <Calendar
                       mode="single"
                       selected={selectedDate}
-                      onSelect={(d) => d && setSelectedDate(d)}
+                      onSelect={(d) => {
+                        if (d) {
+                          setSelectedDate(d);
+                          setBusConfirmed(false);
+                        }
+                      }}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
-                <div className="flex gap-2 mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedDate(addDays(selectedDate, -1))}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedDate(new Date())}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Day Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span>Booked Seats</span>
-                  <span className="font-medium">{daySummary.total} / {TOTAL_SEATS}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Online</span>
-                  <span>{daySummary.online}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Agent</span>
-                  <span>{daySummary.agent}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Self</span>
-                  <span>{daySummary.self}</span>
-                </div>
-                <div className="border-t pt-3 flex justify-between font-medium text-primary">
-                  <span>Today's Profit</span>
-                  <span>₹{daySummary.totalProfit.toFixed(0)}</span>
-                </div>
-                {daySummary.pendingFromAgents > 0 && (
-                  <div className="flex justify-between text-amber-600">
-                    <span>Pending from Agents</span>
-                    <span>₹{daySummary.pendingFromAgents.toFixed(0)}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-muted border" />
-                <span>Empty</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-blue-500" />
-                <span>Online</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-amber-500" />
-                <span>Agent</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-500" />
-                <span>Self</span>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setSelectedDate(addDays(selectedDate, -1)); setBusConfirmed(false); }}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setSelectedDate(new Date()); setBusConfirmed(false); }}>
+                  Today
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setSelectedDate(addDays(selectedDate, 1)); setBusConfirmed(false); }}>
+                  Next
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* Right: Seat grid */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bus className="h-5 w-5" />
-                Bus Layout - {format(selectedDate, 'EEE, dd MMM yyyy')}
-              </CardTitle>
-              <CardDescription>Click on a seat to book or edit</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-6 gap-2 max-w-lg">
-                {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
-                  const booking = getBookingForSeat(seatNum);
-                  const isBooked = !!booking;
-
-                  let bgClass = 'bg-muted hover:bg-muted/80 border';
-                  if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
-                  if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
-                  if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
-
-                  return (
-                    <button
-                      key={seatNum}
-                      onClick={() => handleSeatClick(seatNum)}
-                      className={cn(
-                        'aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-colors relative',
-                        bgClass
-                      )}
-                    >
-                      <span>{seatNum}</span>
-                      {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                    </button>
-                  );
-                })}
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-[200px]">
+                <Label>Bus Number / Name</Label>
+                <Input
+                  value={busName}
+                  onChange={(e) => { setBusName(e.target.value); setBusConfirmed(false); }}
+                  placeholder="Enter bus number (e.g., KA-01-1234)"
+                  className="mt-1"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Button onClick={() => busName.trim() && setBusConfirmed(true)} disabled={!busName.trim()}>
+                <Bus className="h-4 w-4 mr-2" />
+                Load Bus
+              </Button>
+            </div>
 
-        {/* Booking Dialog */}
+            {dateBuses.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm text-muted-foreground">Existing buses today:</span>
+                {dateBuses.map((b) => (
+                  <Badge
+                    key={b}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-muted"
+                    onClick={() => { setBusName(b); setBusConfirmed(true); }}
+                  >
+                    {b}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Bus Layout (shown only when bus is confirmed) */}
+        {busConfirmed && (
+          <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+            {/* Left: Summary */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bus className="h-4 w-4" />
+                    {busName} Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span>Booked Seats</span>
+                    <span className="font-medium">{busSummary.total} / {TOTAL_SEATS}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Online</span>
+                    <span>{busSummary.online}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Agent</span>
+                    <span>{busSummary.agent}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Self</span>
+                    <span>{busSummary.self}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Luggage Items</span>
+                    <span>{busSummary.luggageCount}</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between">
+                    <span>Grand Total</span>
+                    <span className="font-medium">₹{busSummary.grandTotal.toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600 font-medium">
+                    <span>Pay to Owner</span>
+                    <span>₹{busSummary.payToOwner.toFixed(0)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Luggage Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Luggage
+                    </CardTitle>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingLuggage(null); setLuggageDialogOpen(true); }}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {busLuggage.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No luggage added</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {busLuggage.map((l) => (
+                        <div
+                          key={l.id}
+                          className="flex justify-between items-center p-2 bg-muted rounded cursor-pointer hover:bg-muted/80"
+                          onClick={() => { setEditingLuggage(l); setLuggageDialogOpen(true); }}
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{l.destination}</p>
+                            <p className="text-xs text-muted-foreground">Qty: {l.quantity}</p>
+                          </div>
+                          <span className="text-sm font-medium">₹{l.totalAmount.toFixed(0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Generate Memo Button */}
+              <Button className="w-full gap-2" onClick={handleGenerateMemo} variant="default">
+                <FileText className="h-4 w-4" />
+                Generate Memo
+              </Button>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-muted border" />
+                  <span>Empty</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-blue-500" />
+                  <span>Online</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-amber-500" />
+                  <span>Agent</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-green-500" />
+                  <span>Self</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Seat grid */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bus className="h-5 w-5" />
+                  {busName} - {format(selectedDate, 'EEE, dd MMM yyyy')}
+                </CardTitle>
+                <CardDescription>Click on a seat to book or edit</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-6 gap-2 max-w-lg">
+                  {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
+                    const booking = getBookingForSeat(seatNum);
+
+                    let bgClass = 'bg-muted hover:bg-muted/80 border';
+                    if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
+                    if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
+                    if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
+
+                    return (
+                      <button
+                        key={seatNum}
+                        onClick={() => handleSeatClick(seatNum)}
+                        className={cn(
+                          'aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-colors relative',
+                          bgClass
+                        )}
+                      >
+                        <span>{seatNum}</span>
+                        {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Seat Booking Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Bus className="h-5 w-5" />
-                Seat {selectedSeat} - {format(selectedDate, 'dd MMM yyyy')}
+                Seat {selectedSeat} - {busName}
               </DialogTitle>
               <DialogDescription>
                 {editingBooking ? 'Edit booking details' : 'Add new booking'}
@@ -393,8 +563,8 @@ export default function SeatBookings() {
                       </div>
                       {agents
                         .filter((a) => a.active)
-                        .filter((a) => 
-                          !agentSearchQuery.trim() || 
+                        .filter((a) =>
+                          !agentSearchQuery.trim() ||
                           a.name.toLowerCase().includes(agentSearchQuery.toLowerCase()) ||
                           a.phone?.toLowerCase().includes(agentSearchQuery.toLowerCase())
                         )
@@ -446,17 +616,13 @@ export default function SeatBookings() {
                 />
               </div>
 
-              {/* Amount breakdown */}
+              {/* Amount breakdown - hide profit */}
               {parseFloat(formData.bookingAmount) > 0 && (
                 <Card className="bg-muted/50">
                   <CardContent className="pt-4 text-sm space-y-2">
                     <div className="flex justify-between">
                       <span>Booking Amount</span>
                       <span>₹{parseFloat(formData.bookingAmount).toFixed(0)}</span>
-                    </div>
-                    <div className="flex justify-between text-primary font-medium">
-                      <span>Our Earning</span>
-                      <span>₹{amounts.ourEarning.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Pay to Owner</span>
@@ -507,6 +673,53 @@ export default function SeatBookings() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Luggage Dialog */}
+        <LuggageDialog
+          open={luggageDialogOpen}
+          onOpenChange={(open) => { setLuggageDialogOpen(open); if (!open) setEditingLuggage(null); }}
+          destinations={destinations}
+          onSave={handleLuggageSave}
+          onDelete={editingLuggage ? handleLuggageDelete : undefined}
+          editingLuggage={editingLuggage}
+        />
+
+        {/* Memo Password Dialog */}
+        <Dialog open={memoPasswordDialog} onOpenChange={setMemoPasswordDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Enter Password
+              </DialogTitle>
+              <DialogDescription>
+                Enter password to generate memo
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              type="password"
+              value={memoPassword}
+              onChange={(e) => setMemoPassword(e.target.value)}
+              placeholder="Password"
+              onKeyDown={(e) => e.key === 'Enter' && handleMemoPasswordSubmit()}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setMemoPasswordDialog(false)}>Cancel</Button>
+              <Button onClick={handleMemoPasswordSubmit}>Generate</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Hidden Memo for printing */}
+        <div className="hidden">
+          <BusMemo
+            ref={memoRef}
+            date={selectedDate}
+            busName={busName}
+            seatBookings={busBookings}
+            luggageBookings={busLuggage}
+          />
+        </div>
       </div>
     </Layout>
   );

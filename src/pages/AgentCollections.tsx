@@ -104,8 +104,9 @@ export default function AgentCollections() {
         }
       });
 
+    // Only show agents with pending collections
     let results = Array.from(agentMap.values())
-      .filter(a => a.totalPending > 0 || a.bookings.length > 0);
+      .filter(a => a.totalPending > 0);
     
     // Apply search filter
     if (searchQuery.trim()) {
