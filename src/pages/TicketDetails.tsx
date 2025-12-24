@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
@@ -11,7 +11,8 @@ import {
   User,
   Calendar,
   Clock,
-  Bus as BusIcon
+  Bus as BusIcon,
+  Loader2
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { PaymentDialog } from '@/components/dashboard/PaymentDialog';
@@ -29,38 +30,128 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { getTicketById, getPaymentByTicketId, deleteTicket } from '@/lib/storage';
-import { TicketWithPayment } from '@/types/ticket';
+import { TicketWithPayment, Ticket, Payment } from '@/types/ticket';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TicketDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [ticket, setTicket] = useState<TicketWithPayment | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [showDeletePassword, setShowDeletePassword] = useState(false);
 
-  const loadTicket = () => {
-    if (!id) return;
-    const t = getTicketById(id);
-    if (t) {
-      const payment = getPaymentByTicketId(id);
-      setTicket({ ...t, payment });
+  const loadTicket = useCallback(async () => {
+    if (!id || !user) return;
+    
+    setLoading(true);
+    try {
+      const { data: ticketData, error: ticketError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (ticketError) throw ticketError;
+
+      if (ticketData) {
+        const { data: paymentData } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('ticket_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const transformedTicket: Ticket = {
+          id: ticketData.id,
+          ticketNo: ticketData.ticket_no,
+          bookingDateTime: ticketData.booking_date_time,
+          journeyDate: ticketData.journey_date,
+          passengerName: ticketData.passenger_name,
+          passengerPhone: ticketData.passenger_phone,
+          passengerAddress: ticketData.passenger_address || undefined,
+          toursTo: ticketData.tours_to,
+          noOfTourist: ticketData.no_of_tourist,
+          seatNo: ticketData.seat_no || undefined,
+          repTime: ticketData.rep_time || undefined,
+          depTime: ticketData.dep_time || undefined,
+          amount: Number(ticketData.amount),
+          surcharges: ticketData.surcharges ? Number(ticketData.surcharges) : undefined,
+          travelsName: ticketData.travels_name || undefined,
+          busName: ticketData.bus_name || undefined,
+          busNo: ticketData.bus_no || undefined,
+          branch: ticketData.branch || undefined,
+          bookedBy: ticketData.booked_by || undefined,
+          withFamily: ticketData.with_family || false,
+          collectionStatus: ticketData.collection_status as 'Paid' | 'Unpaid',
+        };
+
+        const payment: Payment | undefined = paymentData ? {
+          id: paymentData.id,
+          ticketId: paymentData.ticket_id,
+          receivedByName: paymentData.received_by_name,
+          paymentMode: paymentData.payment_mode as 'Cash' | 'UPI' | 'Card' | 'Other',
+          paidAmount: Number(paymentData.paid_amount),
+          paidAt: paymentData.paid_at,
+        } : undefined;
+
+        setTicket({ ...transformedTicket, payment });
+      }
+    } catch (error) {
+      console.error('Error loading ticket:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [id, user]);
 
   useEffect(() => {
     loadTicket();
-  }, [id]);
+  }, [loadTicket]);
 
-  const handleDelete = () => {
-    if (id) {
-      deleteTicket(id);
+  const handleDelete = async () => {
+    if (!id) return;
+    
+    try {
+      const { error } = await supabase.from('tickets').delete().eq('id', id);
+      if (error) throw error;
+      
       toast.success('Ticket deleted successfully');
       navigate('/');
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast.error('Failed to delete ticket');
     }
+  };
+
+  const handlePayment = async (paidBy: string, paymentMode: 'Cash' | 'UPI' | 'Card' | 'Other', paidAmount: number) => {
+    if (!ticket || !user) return;
+
+    const { error: paymentError } = await supabase.from('payments').insert({
+      user_id: user.id,
+      ticket_id: ticket.id,
+      received_by_name: paidBy,
+      payment_mode: paymentMode,
+      paid_amount: paidAmount,
+      paid_at: new Date().toISOString(),
+    });
+
+    if (paymentError) throw paymentError;
+
+    const { error: ticketError } = await supabase
+      .from('tickets')
+      .update({ collection_status: 'Paid' })
+      .eq('id', ticket.id);
+
+    if (ticketError) throw ticketError;
+
+    setShowPayment(false);
+    await loadTicket();
   };
 
   const handleEditClick = () => {
@@ -79,8 +170,15 @@ export default function TicketDetails() {
     setShowDelete(true);
   };
 
-  // Calculate base amount (without surcharges) for collection display
-  const baseAmount = ticket?.surcharges ? ticket.amount - ticket.surcharges : ticket?.amount || 0;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!ticket) {
     return (
@@ -94,6 +192,9 @@ export default function TicketDetails() {
       </Layout>
     );
   }
+
+  // Calculate base amount (without surcharges) for collection display
+  const baseAmount = ticket.surcharges ? ticket.amount - ticket.surcharges : ticket.amount;
 
   return (
     <Layout>
@@ -176,6 +277,13 @@ export default function TicketDetails() {
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{ticket.passengerPhone}</span>
                   </div>
+
+                  {ticket.passengerAddress && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Address</p>
+                      <p>{ticket.passengerAddress}</p>
+                    </div>
+                  )}
 
                   <div>
                     <p className="text-sm text-muted-foreground">Tours To</p>
@@ -285,7 +393,7 @@ export default function TicketDetails() {
                 {ticket.payment && (
                   <>
                     <div>
-                      <p className="text-sm text-muted-foreground">Received By</p>
+                      <p className="text-sm text-muted-foreground">Paid By</p>
                       <p className="font-semibold">{ticket.payment.receivedByName}</p>
                     </div>
                     <div>
@@ -294,7 +402,7 @@ export default function TicketDetails() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Paid Amount (Collection)</p>
-                      <p className="font-semibold">₹{baseAmount.toLocaleString()}</p>
+                      <p className="font-semibold">₹{ticket.payment.paidAmount.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Paid At</p>
@@ -312,7 +420,7 @@ export default function TicketDetails() {
           ticket={ticket}
           open={showPayment}
           onOpenChange={setShowPayment}
-          onSuccess={loadTicket}
+          onSubmit={handlePayment}
         />
 
         {/* Password Dialogs */}
