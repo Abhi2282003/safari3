@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CalendarIcon, Loader2, Bus, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Bus, CheckCircle2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatBooking } from '@/hooks/useSeatBookings';
 import { useDestinations } from '@/hooks/useDestinations';
@@ -50,6 +50,7 @@ export default function SeatBookings() {
     passengerName: '',
     notes: '',
   });
+  const [agentSearchQuery, setAgentSearchQuery] = useState('');
 
   const dayBookings = useMemo(() => getSeatsByDate(selectedDate), [selectedDate, seatBookings]);
 
@@ -109,6 +110,7 @@ export default function SeatBookings() {
         ourEarning: 0,
         amountToOwner: 0,
         amountFromAgent: 0,
+        originalAmountFromAgent: 0,
         agentCollectionStatus: 'pending',
         destination: formData.destination || undefined,
         busName: formData.busName || undefined,
@@ -369,17 +371,38 @@ export default function SeatBookings() {
                   <Label>Agent</Label>
                   <Select
                     value={formData.agentId}
-                    onValueChange={(v) => setFormData({ ...formData, agentId: v })}
+                    onValueChange={(v) => {
+                      setFormData({ ...formData, agentId: v });
+                      setAgentSearchQuery('');
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select agent" />
                     </SelectTrigger>
                     <SelectContent>
-                      {agents.filter((a) => a.active).map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </SelectItem>
-                      ))}
+                      <div className="p-2">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search agent..."
+                            value={agentSearchQuery}
+                            onChange={(e) => setAgentSearchQuery(e.target.value)}
+                            className="pl-8 h-8"
+                          />
+                        </div>
+                      </div>
+                      {agents
+                        .filter((a) => a.active)
+                        .filter((a) => 
+                          !agentSearchQuery.trim() || 
+                          a.name.toLowerCase().includes(agentSearchQuery.toLowerCase()) ||
+                          a.phone?.toLowerCase().includes(agentSearchQuery.toLowerCase())
+                        )
+                        .map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.name} {agent.phone && `(${agent.phone})`}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

@@ -25,6 +25,7 @@ export interface SeatBooking {
   ourEarning: number;
   amountToOwner: number;
   amountFromAgent: number;
+  originalAmountFromAgent: number;
   agentCollectionStatus: 'pending' | 'collected' | 'not_applicable';
   collectedAt?: string;
   travelsName?: string;
@@ -191,6 +192,7 @@ export function useSeatBookings() {
       ourEarning: Number(s.our_earning),
       amountToOwner: Number(s.amount_to_owner),
       amountFromAgent: Number(s.amount_from_agent),
+      originalAmountFromAgent: Number(s.original_amount_from_agent || s.amount_from_agent),
       agentCollectionStatus: s.agent_collection_status as SeatBooking['agentCollectionStatus'],
       collectedAt: s.collected_at || undefined,
       travelsName: s.travels_name || undefined,
@@ -231,6 +233,7 @@ export function useSeatBookings() {
       our_earning: amounts.ourEarning,
       amount_to_owner: amounts.amountToOwner,
       amount_from_agent: amounts.amountFromAgent,
+      original_amount_from_agent: amounts.amountFromAgent,
       agent_collection_status: booking.bookingType === 'agent' ? 'pending' : 'not_applicable',
       travels_name: booking.travelsName || null,
       destination: booking.destination || null,

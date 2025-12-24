@@ -269,6 +269,7 @@ export type Database = {
           id: string
           journey_date: string
           notes: string | null
+          original_amount_from_agent: number | null
           our_earning: number
           passenger_name: string | null
           seat_number: number
@@ -292,6 +293,7 @@ export type Database = {
           id?: string
           journey_date: string
           notes?: string | null
+          original_amount_from_agent?: number | null
           our_earning?: number
           passenger_name?: string | null
           seat_number: number
@@ -315,6 +317,7 @@ export type Database = {
           id?: string
           journey_date?: string
           notes?: string | null
+          original_amount_from_agent?: number | null
           our_earning?: number
           passenger_name?: string | null
           seat_number?: number

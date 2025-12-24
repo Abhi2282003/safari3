@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -27,9 +27,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee } from 'lucide-react';
+import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown } from 'lucide-react';
 import { useSeatBookings, useAgents, SeatBooking } from '@/hooks/useSeatBookings';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,8 +48,10 @@ interface AgentWithCollections {
   bookings: SeatBooking[];
   totalPending: number;
   totalCollected: number;
-  amountPaid: number;
+  originalTotal: number;
 }
+
+type SortOption = 'pending-desc' | 'pending-asc' | 'name-asc' | 'name-desc' | 'collected-desc';
 
 export default function AgentCollections() {
   const { user } = useAuth();
@@ -53,6 +62,8 @@ export default function AgentCollections() {
   const [selectedAgent, setSelectedAgent] = useState<AgentWithCollections | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('pending-desc');
 
   // Group bookings by agent with pending collections
   const agentCollections = useMemo(() => {
@@ -72,32 +83,90 @@ export default function AgentCollections() {
             bookings: [],
             totalPending: 0,
             totalCollected: 0,
-            amountPaid: 0,
+            originalTotal: 0,
           });
         }
 
         const agentData = agentMap.get(agentId)!;
+        const originalAmount = booking.originalAmountFromAgent || booking.amountFromAgent;
         agentData.bookings.push(booking);
+        agentData.originalTotal += originalAmount;
         
         if (booking.agentCollectionStatus === 'pending') {
           agentData.totalPending += booking.amountFromAgent;
         } else {
-          agentData.totalCollected += booking.amountFromAgent;
+          agentData.totalCollected += originalAmount;
+        }
+        
+        // Add partial collection (original - remaining for pending items)
+        if (booking.agentCollectionStatus === 'pending' && originalAmount > booking.amountFromAgent) {
+          agentData.totalCollected += (originalAmount - booking.amountFromAgent);
         }
       });
 
-    return Array.from(agentMap.values())
-      .filter(a => a.totalPending > 0 || a.bookings.length > 0)
-      .sort((a, b) => b.totalPending - a.totalPending);
-  }, [seatBookings, agents]);
+    let results = Array.from(agentMap.values())
+      .filter(a => a.totalPending > 0 || a.bookings.length > 0);
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      results = results.filter(a => 
+        a.name.toLowerCase().includes(query) || 
+        a.phone?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply sorting
+    switch (sortBy) {
+      case 'pending-desc':
+        results.sort((a, b) => b.totalPending - a.totalPending);
+        break;
+      case 'pending-asc':
+        results.sort((a, b) => a.totalPending - b.totalPending);
+        break;
+      case 'name-asc':
+        results.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name-desc':
+        results.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'collected-desc':
+        results.sort((a, b) => b.totalCollected - a.totalCollected);
+        break;
+    }
+    
+    return results;
+  }, [seatBookings, agents, searchQuery, sortBy]);
 
   const summary = useMemo(() => {
-    const totalPending = agentCollections.reduce((sum, a) => sum + a.totalPending, 0);
-    const totalCollected = agentCollections.reduce((sum, a) => sum + a.totalCollected, 0);
-    const agentsWithPending = agentCollections.filter(a => a.totalPending > 0).length;
+    // Calculate from all agent bookings, not filtered ones
+    let totalPending = 0;
+    let totalCollected = 0;
+    let agentsWithPending = 0;
+    
+    const agentPendingMap = new Map<string, number>();
+    
+    seatBookings
+      .filter((b) => b.bookingType === 'agent' && b.agentId)
+      .forEach((booking) => {
+        const originalAmount = booking.originalAmountFromAgent || booking.amountFromAgent;
+        
+        if (booking.agentCollectionStatus === 'pending') {
+          totalPending += booking.amountFromAgent;
+          // Track partial collections
+          if (originalAmount > booking.amountFromAgent) {
+            totalCollected += (originalAmount - booking.amountFromAgent);
+          }
+          agentPendingMap.set(booking.agentId!, (agentPendingMap.get(booking.agentId!) || 0) + 1);
+        } else {
+          totalCollected += originalAmount;
+        }
+      });
+    
+    agentsWithPending = agentPendingMap.size;
     
     return { totalPending, totalCollected, agentsWithPending };
-  }, [agentCollections]);
+  }, [seatBookings]);
 
   const handleOpenPayment = (agent: AgentWithCollections) => {
     setSelectedAgent(agent);
@@ -273,6 +342,32 @@ export default function AgentCollections() {
               <div className="text-2xl font-bold">{agentCollections.length}</div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Search and Sort Controls */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search agent by name or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-full sm:w-48">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending-desc">Pending: High to Low</SelectItem>
+              <SelectItem value="pending-asc">Pending: Low to High</SelectItem>
+              <SelectItem value="collected-desc">Collected: High to Low</SelectItem>
+              <SelectItem value="name-asc">Name: A to Z</SelectItem>
+              <SelectItem value="name-desc">Name: Z to A</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Agent-wise Collections */}
