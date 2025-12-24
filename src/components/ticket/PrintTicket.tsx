@@ -120,13 +120,6 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                       <span className="font-semibold">{ticket.noOfTourist}</span>
                     </div>
                   </div>
-
-                  <div className="mt-1 text-[10px] font-medium text-muted-foreground">
-                    Address
-                  </div>
-                  <div className="text-[11px] leading-snug">
-                    {passengerAddress || "—"}
-                  </div>
                 </div>
 
                 <div className="col-span-5 rounded-lg border border-ticket-border bg-card p-2">

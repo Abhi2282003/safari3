@@ -97,11 +97,11 @@ export default function PrintTicketPage() {
             ticketHeight: settingsData.ticket_height || 140,
           });
         } else {
-          // Use default settings
+          // Use default settings - user should configure in Settings page
           setSettings({
             name: 'ROYAL TRAVELS',
-            address: '',
-            phone: '',
+            address: 'Please configure in Settings',
+            phone: 'Please configure in Settings',
             footerNote: 'Wish you a Happy Journey!',
             ticketWidth: 280,
             ticketHeight: 140,
