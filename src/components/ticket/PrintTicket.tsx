@@ -279,23 +279,22 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
 
               {/* Bus Details */}
               <div className="border-b border-gray-300 pb-1 mb-1">
-                <div className="flex justify-between">
-                  <div>
-                    <span className="text-gray-600 font-bold">Travels: </span>
-                    <span className="font-black">{ticket.travelsName || "—"}</span>
-                  </div>
-                </div>
-                {(ticket.busName || ticket.busNo) && (
+                {ticket.travelsName && (
                   <div className="flex justify-between">
-                    <div>
-                      <span className="text-gray-600 font-bold">Bus: </span>
-                      <span className="font-black">{ticket.busName || "—"}</span>
-                    </div>
-                    {ticket.busNo && (
-                      <span className="font-black">{ticket.busNo}</span>
-                    )}
+                    <span className="text-gray-600 font-bold">Travels: </span>
+                    <span className="font-black">{ticket.travelsName}</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <div>
+                    <span className="text-gray-600 font-bold">Bus: </span>
+                    <span className="font-black">{ticket.busName || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-bold">No: </span>
+                    <span className="font-black">{ticket.busNo || "—"}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Timing & Seat */}
