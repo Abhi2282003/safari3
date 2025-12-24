@@ -267,8 +267,22 @@ export function useTickets() {
   };
 
   const deleteTicket = async (id: string) => {
-    const { error } = await supabase.from('tickets').delete().eq('id', id);
+    if (!user) throw new Error('User not authenticated');
+    
+    // First delete associated payment (if exists)
+    await supabase.from('payments').delete().eq('ticket_id', id).eq('user_id', user.id);
+    
+    // Then delete the ticket
+    const { error } = await supabase
+      .from('tickets')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+    
     if (error) throw error;
+    
+    // Refresh tickets after deletion
+    await fetchTickets();
   };
 
   const savePayment = async (payment: Omit<Payment, 'id'>) => {

@@ -31,29 +31,37 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PasswordDialog } from '@/components/shared/PasswordDialog';
-import { deleteTicket } from '@/lib/storage';
 import { toast } from 'sonner';
 
 interface TicketTableProps {
   tickets: TicketWithPayment[];
   onRefresh: () => void;
   onMarkPaid: (ticket: TicketWithPayment) => void;
+  onDeleteTicket: (id: string) => Promise<void>;
 }
 
-export function TicketTable({ tickets, onRefresh, onMarkPaid }: TicketTableProps) {
+export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: TicketTableProps) {
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId) {
-      deleteTicket(deleteId);
-      toast.success('Ticket deleted successfully');
-      onRefresh();
-      setDeleteId(null);
-      setShowDeleteConfirm(false);
+      setIsDeleting(true);
+      try {
+        await onDeleteTicket(deleteId);
+        toast.success('Ticket deleted successfully');
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Failed to delete ticket');
+      } finally {
+        setIsDeleting(false);
+        setDeleteId(null);
+        setShowDeleteConfirm(false);
+      }
     }
   };
 
@@ -223,9 +231,13 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid }: TicketTableProps
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
