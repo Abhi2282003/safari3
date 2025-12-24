@@ -11,7 +11,7 @@ import EditTicket from "./pages/EditTicket";
 import TicketDetails from "./pages/TicketDetails";
 import PrintTicketPage from "./pages/PrintTicketPage";
 import Settings from "./pages/Settings";
-import Reports from "./pages/Reports";
+
 import SeatBookings from "./pages/SeatBookings";
 import Profit from "./pages/Profit";
 import AgentCollections from "./pages/AgentCollections";
@@ -35,9 +35,8 @@ const App = () => (
             <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetails /></ProtectedRoute>} />
             <Route path="/ticket/:id/print" element={<ProtectedRoute><PrintTicketPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/seat-bookings" element={<ProtectedRoute><SeatBookings /></ProtectedRoute>} />
-            <Route path="/profit" element={<ProtectedRoute><Profit /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Profit /></ProtectedRoute>} />
             <Route path="/agent-collections" element={<ProtectedRoute><AgentCollections /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
