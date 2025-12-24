@@ -158,9 +158,16 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         paymentMode: formData.paymentMode || undefined,
       };
 
-      const newId = await saveTicket(ticketData);
+      const savedId = await saveTicket(ticketData);
+      const finalId = savedId || ticketId;
       toast.success(mode === 'edit' ? 'Ticket updated successfully' : 'Ticket created successfully');
-      navigate(`/ticket/${newId || ticketId}`);
+      
+      // After creating a new ticket, go directly to print; after edit, go to details
+      if (mode === 'create' && finalId) {
+        navigate(`/ticket/${finalId}/print`);
+      } else {
+        navigate(`/ticket/${finalId}`);
+      }
     } catch (error) {
       toast.error('Failed to save ticket');
     } finally {
