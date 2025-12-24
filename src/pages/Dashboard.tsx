@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
@@ -35,17 +35,25 @@ import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { tickets, loading, getTicketsByDate, fetchTickets, savePayment } = useTickets();
+  const { tickets, loading, fetchTickets, savePayment } = useTickets();
   const { travels } = useTravels();
-  const [filteredTickets, setFilteredTickets] = useState<TicketWithPayment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
 
-  const dateTickets = getTicketsByDate(selectedDate);
-  const stats = calculateStats(dateTickets, travels);
+  // Memoize the date tickets to prevent infinite loops
+  const dateTickets = useMemo(() => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    return tickets.filter((ticket) => {
+      const ticketDate = format(new Date(ticket.bookingDateTime), 'yyyy-MM-dd');
+      return ticketDate === dateStr;
+    });
+  }, [tickets, selectedDate]);
 
-  useEffect(() => {
+  const stats = useMemo(() => calculateStats(dateTickets, travels), [dateTickets, travels]);
+
+  // Memoize filtered tickets
+  const filteredTickets = useMemo(() => {
     let result = [...dateTickets];
 
     // Apply search filter
@@ -68,7 +76,7 @@ export default function Dashboard() {
       new Date(b.bookingDateTime).getTime() - new Date(a.bookingDateTime).getTime()
     );
 
-    setFilteredTickets(result);
+    return result;
   }, [dateTickets, searchQuery, statusFilter]);
 
   const handleExport = () => {
