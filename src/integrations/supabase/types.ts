@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_collections: {
+        Row: {
+          agent_id: string
+          amount_collected: number
+          amount_due: number
+          collected_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          seat_booking_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          amount_collected?: number
+          amount_due?: number
+          collected_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          seat_booking_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          amount_collected?: number
+          amount_due?: number
+          collected_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          seat_booking_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_collections_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_collections_seat_booking_id_fkey"
+            columns: ["seat_booking_id"]
+            isOneToOne: false
+            referencedRelation: "seat_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       company_settings: {
         Row: {
           address: string | null
@@ -144,6 +228,90 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      seat_bookings: {
+        Row: {
+          agent_collection_status: string
+          agent_id: string | null
+          amount_from_agent: number
+          amount_to_owner: number
+          booking_amount: number
+          booking_type: Database["public"]["Enums"]["booking_type"]
+          bus_name: string | null
+          collected_at: string | null
+          commission_percent: number
+          created_at: string
+          id: string
+          journey_date: string
+          notes: string | null
+          our_earning: number
+          passenger_name: string | null
+          seat_number: number
+          ticket_id: string | null
+          travels_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_collection_status?: string
+          agent_id?: string | null
+          amount_from_agent?: number
+          amount_to_owner?: number
+          booking_amount?: number
+          booking_type?: Database["public"]["Enums"]["booking_type"]
+          bus_name?: string | null
+          collected_at?: string | null
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          journey_date: string
+          notes?: string | null
+          our_earning?: number
+          passenger_name?: string | null
+          seat_number: number
+          ticket_id?: string | null
+          travels_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_collection_status?: string
+          agent_id?: string | null
+          amount_from_agent?: number
+          amount_to_owner?: number
+          booking_amount?: number
+          booking_type?: Database["public"]["Enums"]["booking_type"]
+          bus_name?: string | null
+          collected_at?: string | null
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          journey_date?: string
+          notes?: string | null
+          our_earning?: number
+          passenger_name?: string | null
+          seat_number?: number
+          ticket_id?: string | null
+          travels_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_bookings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_bookings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ticket_counters: {
         Row: {
@@ -285,7 +453,7 @@ export type Database = {
       next_ticket_no: { Args: never; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      booking_type: "online" | "agent" | "self"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -412,6 +580,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_type: ["online", "agent", "self"],
+    },
   },
 } as const

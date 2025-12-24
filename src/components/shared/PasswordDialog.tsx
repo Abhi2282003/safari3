@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
 
-const ADMIN_PASSWORD = 'abhi';
+const ADMIN_PASSWORD = 'safari123';
 
 interface PasswordDialogProps {
   open: boolean;
