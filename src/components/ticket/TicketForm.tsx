@@ -255,7 +255,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>Journey Date *</Label>
                 <Popover>
@@ -286,7 +286,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="seatNo">Seat No.</Label>
                 <Input id="seatNo" value={formData.seatNo} onChange={(e) => setFormData(prev => ({ ...prev, seatNo: e.target.value }))} placeholder="e.g., A1, B2" />
@@ -309,7 +309,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         <Card>
           <CardHeader><CardTitle className="text-lg">Bus & Travel Details</CardTitle></CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>Travels Name</Label>
                 {formData.travelsName === '__other__' ? (
@@ -332,7 +332,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
                 <Input id="busName" value={formData.busName} onChange={(e) => setFormData(prev => ({ ...prev, busName: e.target.value }))} placeholder="e.g., Sleeper Coach" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="branch">Branch</Label>
                 <Input id="branch" value={formData.branch} onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value }))} placeholder="Optional" />
@@ -352,7 +352,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         <Card>
           <CardHeader><CardTitle className="text-lg">Payment</CardTitle></CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="amount">Base Amount (₹) *</Label>
                 <Input id="amount" type="number" min={0} step={0.01} value={formData.amount} onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))} placeholder="Enter base amount" className="text-lg font-semibold" required />
@@ -385,9 +385,9 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         </Card>
       </div>
 
-      <div className="mt-6 flex justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : mode === 'edit' ? 'Update Ticket' : 'Create Ticket'}</Button>
+      <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3">
+        <Button type="button" variant="outline" onClick={() => navigate(-1)} className="w-full sm:w-auto">Cancel</Button>
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">{isSubmitting ? 'Saving...' : mode === 'edit' ? 'Update Ticket' : 'Create Ticket'}</Button>
       </div>
     </form>
   );
