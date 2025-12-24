@@ -120,114 +120,121 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
             <div className="px-5 py-4">
               {/* Passenger Row */}
               <div 
-                className="mb-4 p-4 rounded-xl"
+                className="mb-3 p-3 rounded-xl"
                 style={{
                   background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
                   border: '1px solid #cbd5e1',
                 }}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 mb-1">
                   <span className="text-gray-600 font-medium text-sm whitespace-nowrap">Shri/Smt.</span>
                   <span 
-                    className="flex-1 font-bold text-xl text-gray-900"
+                    className="flex-1 font-bold text-lg text-gray-900"
                     style={{ letterSpacing: '0.5px' }}
                   >
                     {ticket.passengerName}
                   </span>
                   {ticket.withFamily && (
                     <span 
-                      className="text-xs font-medium px-3 py-1 rounded-full"
+                      className="text-xs font-medium px-2 py-0.5 rounded-full"
                       style={{ background: '#dbeafe', color: '#1e40af' }}
                     >
-                      + Family/Friends
+                      + Family
                     </span>
                   )}
                 </div>
+                {ticket.passengerAddress && (
+                  <div className="text-gray-600 text-xs mt-1 pl-14">
+                    📍 {ticket.passengerAddress}
+                  </div>
+                )}
               </div>
 
               {/* Journey Details Grid */}
-              <div className="grid grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-4 gap-2 mb-3">
                 <div 
-                  className="col-span-2 p-3 rounded-xl text-center"
+                  className="col-span-2 p-2 rounded-xl text-center"
                   style={{
                     background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
                     boxShadow: '0 4px 15px rgba(59,130,246,0.3)',
                   }}
                 >
-                  <div className="text-blue-100 text-xs font-semibold uppercase tracking-wide mb-1">Tours To</div>
-                  <div className="text-white font-bold text-lg">{ticket.toursTo}</div>
+                  <div className="text-blue-100 text-xs font-semibold uppercase tracking-wide">Tours To</div>
+                  <div className="text-white font-bold text-base">{ticket.toursTo}</div>
                 </div>
                 <div 
-                  className="p-3 rounded-xl text-center border-2"
+                  className="p-2 rounded-xl text-center border-2"
                   style={{ borderColor: '#0f172a', background: '#f8fafc' }}
                 >
-                  <div className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-1">Journey Date</div>
-                  <div className="text-gray-900 font-bold text-sm">{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</div>
+                  <div className="text-gray-500 text-xs font-semibold uppercase tracking-wide">Date</div>
+                  <div className="text-gray-900 font-bold text-sm">{format(new Date(ticket.journeyDate), 'dd/MM/yy')}</div>
                 </div>
                 <div 
-                  className="p-3 rounded-xl text-center border-2"
+                  className="p-2 rounded-xl text-center border-2"
                   style={{ borderColor: '#0f172a', background: '#f8fafc' }}
                 >
-                  <div className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-1">Tourists</div>
-                  <div className="text-gray-900 font-bold text-xl">{ticket.noOfTourist}</div>
+                  <div className="text-gray-500 text-xs font-semibold uppercase tracking-wide">Pax</div>
+                  <div className="text-gray-900 font-bold text-lg">{ticket.noOfTourist}</div>
                 </div>
               </div>
 
               {/* Info Row */}
-              <div className="grid grid-cols-5 gap-2 mb-4 text-sm">
-                <div className="p-2 rounded-lg bg-gray-50 border">
-                  <div className="text-gray-500 text-xs">Phone</div>
-                  <div className="font-semibold text-gray-800">{ticket.passengerPhone}</div>
+              <div className="grid grid-cols-5 gap-1.5 mb-3 text-xs">
+                <div className="p-1.5 rounded-lg bg-gray-50 border">
+                  <div className="text-gray-500 text-[10px]">Phone</div>
+                  <div className="font-semibold text-gray-800 text-xs">{ticket.passengerPhone}</div>
                 </div>
-                <div className="p-2 rounded-lg bg-gray-50 border">
-                  <div className="text-gray-500 text-xs">Seat No.</div>
+                <div className="p-1.5 rounded-lg bg-gray-50 border">
+                  <div className="text-gray-500 text-[10px]">Seat</div>
                   <div className="font-semibold text-gray-800">{ticket.seatNo || '—'}</div>
                 </div>
-                <div className="p-2 rounded-lg bg-gray-50 border">
-                  <div className="text-gray-500 text-xs">Rep. Time</div>
+                <div className="p-1.5 rounded-lg bg-gray-50 border">
+                  <div className="text-gray-500 text-[10px]">Rep.</div>
                   <div className="font-semibold text-gray-800">{ticket.repTime || '—'}</div>
                 </div>
-                <div className="p-2 rounded-lg bg-gray-50 border">
-                  <div className="text-gray-500 text-xs">Dep. Time</div>
+                <div className="p-1.5 rounded-lg bg-gray-50 border">
+                  <div className="text-gray-500 text-[10px]">Dep.</div>
                   <div className="font-semibold text-gray-800">{ticket.depTime || '—'}</div>
                 </div>
-                <div className="p-2 rounded-lg bg-gray-50 border">
-                  <div className="text-gray-500 text-xs">Booking</div>
-                  <div className="font-semibold text-gray-800">{format(new Date(ticket.bookingDateTime), 'dd/MM/yy')}</div>
+                <div className="p-1.5 rounded-lg bg-gray-50 border">
+                  <div className="text-gray-500 text-[10px]">Booked</div>
+                  <div className="font-semibold text-gray-800">{format(new Date(ticket.bookingDateTime), 'dd/MM')}</div>
                 </div>
               </div>
 
               {/* Travel Details Row */}
-              <div className="grid grid-cols-4 gap-2 mb-4 text-sm">
-                {ticket.travelsName && (
-                  <div className="p-2 rounded-lg bg-amber-50 border border-amber-200">
-                    <div className="text-amber-700 text-xs font-medium">Travels</div>
-                    <div className="font-bold text-amber-900 truncate">{ticket.travelsName}</div>
-                  </div>
-                )}
-                {ticket.busName && (
-                  <div className="p-2 rounded-lg bg-purple-50 border border-purple-200">
-                    <div className="text-purple-700 text-xs font-medium">Bus Name</div>
-                    <div className="font-bold text-purple-900 truncate">{ticket.busName}</div>
-                  </div>
-                )}
-                {ticket.busNo && (
-                  <div className="p-2 rounded-lg bg-cyan-50 border border-cyan-200">
-                    <div className="text-cyan-700 text-xs font-medium">Bus No.</div>
-                    <div className="font-bold text-cyan-900">{ticket.busNo}</div>
-                  </div>
-                )}
-                {ticket.bookedBy && (
-                  <div className="p-2 rounded-lg bg-pink-50 border border-pink-200">
-                    <div className="text-pink-700 text-xs font-medium">Booked By</div>
-                    <div className="font-bold text-pink-900 truncate">{ticket.bookedBy}</div>
-                  </div>
-                )}
-              </div>
+              {(ticket.travelsName || ticket.busName || ticket.busNo || ticket.bookedBy) && (
+                <div className="grid grid-cols-4 gap-1.5 mb-3 text-xs">
+                  {ticket.travelsName && (
+                    <div className="p-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                      <div className="text-amber-700 text-[10px]">Travels</div>
+                      <div className="font-bold text-amber-900 truncate text-xs">{ticket.travelsName}</div>
+                    </div>
+                  )}
+                  {ticket.busName && (
+                    <div className="p-1.5 rounded-lg bg-purple-50 border border-purple-200">
+                      <div className="text-purple-700 text-[10px]">Bus</div>
+                      <div className="font-bold text-purple-900 truncate text-xs">{ticket.busName}</div>
+                    </div>
+                  )}
+                  {ticket.busNo && (
+                    <div className="p-1.5 rounded-lg bg-cyan-50 border border-cyan-200">
+                      <div className="text-cyan-700 text-[10px]">Bus No.</div>
+                      <div className="font-bold text-cyan-900 text-xs">{ticket.busNo}</div>
+                    </div>
+                  )}
+                  {ticket.bookedBy && (
+                    <div className="p-1.5 rounded-lg bg-pink-50 border border-pink-200">
+                      <div className="text-pink-700 text-[10px]">By</div>
+                      <div className="font-bold text-pink-900 truncate text-xs">{ticket.bookedBy}</div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Amount Box */}
               <div 
-                className="p-4 rounded-xl"
+                className="p-3 rounded-xl"
                 style={{
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                   boxShadow: '0 4px 20px rgba(16,185,129,0.4)',
@@ -235,18 +242,18 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
               >
                 <div className="flex items-center justify-between">
                   <div className="text-white">
-                    <div className="text-green-100 text-xs">Base Amount</div>
-                    <div className="font-semibold text-lg">₹{(ticket.surcharges ? ticket.amount - ticket.surcharges : ticket.amount).toLocaleString()}</div>
+                    <div className="text-green-100 text-[10px]">Base</div>
+                    <div className="font-semibold text-base">₹{(ticket.surcharges ? ticket.amount - ticket.surcharges : ticket.amount).toLocaleString()}</div>
                   </div>
                   {ticket.surcharges && ticket.surcharges > 0 && (
                     <div className="text-white text-center">
-                      <div className="text-green-100 text-xs">Surcharges</div>
-                      <div className="font-semibold text-lg">₹{ticket.surcharges.toLocaleString()}</div>
+                      <div className="text-green-100 text-[10px]">Extra</div>
+                      <div className="font-semibold text-base">₹{ticket.surcharges.toLocaleString()}</div>
                     </div>
                   )}
                   <div className="text-white text-right">
-                    <div className="text-green-100 text-xs">Total</div>
-                    <div className="font-bold text-2xl">₹{ticket.amount.toLocaleString()}</div>
+                    <div className="text-green-100 text-[10px]">Total</div>
+                    <div className="font-bold text-xl">₹{ticket.amount.toLocaleString()}</div>
                   </div>
                 </div>
               </div>

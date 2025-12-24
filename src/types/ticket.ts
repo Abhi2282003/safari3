@@ -5,6 +5,7 @@ export interface Ticket {
   journeyDate: string;
   passengerName: string;
   passengerPhone: string;
+  passengerAddress?: string;
   toursTo: string;
   noOfTourist: number;
   seatNo?: string;
