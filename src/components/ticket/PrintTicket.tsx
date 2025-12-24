@@ -39,31 +39,30 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
         )}
         style={{
           width: `${ticketWidth}mm`,
-          minHeight: `${ticketHeight}mm`,
-          padding: "4mm",
+          height: `${ticketHeight}mm`,
+          padding: "3mm",
         }}
       >
-        <div className="flex gap-3" style={{ minHeight: `${ticketHeight - 8}mm` }}>
+        <div className="flex gap-2 h-full">
           {/* Main Ticket */}
-          <section className="flex-1 overflow-hidden rounded-xl border-2 border-ticket-border bg-ticket-bg relative">
+          <section className="flex-1 overflow-hidden rounded-lg border-2 border-ticket-border bg-ticket-bg relative flex flex-col">
             {/* Watermark Logo - Center */}
             <div 
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
-              style={{ top: "50%", transform: "translateY(-20%)" }}
             >
               <img
                 src={settings.logoUrl || companyLogo}
                 alt=""
                 className="opacity-10"
-                style={{ width: "70mm", height: "70mm", objectFit: "contain" }}
+                style={{ width: "50mm", height: "50mm", objectFit: "contain" }}
               />
             </div>
 
-            {/* Header - Big Logo + Centered Company Info */}
-            <header className="bg-gradient-to-br from-primary via-primary/90 to-ticket-accent text-primary-foreground relative z-10">
-              <div className="p-4 flex items-center gap-4">
-                {/* Big Logo */}
-                <div className="shrink-0 rounded-xl bg-card/95 p-2 shadow-xl" style={{ width: "38mm", height: "38mm" }}>
+            {/* Header - Compact single row */}
+            <header className="bg-gradient-to-r from-primary via-primary/90 to-ticket-accent text-primary-foreground relative z-10">
+              <div className="px-3 py-2 flex items-center gap-3">
+                {/* Logo */}
+                <div className="shrink-0 rounded-lg bg-card/95 p-1.5 shadow-lg" style={{ width: "22mm", height: "22mm" }}>
                   <img
                     src={settings.logoUrl || companyLogo}
                     alt="Company logo"
@@ -72,274 +71,174 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   />
                 </div>
 
-                {/* Company Info - Center Aligned */}
-                <div className="flex-1 text-center py-1">
-                  <h1 className="text-3xl font-black uppercase tracking-wide leading-tight drop-shadow-sm">
+                {/* Company Info - Single lines */}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl font-black uppercase tracking-wide leading-none truncate">
                     {settings.name}
                   </h1>
                   {companyAddress && (
-                    <p className="text-base font-medium leading-snug text-primary-foreground mt-2">
+                    <p className="text-sm font-medium leading-tight text-primary-foreground/90 truncate mt-1">
                       {companyAddress}
                     </p>
                   )}
                   {companyPhone && (
-                    <p className="text-xl font-bold text-primary-foreground mt-2">
+                    <p className="text-base font-bold text-primary-foreground truncate mt-0.5">
                       📞 {companyPhone}
                     </p>
                   )}
                 </div>
 
                 {/* Ticket Number Badge */}
-                <div className="shrink-0 rounded-lg bg-accent px-4 py-3 text-center text-accent-foreground shadow-lg">
-                  <div className="text-sm font-bold uppercase tracking-wider opacity-90">
-                    Ticket
-                  </div>
-                  <div className="ticket-number text-2xl font-black">
-                    {ticketNumberShort}
-                  </div>
+                <div className="shrink-0 rounded-lg bg-accent px-3 py-2 text-center text-accent-foreground shadow-lg">
+                  <div className="text-xs font-bold uppercase tracking-wider opacity-90">Ticket</div>
+                  <div className="ticket-number text-xl font-black">{ticketNumberShort}</div>
                 </div>
               </div>
             </header>
 
-            <div className="p-4 relative z-10">
-              {/* Passenger & Journey Info */}
-              <div className="grid grid-cols-12 gap-3">
+            {/* Content - Compact grid */}
+            <div className="p-2 relative z-10 flex-1 flex flex-col">
+              <div className="grid grid-cols-12 gap-2 flex-1">
                 {/* Passenger Block */}
-                <div className="col-span-6 rounded-lg border border-ticket-border bg-card/90 p-3">
-                  <div className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                    Passenger
-                  </div>
-                  <div className="mt-1 text-xl font-black leading-tight text-foreground">
+                <div className="col-span-4 rounded-lg border border-ticket-border bg-card/90 p-2">
+                  <div className="text-xs font-bold text-muted-foreground uppercase">Passenger</div>
+                  <div className="text-base font-black leading-tight text-foreground truncate">
                     {ticket.passengerName}
-                    {ticket.withFamily && (
-                      <span className="ml-2 text-sm font-bold text-muted-foreground">
-                        (Family)
-                      </span>
-                    )}
+                    {ticket.withFamily && <span className="ml-1 text-xs font-bold text-muted-foreground">(Family)</span>}
                   </div>
-                  <div className="mt-2 text-base font-semibold">
+                  <div className="text-sm font-semibold mt-1">
                     <span className="text-muted-foreground">Mobile:</span>{" "}
                     <span className="font-mono font-bold text-foreground">{ticket.passengerPhone}</span>
                   </div>
-                  <div className="mt-1 text-base font-semibold">
+                  <div className="text-sm font-semibold">
                     <span className="text-muted-foreground">Pax:</span>{" "}
                     <span className="font-bold text-foreground">{ticket.noOfTourist}</span>
                   </div>
                 </div>
 
                 {/* Journey Block */}
-                <div className="col-span-6 rounded-lg border border-ticket-border bg-card/90 p-3">
-                  <div className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                    Journey To
-                  </div>
-                  <div className="mt-1 text-xl font-black leading-tight text-foreground">
-                    {ticket.toursTo}
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-base">
+                <div className="col-span-4 rounded-lg border border-ticket-border bg-card/90 p-2">
+                  <div className="text-xs font-bold text-muted-foreground uppercase">Journey To</div>
+                  <div className="text-base font-black leading-tight text-foreground truncate">{ticket.toursTo}</div>
+                  <div className="grid grid-cols-2 gap-1 text-sm mt-1">
                     <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Date</div>
-                      <div className="font-bold text-foreground">
-                        {format(new Date(ticket.journeyDate), "dd/MM/yyyy")}
-                      </div>
+                      <div className="text-xs text-muted-foreground">Date</div>
+                      <div className="font-bold text-foreground">{format(new Date(ticket.journeyDate), "dd/MM/yyyy")}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-muted-foreground">Booked</div>
-                      <div className="font-bold text-foreground">
-                        {format(new Date(ticket.bookingDateTime), "dd/MM/yy")}
-                      </div>
+                      <div className="text-xs text-muted-foreground">Booked</div>
+                      <div className="font-bold text-foreground">{format(new Date(ticket.bookingDateTime), "dd/MM/yy")}</div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Travel Details */}
+                <div className="col-span-4 rounded-lg border border-ticket-border bg-card/90 p-2">
+                  <div className="grid grid-cols-2 gap-1 text-sm">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Seat</div>
+                      <div className="font-bold text-foreground">{ticket.seatNo || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Report</div>
+                      <div className="font-bold text-foreground">{ticket.repTime || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Departure</div>
+                      <div className="font-bold text-foreground">{ticket.depTime || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Booked By</div>
+                      <div className="font-bold text-foreground truncate">{ticket.bookedBy || "—"}</div>
+                    </div>
+                  </div>
+                  <div className="mt-1 text-sm">
+                    <span className="text-xs text-muted-foreground">Travels:</span>{" "}
+                    <span className="font-bold text-foreground truncate">{ticket.travelsName || "—"}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Travel Details */}
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-ticket-border bg-card/90 p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Seat No</div>
-                      <div className="font-bold text-lg text-foreground">{ticket.seatNo || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Report Time</div>
-                      <div className="font-bold text-lg text-foreground">{ticket.repTime || "—"}</div>
-                    </div>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Departure</div>
-                      <div className="font-bold text-lg text-foreground">{ticket.depTime || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Booked By</div>
-                      <div className="font-bold text-lg truncate text-foreground">{ticket.bookedBy || "—"}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-ticket-border bg-card/90 p-3">
+              {/* Bottom Row: Amount + Footer */}
+              <div className="flex gap-2 mt-2">
+                <div className="flex-1 rounded-lg border-2 border-primary/40 bg-primary/10 px-3 py-1.5 flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-semibold text-muted-foreground">Travels</div>
-                    <div className="font-bold text-lg truncate text-foreground">{ticket.travelsName || "—"}</div>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Bus</div>
-                      <div className="font-bold text-base truncate text-foreground">{ticket.busName || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Bus No</div>
-                      <div className="font-bold text-base truncate text-foreground">{ticket.busNo || "—"}</div>
+                    <div className="text-xs font-bold text-muted-foreground uppercase">Total Amount</div>
+                    <div className="text-sm text-muted-foreground">
+                      Base: ₹{baseAmount.toLocaleString()}
+                      {ticket.surcharges && ticket.surcharges > 0 && <> • Sur: ₹{ticket.surcharges.toLocaleString()}</>}
                     </div>
                   </div>
+                  <div className="text-2xl font-black text-foreground">₹{ticket.amount.toLocaleString()}</div>
                 </div>
-              </div>
-
-              {/* Amount Section */}
-              <div className="mt-3 rounded-lg border-2 border-primary/40 bg-primary/10 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                      Total Amount
-                    </div>
-                    <div className="text-3xl font-black text-foreground">
-                      {formatMoney(ticket.amount)}
-                    </div>
-                    <div className="mt-1 text-base font-semibold text-muted-foreground">
-                      Base: {formatMoney(baseAmount)}
-                      {ticket.surcharges && ticket.surcharges > 0 && (
-                        <> • Surcharges: {formatMoney(ticket.surcharges)}</>
-                      )}
-                    </div>
-                  </div>
+                <div className="rounded-lg border border-ticket-border bg-card/90 px-3 py-1.5 text-center flex flex-col justify-center">
+                  <p className="text-xs text-muted-foreground leading-tight">यात्री अपने सामान की रक्षा स्वयं करें</p>
+                  <p className="text-sm font-bold text-foreground">{settings.footerNote || "Happy Journey!"}</p>
                 </div>
-              </div>
-
-              {/* Footer Note */}
-              <div className="mt-3 rounded-lg border border-ticket-border bg-card/90 p-3 text-center">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  यात्री अपने सामान की रक्षा स्वयं करें ट्रॅव्हल्स की जिम्मेदारी नहीं होगी।
-                </p>
-                <p className="mt-1 text-base font-black text-foreground">
-                  {settings.footerNote || "Wish you a Happy Journey!"}
-                </p>
               </div>
             </div>
           </section>
 
           {/* Divider */}
-          <div className="ticket-divider relative w-6 shrink-0" aria-hidden="true" />
+          <div className="ticket-divider relative w-4 shrink-0" aria-hidden="true" />
 
-          {/* Boarding Pass */}
-          <aside className="flex shrink-0 flex-col overflow-hidden rounded-xl border-2 border-ticket-border bg-ticket-bg relative" style={{ width: "85mm" }}>
-            {/* Watermark Logo - Center */}
-            <div 
-              className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
-              style={{ top: "50%", transform: "translateY(-10%)" }}
-            >
-              <img
-                src={settings.logoUrl || companyLogo}
-                alt=""
-                className="opacity-10"
-                style={{ width: "45mm", height: "45mm", objectFit: "contain" }}
-              />
+          {/* Boarding Pass - Compact */}
+          <aside className="flex shrink-0 flex-col overflow-hidden rounded-lg border-2 border-ticket-border bg-ticket-bg relative" style={{ width: "70mm" }}>
+            {/* Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+              <img src={settings.logoUrl || companyLogo} alt="" className="opacity-10" style={{ width: "35mm", height: "35mm", objectFit: "contain" }} />
             </div>
 
             {/* Header */}
-            <header className="bg-gradient-to-br from-primary to-ticket-accent text-primary-foreground relative z-10">
-              <div className="p-3">
-                <div className="flex items-center gap-2">
-                  {/* Logo */}
-                  <div className="shrink-0 rounded-lg bg-card/95 p-1.5 shadow-lg" style={{ width: "22mm", height: "22mm" }}>
-                    <img
-                      src={settings.logoUrl || companyLogo}
-                      alt="Company logo"
-                      loading="eager"
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                  <div className="flex-1 text-center">
-                    <div className="text-lg font-black uppercase tracking-wide leading-tight">
-                      {settings.name}
-                    </div>
-                    {companyAddress && (
-                      <div className="text-xs font-medium text-primary-foreground/90 mt-1 leading-tight">
-                        {companyAddress}
-                      </div>
-                    )}
-                    {companyPhone && (
-                      <div className="text-sm font-bold text-primary-foreground mt-1">
-                        📞 {companyPhone}
-                      </div>
-                    )}
-                  </div>
+            <header className="bg-gradient-to-r from-primary to-ticket-accent text-primary-foreground relative z-10 px-2 py-1.5">
+              <div className="flex items-center gap-2">
+                <div className="shrink-0 rounded bg-card/95 p-1" style={{ width: "14mm", height: "14mm" }}>
+                  <img src={settings.logoUrl || companyLogo} alt="Logo" className="h-full w-full object-contain" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-black uppercase truncate">{settings.name}</div>
+                  {companyPhone && <div className="text-xs font-bold truncate">📞 {companyPhone}</div>}
                 </div>
               </div>
             </header>
 
-            <div className="border-b border-ticket-border bg-accent px-3 py-2 text-center text-base font-black uppercase tracking-[0.15em] text-accent-foreground relative z-10">
+            <div className="border-b border-ticket-border bg-accent px-2 py-1 text-center text-sm font-black uppercase tracking-wider text-accent-foreground relative z-10">
               Boarding Pass
             </div>
 
-            <div className="flex flex-1 flex-col justify-between p-3 relative z-10">
-              <div className="space-y-2">
-                {/* Ticket Number */}
-                <div className="flex items-center justify-between rounded-lg border border-ticket-border bg-card/90 px-3 py-2">
-                  <span className="text-sm font-bold text-muted-foreground">Ticket No</span>
-                  <span className="ticket-number text-xl font-black text-foreground">{ticketNumberShort}</span>
-                </div>
+            <div className="flex flex-1 flex-col p-2 relative z-10 text-sm">
+              {/* Ticket No */}
+              <div className="flex items-center justify-between rounded border border-ticket-border bg-card/90 px-2 py-1">
+                <span className="text-xs font-bold text-muted-foreground">Ticket</span>
+                <span className="ticket-number text-lg font-black text-foreground">{ticketNumberShort}</span>
+              </div>
 
-                {/* Passenger Info */}
-                <div className="rounded-lg border border-ticket-border bg-card/90 p-3">
-                  <div className="text-sm font-bold text-muted-foreground">Passenger</div>
-                  <div className="text-lg font-black truncate text-foreground">{ticket.passengerName}</div>
-                  <div className="mt-1 text-base font-semibold">
-                    Mobile: <span className="font-mono font-bold text-foreground">{ticket.passengerPhone}</span>
-                  </div>
-                </div>
+              {/* Passenger */}
+              <div className="rounded border border-ticket-border bg-card/90 p-1.5 mt-1">
+                <div className="text-xs font-bold text-muted-foreground">Passenger</div>
+                <div className="font-black truncate text-foreground">{ticket.passengerName}</div>
+                <div className="text-xs">Mobile: <span className="font-mono font-bold">{ticket.passengerPhone}</span></div>
+              </div>
 
-                {/* Route Info */}
-                <div className="rounded-lg border border-ticket-border bg-card/90 p-3">
-                  <div className="text-sm font-bold text-muted-foreground">Destination</div>
-                  <div className="text-lg font-black truncate text-foreground">{ticket.toursTo}</div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-base">
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Date</div>
-                      <div className="font-bold text-foreground">
-                        {format(new Date(ticket.journeyDate), "dd/MM/yyyy")}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-muted-foreground">Seat</div>
-                      <div className="font-bold text-foreground">{ticket.seatNo || "—"}</div>
-                    </div>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-base">
-                    <div>
-                      <div className="text-sm font-semibold text-muted-foreground">Report</div>
-                      <div className="font-bold text-foreground">{ticket.repTime || "—"}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-muted-foreground">Departure</div>
-                      <div className="font-bold text-foreground">{ticket.depTime || "—"}</div>
-                    </div>
-                  </div>
+              {/* Destination */}
+              <div className="rounded border border-ticket-border bg-card/90 p-1.5 mt-1">
+                <div className="text-xs font-bold text-muted-foreground">To</div>
+                <div className="font-black truncate text-foreground">{ticket.toursTo}</div>
+                <div className="grid grid-cols-2 gap-1 text-xs mt-1">
+                  <div><span className="text-muted-foreground">Date:</span> <span className="font-bold">{format(new Date(ticket.journeyDate), "dd/MM/yy")}</span></div>
+                  <div className="text-right"><span className="text-muted-foreground">Seat:</span> <span className="font-bold">{ticket.seatNo || "—"}</span></div>
                 </div>
               </div>
 
               {/* Amount */}
-              <div className="mt-2 rounded-lg border-2 border-primary/40 bg-primary/10 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-bold text-muted-foreground">Total</div>
-                  <div className="text-2xl font-black text-foreground">{formatMoney(ticket.amount)}</div>
-                </div>
+              <div className="rounded border-2 border-primary/40 bg-primary/10 px-2 py-1 mt-1 flex items-center justify-between">
+                <span className="text-xs font-bold text-muted-foreground">Total</span>
+                <span className="text-lg font-black text-foreground">₹{ticket.amount.toLocaleString()}</span>
               </div>
 
               {/* Footer */}
-              <div className="mt-2 rounded-lg border border-ticket-border bg-card/90 p-2 text-center">
-                <p className="text-base font-black text-foreground">
-                  {settings.footerNote || "Wish you a Happy Journey!"}
-                </p>
+              <div className="rounded border border-ticket-border bg-card/90 px-2 py-1 mt-1 text-center">
+                <p className="text-xs font-bold text-foreground">{settings.footerNote || "Happy Journey!"}</p>
               </div>
             </div>
           </aside>
