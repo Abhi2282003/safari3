@@ -75,7 +75,7 @@ export default function TicketDetails() {
           journeyDate: ticketData.journey_date,
           passengerName: ticketData.passenger_name,
           passengerPhone: ticketData.passenger_phone,
-          passengerAddress: ticketData.passenger_address || undefined,
+          pickup: ticketData.passenger_address || undefined,
           toursTo: ticketData.tours_to,
           noOfTourist: ticketData.no_of_tourist,
           seatNo: ticketData.seat_no || undefined,
@@ -278,10 +278,10 @@ export default function TicketDetails() {
                     <span>{ticket.passengerPhone}</span>
                   </div>
 
-                  {ticket.passengerAddress && (
+                  {ticket.pickup && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Address</p>
-                      <p>{ticket.passengerAddress}</p>
+                      <p className="text-sm text-muted-foreground">Pickup</p>
+                      <p>{ticket.pickup}</p>
                     </div>
                   )}
 

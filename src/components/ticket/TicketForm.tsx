@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTickets, useReceivers, useTravels, TravelsConfig } from '@/hooks/useTickets';
+import { useTickets, useReceivers, useTravels, usePickupLocations, TravelsConfig } from '@/hooks/useTickets';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,12 +45,13 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
   const { getTicketById, saveTicket } = useTickets();
   const { receivers } = useReceivers();
   const { travels } = useTravels();
+  const { pickups } = usePickupLocations();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     passengerName: '',
     passengerPhone: '',
-    passengerAddress: '',
+    pickup: '',
     toursTo: '',
     journeyDate: new Date(),
     bookingDate: new Date(),
@@ -75,7 +76,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         setFormData({
           passengerName: ticket.passengerName,
           passengerPhone: ticket.passengerPhone,
-          passengerAddress: ticket.passengerAddress || '',
+          pickup: ticket.pickup || '',
           toursTo: ticket.toursTo,
           journeyDate: new Date(ticket.journeyDate),
           bookingDate: new Date(ticket.bookingDateTime),
@@ -137,7 +138,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         journeyDate: formData.journeyDate.toISOString(),
         passengerName: formData.passengerName.trim(),
         passengerPhone: formData.passengerPhone.trim(),
-        passengerAddress: formData.passengerAddress.trim() || undefined,
+        pickup: formData.pickup.trim() || undefined,
         toursTo: formData.toursTo.trim(),
         noOfTourist: tourists,
         seatNo: formData.seatNo.trim() || undefined,
@@ -166,6 +167,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
 
   const activeReceivers = receivers.filter(r => r.active);
   const activeTravels = travels.filter(t => t.active);
+  const activePickups = pickups.filter(p => p.active);
 
   return (
     <form onSubmit={handleSubmit}>
@@ -209,14 +211,13 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.passengerAddress}
-                onChange={(e) => setFormData(prev => ({ ...prev, passengerAddress: e.target.value }))}
-                placeholder="Enter passenger address"
-                rows={2}
-              />
+              <Label>Pickup Location</Label>
+              <Select value={formData.pickup} onValueChange={(value) => setFormData(prev => ({ ...prev, pickup: value }))}>
+                <SelectTrigger><SelectValue placeholder="Select pickup" /></SelectTrigger>
+                <SelectContent>
+                  {activePickups.map((p) => (<SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-2">

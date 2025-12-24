@@ -11,7 +11,7 @@ export interface Ticket {
   journeyDate: string;
   passengerName: string;
   passengerPhone: string;
-  passengerAddress?: string;
+  pickup?: string;
   toursTo: string;
   noOfTourist: number;
   seatNo?: string;
@@ -49,6 +49,12 @@ export interface TravelsConfig {
 }
 
 export interface ReceiverName {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+export interface PickupLocation {
   id: string;
   name: string;
   active: boolean;
@@ -118,7 +124,7 @@ export function useTickets() {
       journeyDate: t.journey_date,
       passengerName: t.passenger_name,
       passengerPhone: t.passenger_phone,
-      passengerAddress: t.passenger_address || undefined,
+      pickup: t.passenger_address || undefined,
       toursTo: t.tours_to,
       noOfTourist: t.no_of_tourist,
       seatNo: t.seat_no || undefined,
@@ -202,7 +208,7 @@ export function useTickets() {
       journey_date: ticket.journeyDate,
       passenger_name: ticket.passengerName,
       passenger_phone: ticket.passengerPhone,
-      passenger_address: ticket.passengerAddress || null,
+      passenger_address: ticket.pickup || null,
       tours_to: ticket.toursTo,
       no_of_tourist: ticket.noOfTourist,
       seat_no: ticket.seatNo || null,
@@ -420,6 +426,37 @@ export function useTravels() {
   };
 
   return { travels, fetchTravels, saveTravel, deleteTravel };
+}
+
+export function usePickupLocations() {
+  const { user } = useAuth();
+  const [pickups, setPickups] = useState<PickupLocation[]>([]);
+
+  const fetchPickups = useCallback(async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('pickup_locations')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error fetching pickup locations:', error);
+      return;
+    }
+
+    setPickups(data.map((p) => ({
+      id: p.id,
+      name: p.name,
+      active: p.active ?? true,
+    })));
+  }, [user]);
+
+  useEffect(() => {
+    fetchPickups();
+  }, [fetchPickups]);
+
+  return { pickups, fetchPickups };
 }
 
 export function useSettings() {

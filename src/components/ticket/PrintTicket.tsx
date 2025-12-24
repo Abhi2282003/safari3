@@ -115,9 +115,17 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                         <span className="font-black">{ticket.noOfTourist}</span>
                       </div>
                     </div>
-                    <div className="mt-1">
-                      <span className="text-xs text-gray-600 font-bold">Mobile: </span>
-                      <span className="font-black font-mono">{ticket.passengerPhone}</span>
+                    <div className="mt-1 flex justify-between">
+                      <div>
+                        <span className="text-xs text-gray-600 font-bold">Mobile: </span>
+                        <span className="font-black font-mono">{ticket.passengerPhone}</span>
+                      </div>
+                      {ticket.pickup && (
+                        <div>
+                          <span className="text-xs text-gray-600 font-bold">Pickup: </span>
+                          <span className="font-black">{ticket.pickup}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

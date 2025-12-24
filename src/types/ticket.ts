@@ -5,7 +5,7 @@ export interface Ticket {
   journeyDate: string;
   passengerName: string;
   passengerPhone: string;
-  passengerAddress?: string;
+  pickup?: string;
   toursTo: string;
   noOfTourist: number;
   seatNo?: string;
@@ -41,6 +41,12 @@ export interface TravelsConfig {
   id: string;
   name: string;
   commissionPercent: number;
+  active: boolean;
+}
+
+export interface PickupLocation {
+  id: string;
+  name: string;
   active: boolean;
 }
 

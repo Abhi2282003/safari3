@@ -97,6 +97,30 @@ export type Database = {
           },
         ]
       }
+      pickup_locations: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       receivers: {
         Row: {
           active: boolean | null
