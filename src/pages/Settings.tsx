@@ -54,6 +54,7 @@ export default function Settings() {
   const [pickups, setPickups] = useState<PickupLocation[]>([]);
   const [destinations, setDestinations] = useState<DestinationCity[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [agentsTotalCount, setAgentsTotalCount] = useState<number>(0);
   const [newReceiverName, setNewReceiverName] = useState('');
   const [newTravelName, setNewTravelName] = useState('');
   const [newTravelPercent, setNewTravelPercent] = useState('10');
@@ -156,12 +157,20 @@ export default function Settings() {
         })));
       }
 
-      // Fetch agents from Supabase
+      // Fetch agents count and first 100 from Supabase
+      const { count: agentsCount } = await supabase
+        .from('agents')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      setAgentsTotalCount(agentsCount || 0);
+
       const { data: agentsData } = await supabase
         .from('agents')
         .select('*')
         .eq('user_id', user.id)
-        .order('name', { ascending: true });
+        .order('name', { ascending: true })
+        .limit(100);
 
       if (agentsData) {
         setAgents(agentsData.map(a => ({
@@ -531,32 +540,48 @@ export default function Settings() {
   };
 
   // Agent import from file
+  const [importProgress, setImportProgress] = useState<string>('');
+  
   const handleImportAgents = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
     setIsImportingAgents(true);
+    setImportProgress('Reading file...');
     
     try {
       const text = await file.text();
       const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
       
-      // Get existing agent names (lowercase for comparison)
-      const existingNames = new Set(agents.map(a => a.name.toLowerCase()));
+      setImportProgress(`Found ${lines.length} lines, checking for duplicates...`);
       
-      // Filter out duplicates and empty names
-      const newAgentNames = lines
-        .map(name => name.replace(/^["']|["']$/g, '').trim()) // Remove quotes
-        .filter(name => name.length > 0 && name.length <= 100)
-        .filter(name => !existingNames.has(name.toLowerCase()));
+      // Get existing agent names (lowercase for comparison) - also dedupe within file
+      const existingNames = new Set(agents.map(a => a.name.toLowerCase()));
+      const seenInFile = new Set<string>();
+      
+      // Filter out duplicates, empty names, and dedupe within file
+      const newAgentNames: string[] = [];
+      for (const line of lines) {
+        const name = line.replace(/^["']|["']$/g, '').trim();
+        const nameLower = name.toLowerCase();
+        if (name.length > 0 && name.length <= 100 && !existingNames.has(nameLower) && !seenInFile.has(nameLower)) {
+          newAgentNames.push(name);
+          seenInFile.add(nameLower);
+        }
+      }
+      
+      const duplicatesCount = lines.length - newAgentNames.length;
       
       if (newAgentNames.length === 0) {
         toast.info('No new agents to import (all duplicates or empty)');
+        setImportProgress('');
         return;
       }
 
-      // Batch insert in chunks of 100
-      const chunkSize = 100;
+      setImportProgress(`Importing ${newAgentNames.length} agents...`);
+
+      // Batch insert in chunks of 500 for faster import
+      const chunkSize = 500;
       let imported = 0;
       
       for (let i = 0; i < newAgentNames.length; i += chunkSize) {
@@ -571,16 +596,26 @@ export default function Settings() {
         
         if (error) throw error;
         imported += chunk.length;
+        setImportProgress(`Imported ${imported} of ${newAgentNames.length}...`);
       }
 
-      toast.success(`Imported ${imported} agents (${lines.length - imported} duplicates skipped)`);
+      toast.success(`Imported ${imported} agents (${duplicatesCount} duplicates skipped)`);
       
-      // Refresh agents list
+      setImportProgress('Refreshing list...');
+      
+      // Refresh agents count only (don't load all 5000 into memory)
+      const { count } = await supabase
+        .from('agents')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      // Load first batch for display
       const { data: agentsData } = await supabase
         .from('agents')
         .select('*')
         .eq('user_id', user.id)
-        .order('name', { ascending: true });
+        .order('name', { ascending: true })
+        .limit(100);
 
       if (agentsData) {
         setAgents(agentsData.map(a => ({
@@ -590,11 +625,17 @@ export default function Settings() {
           active: a.active ?? true,
         })));
       }
+      
+      // Update total count display
+      if (count !== null) {
+        setAgentsTotalCount(count);
+      }
     } catch (error) {
       console.error('Error importing agents:', error);
       toast.error('Failed to import agents');
     } finally {
       setIsImportingAgents(false);
+      setImportProgress('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -740,33 +781,38 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Agents ({agents.length})
+                Agents ({agentsTotalCount})
               </CardTitle>
               <CardDescription>
                 Import agents from a text/CSV file (one name per line). Duplicates are skipped.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2 mb-4">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".txt,.csv"
-                  onChange={handleImportAgents}
-                  className="hidden"
-                />
-                <Button 
-                  onClick={() => fileInputRef.current?.click()} 
-                  disabled={isImportingAgents}
-                  className="gap-2"
-                >
-                  {isImportingAgents ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
-                  {isImportingAgents ? 'Importing...' : 'Import from File'}
-                </Button>
+              <div className="flex flex-col gap-2 mb-4">
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,.csv"
+                    onChange={handleImportAgents}
+                    className="hidden"
+                  />
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={isImportingAgents}
+                    className="gap-2"
+                  >
+                    {isImportingAgents ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {isImportingAgents ? 'Importing...' : 'Import from File'}
+                  </Button>
+                </div>
+                {importProgress && (
+                  <p className="text-sm text-muted-foreground">{importProgress}</p>
+                )}
               </div>
               
               {agents.length > 0 ? (
@@ -800,9 +846,9 @@ export default function Settings() {
                       ))}
                     </TableBody>
                   </Table>
-                  {agents.length > 50 && (
+                  {agentsTotalCount > 50 && (
                     <p className="text-sm text-muted-foreground text-center py-2">
-                      Showing first 50 of {agents.length} agents
+                      Showing first 50 of {agentsTotalCount} agents
                     </p>
                   )}
                 </div>
