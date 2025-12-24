@@ -67,6 +67,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
     branch: '',
     bookedBy: '',
     withFamily: false,
+    paymentMode: '' as '' | 'Cash' | 'UPI' | 'Card' | 'Other',
   });
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
           branch: ticket.branch || '',
           bookedBy: ticket.bookedBy || '',
           withFamily: ticket.withFamily || false,
+          paymentMode: ticket.paymentMode || '',
         });
       }
     }
@@ -153,6 +155,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         bookedBy: formData.bookedBy || undefined,
         withFamily: formData.withFamily,
         collectionStatus: existingTicket?.collectionStatus || 'Unpaid' as const,
+        paymentMode: formData.paymentMode || undefined,
       };
 
       const newId = await saveTicket(ticketData);
@@ -358,6 +361,18 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
                 <Label htmlFor="surcharges">Surcharges (₹)</Label>
                 <Input id="surcharges" type="number" min={0} step={0.01} value={formData.surcharges} onChange={(e) => setFormData(prev => ({ ...prev, surcharges: e.target.value }))} placeholder="0" />
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Payment Mode</Label>
+              <Select value={formData.paymentMode} onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMode: value as typeof prev.paymentMode }))}>
+                <SelectTrigger><SelectValue placeholder="Select payment mode" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="UPI">UPI</SelectItem>
+                  <SelectItem value="Card">Card</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {(formData.amount || formData.surcharges) && (
               <div className="p-3 bg-muted rounded-lg">
