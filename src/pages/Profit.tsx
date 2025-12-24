@@ -16,9 +16,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Loader2, Lock, TrendingUp, IndianRupee, Download, Users, Wifi, UserCheck } from 'lucide-react';
+import { CalendarIcon, Loader2, Lock, TrendingUp, IndianRupee, Download, Users, Wifi, UserCheck, Package, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSeatBookings } from '@/hooks/useSeatBookings';
+import { useLuggageBookings } from '@/hooks/useLuggageBookings';
+import { useTickets, useTravels } from '@/hooks/useTickets';
 import { PasswordDialog } from '@/components/shared/PasswordDialog';
 
 const PROFIT_PASSWORD = 'safari123';
@@ -30,10 +32,59 @@ export default function Profit() {
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
 
   const { seatBookings, loading, getDailyProfitSummary, getPendingCollections } = useSeatBookings();
+  const { luggageBookings, loading: luggageLoading, getLuggageProfitSummary } = useLuggageBookings();
+  const { tickets, loading: ticketsLoading } = useTickets();
+  const { travels } = useTravels();
 
   const dailySummaries = useMemo(() => {
     return getDailyProfitSummary(startDate, endDate);
   }, [startDate, endDate, seatBookings]);
+
+  // Luggage profit summary
+  const luggageSummary = useMemo(() => {
+    return getLuggageProfitSummary(startDate, endDate);
+  }, [startDate, endDate, luggageBookings]);
+
+  // Ticket profit summary (10% commission or travels-specific commission)
+  const ticketProfitSummary = useMemo(() => {
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
+    
+    const filtered = tickets.filter((t) => {
+      const journeyDate = t.journeyDate;
+      return journeyDate >= startStr && journeyDate <= endStr;
+    });
+
+    // Group by date
+    const byDate: { [date: string]: { count: number; totalAmount: number; profit: number } } = {};
+    
+    filtered.forEach((t) => {
+      // Find travels commission
+      const travelConfig = travels.find((tr) => tr.name === t.travelsName);
+      const commissionPercent = travelConfig?.commissionPercent ?? 10; // Default 10%
+      const profit = (t.amount * commissionPercent) / 100;
+
+      if (!byDate[t.journeyDate]) {
+        byDate[t.journeyDate] = { count: 0, totalAmount: 0, profit: 0 };
+      }
+      byDate[t.journeyDate].count += 1;
+      byDate[t.journeyDate].totalAmount += t.amount;
+      byDate[t.journeyDate].profit += profit;
+    });
+
+    return {
+      byDate,
+      totals: {
+        count: filtered.length,
+        totalAmount: filtered.reduce((sum, t) => sum + t.amount, 0),
+        profit: filtered.reduce((sum, t) => {
+          const travelConfig = travels.find((tr) => tr.name === t.travelsName);
+          const commissionPercent = travelConfig?.commissionPercent ?? 10;
+          return sum + (t.amount * commissionPercent) / 100;
+        }, 0),
+      },
+    };
+  }, [startDate, endDate, tickets, travels]);
 
   const monthlySummaries = useMemo(() => {
     const months: { [key: string]: typeof dailySummaries[0] } = {};
@@ -69,7 +120,7 @@ export default function Profit() {
   }, [dailySummaries]);
 
   const totals = useMemo(() => {
-    return dailySummaries.reduce(
+    const seatTotals = dailySummaries.reduce(
       (acc, day) => ({
         onlineCount: acc.onlineCount + day.onlineCount,
         onlineProfit: acc.onlineProfit + day.onlineProfit,
@@ -93,7 +144,19 @@ export default function Profit() {
         pendingCollections: 0,
       }
     );
-  }, [dailySummaries]);
+
+    // Add luggage and ticket profits to grand total
+    const grandTotalProfit = seatTotals.totalProfit + luggageSummary.totals.profit + ticketProfitSummary.totals.profit;
+
+    return {
+      ...seatTotals,
+      luggageCount: luggageSummary.totals.count,
+      luggageProfit: luggageSummary.totals.profit,
+      ticketCount: ticketProfitSummary.totals.count,
+      ticketProfit: ticketProfitSummary.totals.profit,
+      grandTotalProfit,
+    };
+  }, [dailySummaries, luggageSummary, ticketProfitSummary]);
 
   const pendingCollections = useMemo(() => getPendingCollections(), [seatBookings]);
 
@@ -160,7 +223,7 @@ export default function Profit() {
     );
   }
 
-  if (loading) {
+  if (loading || luggageLoading || ticketsLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center">
@@ -241,17 +304,19 @@ export default function Profit() {
         </Card>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-          <Card>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-6">
+          <Card className="col-span-2 lg:col-span-1 xl:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <IndianRupee className="h-4 w-4" />
-                Total Profit
+                Grand Total Profit
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">₹{totals.totalProfit.toFixed(0)}</div>
-              <p className="text-xs text-muted-foreground mt-1">{totals.totalSeats} seats booked</p>
+              <div className="text-2xl font-bold text-primary">₹{totals.grandTotalProfit.toFixed(0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Seats: ₹{totals.totalProfit.toFixed(0)} | Luggage: ₹{totals.luggageProfit.toFixed(0)} | Tickets: ₹{totals.ticketProfit.toFixed(0)}
+              </p>
             </CardContent>
           </Card>
 
@@ -291,6 +356,32 @@ export default function Profit() {
             <CardContent>
               <div className="text-2xl font-bold text-green-600">₹{totals.selfProfit.toFixed(0)}</div>
               <p className="text-xs text-muted-foreground mt-1">{totals.selfCount} bookings</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Luggage (30%)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">₹{totals.luggageProfit.toFixed(0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">{totals.luggageCount} items</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Ticket className="h-4 w-4" />
+                Tickets
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-indigo-600">₹{totals.ticketProfit.toFixed(0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">{totals.ticketCount} tickets</p>
             </CardContent>
           </Card>
         </div>
@@ -334,37 +425,61 @@ export default function Profit() {
                         <TableHead className="text-right">Online</TableHead>
                         <TableHead className="text-right">Agent</TableHead>
                         <TableHead className="text-right">Self</TableHead>
-                        <TableHead className="text-right">Total Profit</TableHead>
+                        <TableHead className="text-right">Luggage</TableHead>
+                        <TableHead className="text-right">Tickets</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {dailySummaries
-                        .filter((d) => d.totalSeats > 0)
-                        .map((day) => (
-                          <TableRow key={day.date}>
-                            <TableCell className="font-medium">
-                              {format(new Date(day.date), 'EEE, dd MMM')}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className="text-muted-foreground">{day.onlineCount}× </span>
-                              <span className="text-blue-600">₹{day.onlineProfit.toFixed(0)}</span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className="text-muted-foreground">{day.agentCount}× </span>
-                              <span className="text-amber-600">₹{day.agentProfit.toFixed(0)}</span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className="text-muted-foreground">{day.selfCount}× </span>
-                              <span className="text-green-600">₹{day.selfProfit.toFixed(0)}</span>
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              ₹{day.totalProfit.toFixed(0)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {dailySummaries.filter((d) => d.totalSeats > 0).length === 0 && (
+                        .filter((d) => {
+                          const luggageData = luggageSummary.byDate[d.date];
+                          const ticketData = ticketProfitSummary.byDate[d.date];
+                          return d.totalSeats > 0 || luggageData?.count > 0 || ticketData?.count > 0;
+                        })
+                        .map((day) => {
+                          const luggageData = luggageSummary.byDate[day.date] || { count: 0, profit: 0 };
+                          const ticketData = ticketProfitSummary.byDate[day.date] || { count: 0, profit: 0 };
+                          const dayTotal = day.totalProfit + luggageData.profit + ticketData.profit;
+
+                          return (
+                            <TableRow key={day.date}>
+                              <TableCell className="font-medium">
+                                {format(new Date(day.date), 'EEE, dd MMM')}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="text-muted-foreground">{day.onlineCount}× </span>
+                                <span className="text-blue-600">₹{day.onlineProfit.toFixed(0)}</span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="text-muted-foreground">{day.agentCount}× </span>
+                                <span className="text-amber-600">₹{day.agentProfit.toFixed(0)}</span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="text-muted-foreground">{day.selfCount}× </span>
+                                <span className="text-green-600">₹{day.selfProfit.toFixed(0)}</span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="text-muted-foreground">{luggageData.count}× </span>
+                                <span className="text-purple-600">₹{luggageData.profit.toFixed(0)}</span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="text-muted-foreground">{ticketData.count}× </span>
+                                <span className="text-indigo-600">₹{ticketData.profit.toFixed(0)}</span>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold">
+                                ₹{dayTotal.toFixed(0)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      {dailySummaries.filter((d) => {
+                        const luggageData = luggageSummary.byDate[d.date];
+                        const ticketData = ticketProfitSummary.byDate[d.date];
+                        return d.totalSeats > 0 || luggageData?.count > 0 || ticketData?.count > 0;
+                      }).length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                             No bookings in selected date range
                           </TableCell>
                         </TableRow>
@@ -387,32 +502,66 @@ export default function Profit() {
                         <TableHead className="text-right">Online</TableHead>
                         <TableHead className="text-right">Agent</TableHead>
                         <TableHead className="text-right">Self</TableHead>
-                        <TableHead className="text-right">Total Profit</TableHead>
+                        <TableHead className="text-right">Luggage</TableHead>
+                        <TableHead className="text-right">Tickets</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {monthlySummaries.map((month) => (
-                        <TableRow key={month.date}>
-                          <TableCell className="font-medium">
-                            {format(new Date(month.date + '-01'), 'MMMM yyyy')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-muted-foreground">{month.onlineCount}× </span>
-                            <span className="text-blue-600">₹{month.onlineProfit.toFixed(0)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-muted-foreground">{month.agentCount}× </span>
-                            <span className="text-amber-600">₹{month.agentProfit.toFixed(0)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-muted-foreground">{month.selfCount}× </span>
-                            <span className="text-green-600">₹{month.selfProfit.toFixed(0)}</span>
-                          </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            ₹{month.totalProfit.toFixed(0)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {monthlySummaries.map((month) => {
+                        // Calculate monthly luggage and ticket totals
+                        let monthLuggageProfit = 0;
+                        let monthLuggageCount = 0;
+                        let monthTicketProfit = 0;
+                        let monthTicketCount = 0;
+
+                        Object.entries(luggageSummary.byDate).forEach(([date, data]) => {
+                          if (date.startsWith(month.date)) {
+                            monthLuggageProfit += data.profit;
+                            monthLuggageCount += data.count;
+                          }
+                        });
+
+                        Object.entries(ticketProfitSummary.byDate).forEach(([date, data]) => {
+                          if (date.startsWith(month.date)) {
+                            monthTicketProfit += data.profit;
+                            monthTicketCount += data.count;
+                          }
+                        });
+
+                        const monthTotal = month.totalProfit + monthLuggageProfit + monthTicketProfit;
+
+                        return (
+                          <TableRow key={month.date}>
+                            <TableCell className="font-medium">
+                              {format(new Date(month.date + '-01'), 'MMMM yyyy')}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-muted-foreground">{month.onlineCount}× </span>
+                              <span className="text-blue-600">₹{month.onlineProfit.toFixed(0)}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-muted-foreground">{month.agentCount}× </span>
+                              <span className="text-amber-600">₹{month.agentProfit.toFixed(0)}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-muted-foreground">{month.selfCount}× </span>
+                              <span className="text-green-600">₹{month.selfProfit.toFixed(0)}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-muted-foreground">{monthLuggageCount}× </span>
+                              <span className="text-purple-600">₹{monthLuggageProfit.toFixed(0)}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-muted-foreground">{monthTicketCount}× </span>
+                              <span className="text-indigo-600">₹{monthTicketProfit.toFixed(0)}</span>
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              ₹{monthTotal.toFixed(0)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
