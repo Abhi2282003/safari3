@@ -242,13 +242,6 @@ export default function SeatBookings() {
     const online = busBookings.filter((b) => b.bookingType === 'online');
     const agent = busBookings.filter((b) => b.bookingType === 'agent');
     const self = busBookings.filter((b) => b.bookingType === 'self');
-    
-    const totalSeatAmount = busBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
-    const totalLuggageAmount = busLuggage.reduce((sum, b) => sum + b.totalAmount, 0);
-    const totalSeatCommission = busBookings.reduce((sum, b) => sum + b.ourEarning, 0);
-    const totalLuggageCommission = busLuggage.reduce((sum, b) => sum + b.ourEarning, 0);
-    
-    const payToOwner = totalSeatAmount + totalLuggageAmount - totalSeatCommission - totalLuggageCommission;
 
     return {
       total: busBookings.length,
@@ -256,8 +249,6 @@ export default function SeatBookings() {
       agent: agent.length,
       self: self.length,
       luggageCount: busLuggage.length,
-      grandTotal: totalSeatAmount + totalLuggageAmount,
-      payToOwner,
     };
   }, [busBookings, busLuggage]);
 
@@ -406,14 +397,6 @@ export default function SeatBookings() {
                   <div className="flex justify-between text-muted-foreground">
                     <span>Luggage Items</span>
                     <span>{busSummary.luggageCount}</span>
-                  </div>
-                  <div className="border-t pt-3 flex justify-between">
-                    <span>Grand Total</span>
-                    <span className="font-medium">₹{busSummary.grandTotal.toFixed(0)}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600 font-medium">
-                    <span>Pay to Owner</span>
-                    <span>₹{busSummary.payToOwner.toFixed(0)}</span>
                   </div>
                 </CardContent>
               </Card>
