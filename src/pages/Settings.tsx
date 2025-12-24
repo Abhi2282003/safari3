@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -550,10 +551,24 @@ export default function Settings() {
     setImportProgress('Reading file...');
     
     try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+      let lines: string[] = [];
       
-      setImportProgress(`Found ${lines.length} lines, checking for duplicates...`);
+      // Check if it's an Excel file
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json<any>(firstSheet, { header: 1 });
+        
+        // Flatten all cells into lines (handles single column or multiple columns)
+        lines = data.flat().map((cell: any) => String(cell || '').trim()).filter((s: string) => s.length > 0);
+      } else {
+        // Text/CSV file
+        const text = await file.text();
+        lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+      }
+      
+      setImportProgress(`Found ${lines.length} entries, checking for duplicates...`);
       
       // Get existing agent names (lowercase for comparison) - also dedupe within file
       const existingNames = new Set(agents.map(a => a.name.toLowerCase()));
@@ -784,7 +799,7 @@ export default function Settings() {
                 Agents ({agentsTotalCount})
               </CardTitle>
               <CardDescription>
-                Import agents from a text/CSV file (one name per line). Duplicates are skipped.
+                Import agents from Excel (.xlsx), CSV, or text file. Duplicates are skipped.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -793,7 +808,7 @@ export default function Settings() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".txt,.csv"
+                    accept=".txt,.csv,.xlsx,.xls"
                     onChange={handleImportAgents}
                     className="hidden"
                   />
