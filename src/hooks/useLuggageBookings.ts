@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
 
 export interface LuggageBooking {
   id: string;
@@ -111,15 +112,15 @@ export function useLuggageBookings() {
   };
 
   const getLuggageByDateAndBus = (date: Date, busName: string) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = format(date, 'yyyy-MM-dd');
     return luggageBookings.filter(
       (b) => b.journeyDate === dateStr && b.busName === busName
     );
   };
 
   const getLuggageProfitSummary = (startDate: Date, endDate: Date) => {
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
     
     const filtered = luggageBookings.filter(
       (b) => b.journeyDate >= startStr && b.journeyDate <= endStr

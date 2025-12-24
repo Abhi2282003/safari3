@@ -79,8 +79,12 @@ export default function SeatBookings() {
   // Get luggage for this bus
   const busLuggage = useMemo(() => {
     if (!busConfirmed || !busName.trim()) return [];
-    return getLuggageByDateAndBus(selectedDate, busName.trim());
-  }, [selectedDate, busName, busConfirmed, luggageBookings]);
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    console.log('Filtering luggage for:', { dateStr, busName: busName.trim(), totalLuggage: luggageBookings.length });
+    const filtered = getLuggageByDateAndBus(selectedDate, busName.trim());
+    console.log('Filtered luggage:', filtered);
+    return filtered;
+  }, [selectedDate, busName, busConfirmed, luggageBookings, getLuggageByDateAndBus]);
 
   const getBookingForSeat = (seatNumber: number): SeatBooking | undefined => {
     return busBookings.find((b) => b.seatNumber === seatNumber);
