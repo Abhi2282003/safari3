@@ -4,9 +4,13 @@ import {
   Plus, 
   Settings, 
   FileText,
-  Bus
+  Bus,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +21,12 @@ const navItems = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success('Logged out successfully');
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground">
@@ -56,9 +66,25 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Footer */}
+      {/* Footer with user and logout */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-sidebar-border p-4">
-        <p className="text-xs text-sidebar-foreground/50 text-center">
+        {user && (
+          <div className="mb-3 px-2">
+            <p className="text-xs text-sidebar-foreground/70 truncate">
+              {user.email}
+            </p>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+        <p className="text-xs text-sidebar-foreground/50 text-center mt-3">
           Manual Booking v1.0
         </p>
       </div>
