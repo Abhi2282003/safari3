@@ -20,6 +20,7 @@ export interface Ticket {
   bookedBy?: string;
   withFamily?: boolean;
   collectionStatus: 'Paid' | 'Unpaid';
+  paymentMode?: 'Cash' | 'UPI' | 'Card' | 'Other';
 }
 
 export interface Payment {
