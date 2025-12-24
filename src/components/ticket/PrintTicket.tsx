@@ -207,7 +207,7 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                     <div className="mt-1 text-sm text-muted-foreground">
                       Base: {formatMoney(baseAmount)}
                       {ticket.surcharges && ticket.surcharges > 0 && (
-                        <> • Extra: {formatMoney(ticket.surcharges)}</>
+                        <> • Surcharges: {formatMoney(ticket.surcharges)}</>
                       )}
                     </div>
                   </div>

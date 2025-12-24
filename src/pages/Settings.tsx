@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Building, Ruler, Bus } from 'lucide-react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,21 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { 
-  getSettings, 
-  saveSettings, 
-  getReceivers, 
-  saveReceiver, 
-  deleteReceiver,
-  getTravels,
-  addTravel,
-  updateTravel,
-  deleteTravel as deleteTravelStorage
-} from '@/lib/storage';
 import { CompanySettings, ReceiverName, TravelsConfig } from '@/types/ticket';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Settings() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
     name: '',
     address: '',
@@ -59,58 +52,192 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setCompanySettings(getSettings());
-    setReceivers(getReceivers());
-    setTravels(getTravels());
-  }, []);
+    if (!user) return;
+    fetchData();
+  }, [user]);
 
-  const handleSaveCompany = () => {
+  const fetchData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // Fetch company settings from Supabase
+      const { data: settingsData } = await supabase
+        .from('company_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (settingsData) {
+        setCompanySettings({
+          name: settingsData.name || 'ROYAL TRAVELS',
+          address: settingsData.address || '',
+          phone: settingsData.phone || '',
+          logoUrl: settingsData.logo_url || '',
+          footerNote: settingsData.footer_note || 'Wish you a Happy Journey!',
+          ticketWidth: settingsData.ticket_width || 280,
+          ticketHeight: settingsData.ticket_height || 140,
+        });
+      }
+
+      // Fetch receivers from Supabase
+      const { data: receiversData } = await supabase
+        .from('receivers')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (receiversData) {
+        setReceivers(receiversData.map(r => ({
+          id: r.id,
+          name: r.name,
+          active: r.active ?? true,
+        })));
+      }
+
+      // Fetch travels from Supabase
+      const { data: travelsData } = await supabase
+        .from('travels')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (travelsData) {
+        setTravels(travelsData.map(t => ({
+          id: t.id,
+          name: t.name,
+          commissionPercent: Number(t.commission_percent),
+          active: t.active ?? true,
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast.error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveCompany = async () => {
+    if (!user) return;
     setIsSaving(true);
     try {
-      saveSettings(companySettings);
+      // Check if settings exist
+      const { data: existing } = await supabase
+        .from('company_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const settingsPayload = {
+        user_id: user.id,
+        name: companySettings.name,
+        address: companySettings.address,
+        phone: companySettings.phone,
+        logo_url: companySettings.logoUrl,
+        footer_note: companySettings.footerNote,
+        ticket_width: companySettings.ticketWidth,
+        ticket_height: companySettings.ticketHeight,
+      };
+
+      if (existing) {
+        const { error } = await supabase
+          .from('company_settings')
+          .update(settingsPayload)
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('company_settings')
+          .insert(settingsPayload);
+        if (error) throw error;
+      }
+
       toast.success('Company settings saved successfully');
     } catch (error) {
+      console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleAddReceiver = () => {
+  const handleAddReceiver = async () => {
+    if (!user) return;
     if (!newReceiverName.trim()) {
       toast.error('Please enter a name');
       return;
     }
 
-    const receiver: ReceiverName = {
-      id: crypto.randomUUID(),
-      name: newReceiverName.trim(),
-      active: true,
-    };
+    try {
+      const { data, error } = await supabase
+        .from('receivers')
+        .insert({
+          user_id: user.id,
+          name: newReceiverName.trim(),
+          active: true,
+        })
+        .select()
+        .single();
 
-    saveReceiver(receiver);
-    setReceivers([...receivers, receiver]);
-    setNewReceiverName('');
-    toast.success('Receiver added successfully');
+      if (error) throw error;
+
+      setReceivers([...receivers, {
+        id: data.id,
+        name: data.name,
+        active: data.active ?? true,
+      }]);
+      setNewReceiverName('');
+      toast.success('Receiver added successfully');
+    } catch (error) {
+      console.error('Error adding receiver:', error);
+      toast.error('Failed to add receiver');
+    }
   };
 
-  const handleToggleReceiver = (receiver: ReceiverName) => {
-    const updated = { ...receiver, active: !receiver.active };
-    saveReceiver(updated);
-    setReceivers(receivers.map(r => r.id === receiver.id ? updated : r));
+  const handleToggleReceiver = async (receiver: ReceiverName) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('receivers')
+        .update({ active: !receiver.active })
+        .eq('id', receiver.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setReceivers(receivers.map(r => 
+        r.id === receiver.id ? { ...r, active: !r.active } : r
+      ));
+    } catch (error) {
+      console.error('Error updating receiver:', error);
+      toast.error('Failed to update receiver');
+    }
   };
 
-  const handleDeleteReceiver = () => {
-    if (deleteId) {
-      deleteReceiver(deleteId);
+  const handleDeleteReceiver = async () => {
+    if (!deleteId || !user) return;
+    try {
+      const { error } = await supabase
+        .from('receivers')
+        .delete()
+        .eq('id', deleteId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
       setReceivers(receivers.filter(r => r.id !== deleteId));
       toast.success('Receiver deleted');
+    } catch (error) {
+      console.error('Error deleting receiver:', error);
+      toast.error('Failed to delete receiver');
+    } finally {
       setDeleteId(null);
     }
   };
 
   // Travels management
-  const handleAddTravel = () => {
+  const handleAddTravel = async () => {
+    if (!user) return;
     if (!newTravelName.trim()) {
       toast.error('Please enter a travels name');
       return;
@@ -121,34 +248,85 @@ export default function Settings() {
       return;
     }
 
-    const travel: TravelsConfig = {
-      id: crypto.randomUUID(),
-      name: newTravelName.trim(),
-      commissionPercent: percent,
-      active: true,
-    };
+    try {
+      const { data, error } = await supabase
+        .from('travels')
+        .insert({
+          user_id: user.id,
+          name: newTravelName.trim(),
+          commission_percent: percent,
+          active: true,
+        })
+        .select()
+        .single();
 
-    addTravel(travel);
-    setTravels([...travels, travel]);
-    setNewTravelName('');
-    setNewTravelPercent('10');
-    toast.success('Travels added successfully');
+      if (error) throw error;
+
+      setTravels([...travels, {
+        id: data.id,
+        name: data.name,
+        commissionPercent: Number(data.commission_percent),
+        active: data.active ?? true,
+      }]);
+      setNewTravelName('');
+      setNewTravelPercent('10');
+      toast.success('Travels added successfully');
+    } catch (error) {
+      console.error('Error adding travels:', error);
+      toast.error('Failed to add travels');
+    }
   };
 
-  const handleToggleTravel = (travel: TravelsConfig) => {
-    const updated = { ...travel, active: !travel.active };
-    updateTravel(updated);
-    setTravels(travels.map(t => t.id === travel.id ? updated : t));
+  const handleToggleTravel = async (travel: TravelsConfig) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('travels')
+        .update({ active: !travel.active })
+        .eq('id', travel.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setTravels(travels.map(t => 
+        t.id === travel.id ? { ...t, active: !t.active } : t
+      ));
+    } catch (error) {
+      console.error('Error updating travels:', error);
+      toast.error('Failed to update travels');
+    }
   };
 
-  const handleDeleteTravel = () => {
-    if (deleteTravelId) {
-      deleteTravelStorage(deleteTravelId);
+  const handleDeleteTravel = async () => {
+    if (!deleteTravelId || !user) return;
+    try {
+      const { error } = await supabase
+        .from('travels')
+        .delete()
+        .eq('id', deleteTravelId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
       setTravels(travels.filter(t => t.id !== deleteTravelId));
       toast.success('Travels deleted');
+    } catch (error) {
+      console.error('Error deleting travels:', error);
+      toast.error('Failed to delete travels');
+    } finally {
       setDeleteTravelId(null);
     }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
