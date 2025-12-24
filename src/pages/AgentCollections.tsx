@@ -442,6 +442,7 @@ export default function AgentCollections() {
                         </TableHeader>
                         <TableBody>
                           {agent.bookings
+                            .filter(b => b.agentCollectionStatus === 'pending')
                             .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
                             .map((booking) => (
                             <TableRow key={booking.id}>
@@ -453,15 +454,9 @@ export default function AgentCollections() {
                                 ₹{booking.amountFromAgent.toFixed(0)}
                               </TableCell>
                               <TableCell>
-                                {booking.agentCollectionStatus === 'pending' ? (
-                                  <Badge variant="outline" className="text-amber-600 border-amber-600">
-                                    Pending
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-green-600 border-green-600">
-                                    Collected
-                                  </Badge>
-                                )}
+                                <Badge variant="outline" className="text-amber-600 border-amber-600">
+                                  Pending
+                                </Badge>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -472,15 +467,11 @@ export default function AgentCollections() {
                     {/* Summary */}
                     <div className="flex gap-6 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Total Bookings:</span>{' '}
-                        <span className="font-medium">{agent.bookings.length}</span>
+                        <span className="text-muted-foreground">Pending Bookings:</span>{' '}
+                        <span className="font-medium">{agent.bookings.filter(b => b.agentCollectionStatus === 'pending').length}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Collected:</span>{' '}
-                        <span className="font-medium text-green-600">₹{agent.totalCollected.toFixed(0)}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Pending:</span>{' '}
+                        <span className="text-muted-foreground">Total Pending:</span>{' '}
                         <span className="font-medium text-amber-600">₹{agent.totalPending.toFixed(0)}</span>
                       </div>
                     </div>

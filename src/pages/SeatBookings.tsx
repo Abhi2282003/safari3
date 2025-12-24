@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatBooking } from '@/hooks/useSeatBookings';
 import { useLuggageBookings, LuggageBooking } from '@/hooks/useLuggageBookings';
 import { useDestinations } from '@/hooks/useDestinations';
+import { useBuses } from '@/hooks/useBuses';
 import { BusMemo } from '@/components/seatBookings/BusMemo';
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
 
@@ -55,6 +56,7 @@ export default function SeatBookings() {
   const { luggageBookings, loading: luggageLoading, saveLuggageBooking, deleteLuggageBooking, getLuggageByDateAndBus } = useLuggageBookings();
   const { agents } = useAgents();
   const { destinations } = useDestinations();
+  const { buses, loading: busesLoading } = useBuses();
   
   const memoRef = useRef<HTMLDivElement>(null);
 
@@ -249,17 +251,21 @@ export default function SeatBookings() {
     };
   }, [busBookings, busLuggage]);
 
-  // Get all buses for this date
-  const dateBuses = useMemo(() => {
+  // Get all buses for this date (from settings + any with existing bookings)
+  const availableBuses = useMemo(() => {
     const allBookings = getSeatsByDate(selectedDate);
-    const busSet = new Set<string>();
+    const bookingBusSet = new Set<string>();
     allBookings.forEach((b) => {
-      if (b.busName) busSet.add(b.busName);
+      if (b.busName) bookingBusSet.add(b.busName);
     });
-    return Array.from(busSet);
-  }, [selectedDate, seatBookings]);
+    
+    // Combine buses from settings with buses that have bookings
+    const settingsBuses = buses.filter(b => b.active).map(b => b.name);
+    const allBuses = new Set([...settingsBuses, ...bookingBusSet]);
+    return Array.from(allBuses).sort();
+  }, [selectedDate, seatBookings, buses]);
 
-  if (loading || luggageLoading) {
+  if (loading || luggageLoading || busesLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center">
@@ -340,10 +346,10 @@ export default function SeatBookings() {
               </Button>
             </div>
 
-            {dateBuses.length > 0 && (
+            {availableBuses.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                <span className="text-sm text-muted-foreground">Existing buses today:</span>
-                {dateBuses.map((b) => (
+                <span className="text-sm text-muted-foreground">Available buses:</span>
+                {availableBuses.map((b) => (
                   <Badge
                     key={b}
                     variant="outline"

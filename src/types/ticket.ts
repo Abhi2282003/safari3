@@ -57,6 +57,12 @@ export interface DestinationCity {
   active: boolean;
 }
 
+export interface BusConfig {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 export interface CompanySettings {
   name: string;
   address: string;
