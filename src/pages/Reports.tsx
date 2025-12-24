@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { CalendarIcon, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { CalendarIcon, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getTicketsByDate, getDailyStats } from '@/lib/storage';
+import { useTickets, useTravels } from '@/hooks/useTickets';
 import { cn } from '@/lib/utils';
 
 interface DailyReport {
@@ -30,23 +30,58 @@ interface DailyReport {
   unpaidCount: number;
 }
 
+// Calculate payable amount (base amount minus commission percentage)
+const calculatePayableAmount = (baseAmount: number, commissionPercent: number): number => {
+  const commission = (baseAmount * commissionPercent) / 100;
+  return baseAmount - commission;
+};
+
 export default function Reports() {
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
-  const [reports, setReports] = useState<DailyReport[]>([]);
+  const { tickets, loading } = useTickets();
+  const { travels } = useTravels();
 
-  useEffect(() => {
+  const reports = useMemo(() => {
     const days = eachDayOfInterval({ start: startDate, end: endDate });
-    const dailyReports = days.map(date => {
-      const stats = getDailyStats(date);
+    
+    return days.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayTickets = tickets.filter(ticket => {
+        const ticketDate = format(new Date(ticket.bookingDateTime), 'yyyy-MM-dd');
+        return ticketDate === dateStr;
+      });
+
+      const paidTickets = dayTickets.filter(t => t.collectionStatus === 'Paid');
+      const unpaidTickets = dayTickets.filter(t => t.collectionStatus === 'Unpaid');
+
+      // Collection uses base amount minus travel's commission percentage
+      const totalCollection = paidTickets.reduce((sum, t) => {
+        const baseAmount = t.surcharges ? t.amount - t.surcharges : t.amount;
+        const ticketTravel = travels.find(tr => tr.name === t.travelsName);
+        const commissionPercent = ticketTravel?.commissionPercent ?? 10;
+        const payable = calculatePayableAmount(baseAmount, commissionPercent);
+        return sum + payable;
+      }, 0);
+
+      const totalUnpaid = unpaidTickets.reduce((sum, t) => {
+        const baseAmount = t.surcharges ? t.amount - t.surcharges : t.amount;
+        const ticketTravel = travels.find(tr => tr.name === t.travelsName);
+        const commissionPercent = ticketTravel?.commissionPercent ?? 10;
+        const payable = calculatePayableAmount(baseAmount, commissionPercent);
+        return sum + payable;
+      }, 0);
+
       return {
         date,
-        ...stats,
+        totalTickets: dayTickets.length,
+        totalCollection,
+        totalUnpaid,
+        paidCount: paidTickets.length,
+        unpaidCount: unpaidTickets.length,
       };
     }).filter(r => r.totalTickets > 0);
-
-    setReports(dailyReports);
-  }, [startDate, endDate]);
+  }, [tickets, travels, startDate, endDate]);
 
   const totals = reports.reduce((acc, r) => ({
     tickets: acc.tickets + r.totalTickets,
@@ -59,12 +94,12 @@ export default function Reports() {
     const rows = reports.map(r => [
       format(r.date, 'dd/MM/yyyy'),
       r.totalTickets,
-      r.totalCollection,
-      r.totalUnpaid,
+      r.totalCollection.toFixed(2),
+      r.totalUnpaid.toFixed(2),
     ]);
 
     // Add totals row
-    rows.push(['TOTAL', totals.tickets, totals.collection, totals.unpaid]);
+    rows.push(['TOTAL', totals.tickets.toString(), totals.collection.toFixed(2), totals.unpaid.toFixed(2)]);
 
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -74,6 +109,16 @@ export default function Reports() {
     a.download = `report-${format(startDate, 'yyyyMMdd')}-${format(endDate, 'yyyyMMdd')}.csv`;
     a.click();
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
