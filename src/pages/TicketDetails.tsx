@@ -289,6 +289,13 @@ export default function TicketDetails() {
                     <p className="text-sm text-muted-foreground">Tours To</p>
                     <p className="font-semibold">{ticket.toursTo}</p>
                   </div>
+
+                  {ticket.bookedBy && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Booked By</p>
+                      <p className="font-semibold">{ticket.bookedBy}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
