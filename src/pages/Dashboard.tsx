@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { tickets, loading, fetchTickets, savePayment } = useTickets();
+  const { tickets, loading, fetchTickets, savePayment, deleteTicket } = useTickets();
   const { travels } = useTravels();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
@@ -212,6 +212,7 @@ export default function Dashboard() {
           tickets={filteredTickets} 
           onRefresh={fetchTickets}
           onMarkPaid={(ticket) => setPaymentTicket(ticket)}
+          onDeleteTicket={deleteTicket}
         />
 
         {/* Payment Dialog */}
