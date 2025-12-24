@@ -90,6 +90,7 @@ export default function TicketDetails() {
           bookedBy: ticketData.booked_by || undefined,
           withFamily: ticketData.with_family || false,
           collectionStatus: ticketData.collection_status as 'Paid' | 'Unpaid',
+          paymentMode: (ticketData as any).payment_mode as Ticket['paymentMode'] || undefined,
         };
 
         const payment: Payment | undefined = paymentData ? {
@@ -396,6 +397,13 @@ export default function TicketDetails() {
                     {ticket.collectionStatus === 'Paid' ? '✓ Paid' : '✗ Unpaid'}
                   </Badge>
                 </div>
+
+                {ticket.paymentMode && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Booking Payment Mode</p>
+                    <p className="font-semibold">{ticket.paymentMode}</p>
+                  </div>
+                )}
 
                 {ticket.payment && (
                   <>
