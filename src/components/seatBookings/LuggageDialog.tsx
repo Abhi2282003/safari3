@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,19 +43,42 @@ export function LuggageDialog({
   editingLuggage,
 }: LuggageDialogProps) {
   const [formData, setFormData] = useState({
-    destination: editingLuggage?.destination || '',
-    quantity: editingLuggage?.quantity?.toString() || '1',
-    totalAmount: editingLuggage?.totalAmount?.toString() || '',
+    destination: '',
+    quantity: '1',
+    totalAmount: '',
   });
 
+  // Reset form when dialog opens/closes or editing luggage changes
+  useEffect(() => {
+    if (open) {
+      if (editingLuggage) {
+        setFormData({
+          destination: editingLuggage.destination || '',
+          quantity: editingLuggage.quantity?.toString() || '1',
+          totalAmount: editingLuggage.totalAmount?.toString() || '',
+        });
+      } else {
+        setFormData({
+          destination: destinations.find(d => d.active)?.name || '',
+          quantity: '1',
+          totalAmount: '',
+        });
+      }
+    }
+  }, [open, editingLuggage, destinations]);
+
   const handleSave = async () => {
-    if (!formData.destination || !formData.totalAmount) return;
+    if (!formData.destination) {
+      return;
+    }
+    if (!formData.totalAmount || parseFloat(formData.totalAmount) <= 0) {
+      return;
+    }
     await onSave({
       destination: formData.destination,
       quantity: parseInt(formData.quantity) || 1,
       totalAmount: parseFloat(formData.totalAmount) || 0,
     });
-    setFormData({ destination: '', quantity: '1', totalAmount: '' });
   };
 
   const amounts = calculateLuggageAmounts(parseFloat(formData.totalAmount) || 0);

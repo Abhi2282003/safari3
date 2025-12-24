@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users } from 'lucide-react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Car } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CompanySettings, ReceiverName, TravelsConfig, PickupLocation, DestinationCity } from '@/types/ticket';
+import { CompanySettings, ReceiverName, TravelsConfig, PickupLocation, DestinationCity, BusConfig } from '@/types/ticket';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,6 +53,7 @@ export default function Settings() {
   const [travels, setTravels] = useState<TravelsConfig[]>([]);
   const [pickups, setPickups] = useState<PickupLocation[]>([]);
   const [destinations, setDestinations] = useState<DestinationCity[]>([]);
+  const [buses, setBuses] = useState<BusConfig[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agentsTotalCount, setAgentsTotalCount] = useState<number>(0);
   const [newReceiverName, setNewReceiverName] = useState('');
@@ -60,12 +61,14 @@ export default function Settings() {
   const [newTravelPercent, setNewTravelPercent] = useState('10');
   const [newPickupName, setNewPickupName] = useState('');
   const [newDestinationName, setNewDestinationName] = useState('');
+  const [newBusName, setNewBusName] = useState('');
   const [newAgentName, setNewAgentName] = useState('');
   const [newAgentPhone, setNewAgentPhone] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTravelId, setDeleteTravelId] = useState<string | null>(null);
   const [deletePickupId, setDeletePickupId] = useState<string | null>(null);
   const [deleteDestinationId, setDeleteDestinationId] = useState<string | null>(null);
+  const [deleteBusId, setDeleteBusId] = useState<string | null>(null);
   const [deleteAgentId, setDeleteAgentId] = useState<string | null>(null);
   const [showClearAgentsDialog, setShowClearAgentsDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -156,6 +159,21 @@ export default function Settings() {
           id: d.id,
           name: d.name,
           active: d.active ?? true,
+        })));
+      }
+
+      // Fetch buses from Supabase
+      const { data: busesData } = await supabase
+        .from('buses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (busesData) {
+        setBuses(busesData.map(b => ({
+          id: b.id,
+          name: b.name,
+          active: b.active ?? true,
         })));
       }
 
@@ -538,6 +556,81 @@ export default function Settings() {
       toast.error('Failed to delete destination');
     } finally {
       setDeleteDestinationId(null);
+    }
+  };
+
+  // Bus management
+  const handleAddBus = async () => {
+    if (!user) return;
+    if (!newBusName.trim()) {
+      toast.error('Please enter a bus number');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('buses')
+        .insert({
+          user_id: user.id,
+          name: newBusName.trim(),
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setBuses([...buses, {
+        id: data.id,
+        name: data.name,
+        active: data.active ?? true,
+      }]);
+      setNewBusName('');
+      toast.success('Bus added successfully');
+    } catch (error) {
+      console.error('Error adding bus:', error);
+      toast.error('Failed to add bus');
+    }
+  };
+
+  const handleToggleBus = async (bus: BusConfig) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('buses')
+        .update({ active: !bus.active })
+        .eq('id', bus.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setBuses(buses.map(b => 
+        b.id === bus.id ? { ...b, active: !b.active } : b
+      ));
+    } catch (error) {
+      console.error('Error updating bus:', error);
+      toast.error('Failed to update bus');
+    }
+  };
+
+  const handleDeleteBus = async () => {
+    if (!deleteBusId || !user) return;
+    try {
+      const { error } = await supabase
+        .from('buses')
+        .delete()
+        .eq('id', deleteBusId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setBuses(buses.filter(b => b.id !== deleteBusId));
+      toast.success('Bus deleted');
+    } catch (error) {
+      console.error('Error deleting bus:', error);
+      toast.error('Failed to delete bus');
+    } finally {
+      setDeleteBusId(null);
     }
   };
 
@@ -1076,6 +1169,76 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* Buses */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Car className="h-5 w-5" />
+                Buses
+              </CardTitle>
+              <CardDescription>
+                Add bus numbers for seat bookings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Add New */}
+              <div className="flex gap-2 mb-6">
+                <Input
+                  value={newBusName}
+                  onChange={(e) => setNewBusName(e.target.value)}
+                  placeholder="Enter bus number (e.g., KA-01-1234)"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddBus()}
+                />
+                <Button onClick={handleAddBus} className="gap-2 shrink-0">
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+
+              {/* List */}
+              {buses.length > 0 ? (
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Bus Number</TableHead>
+                        <TableHead className="text-center">Active</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {buses.map((bus) => (
+                        <TableRow key={bus.id}>
+                          <TableCell className="font-medium">{bus.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={bus.active}
+                              onCheckedChange={() => handleToggleBus(bus)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteBusId(bus.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No buses added yet
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Receiver Names */}
           <Card>
             <CardHeader>
@@ -1247,6 +1410,24 @@ export default function Settings() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleClearAllAgents} className="bg-destructive hover:bg-destructive/90">
                 Clear All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Bus Dialog */}
+        <AlertDialog open={!!deleteBusId} onOpenChange={() => setDeleteBusId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Bus</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this bus? This won't affect existing bookings.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteBus} className="bg-destructive hover:bg-destructive/90">
+                Delete
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
