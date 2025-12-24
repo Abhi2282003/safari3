@@ -8,6 +8,7 @@ import { TicketWithPayment, CompanySettings, Ticket, Payment } from '@/types/tic
 import { useReactToPrint } from 'react-to-print';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getSettings } from '@/lib/storage';
 
 export default function PrintTicketPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,7 +80,7 @@ export default function PrintTicketPage() {
           setTicket({ ...transformedTicket, payment });
         }
 
-        // Fetch company settings
+        // Fetch company settings - first try Supabase, then fallback to localStorage
         const { data: settingsData } = await supabase
           .from('company_settings')
           .select('*')
@@ -97,14 +98,16 @@ export default function PrintTicketPage() {
             ticketHeight: settingsData.ticket_height || 140,
           });
         } else {
-          // Use default settings - user should configure in Settings page
+          // Fallback to localStorage settings (where user saved them)
+          const localSettings = getSettings();
           setSettings({
-            name: 'ROYAL TRAVELS',
-            address: 'Please configure in Settings',
-            phone: 'Please configure in Settings',
-            footerNote: 'Wish you a Happy Journey!',
-            ticketWidth: 280,
-            ticketHeight: 140,
+            name: localSettings.name || 'ROYAL TRAVELS',
+            address: localSettings.address || '',
+            phone: localSettings.phone || '',
+            logoUrl: localSettings.logoUrl || undefined,
+            footerNote: localSettings.footerNote || 'Wish you a Happy Journey!',
+            ticketWidth: localSettings.ticketWidth || 280,
+            ticketHeight: localSettings.ticketHeight || 140,
           });
         }
       } catch (error) {
