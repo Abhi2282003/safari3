@@ -140,6 +140,30 @@ export type Database = {
         }
         Relationships: []
       }
+      destination_cities: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           created_at: string
@@ -241,6 +265,7 @@ export type Database = {
           collected_at: string | null
           commission_percent: number
           created_at: string
+          destination: string | null
           id: string
           journey_date: string
           notes: string | null
@@ -263,6 +288,7 @@ export type Database = {
           collected_at?: string | null
           commission_percent?: number
           created_at?: string
+          destination?: string | null
           id?: string
           journey_date: string
           notes?: string | null
@@ -285,6 +311,7 @@ export type Database = {
           collected_at?: string | null
           commission_percent?: number
           created_at?: string
+          destination?: string | null
           id?: string
           journey_date?: string
           notes?: string | null

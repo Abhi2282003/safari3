@@ -28,6 +28,7 @@ export interface SeatBooking {
   agentCollectionStatus: 'pending' | 'collected' | 'not_applicable';
   collectedAt?: string;
   travelsName?: string;
+  destination?: string;
   busName?: string;
   passengerName?: string;
   notes?: string;
@@ -193,6 +194,7 @@ export function useSeatBookings() {
       agentCollectionStatus: s.agent_collection_status as SeatBooking['agentCollectionStatus'],
       collectedAt: s.collected_at || undefined,
       travelsName: s.travels_name || undefined,
+      destination: s.destination || undefined,
       busName: s.bus_name || undefined,
       passengerName: s.passenger_name || undefined,
       notes: s.notes || undefined,
@@ -231,6 +233,7 @@ export function useSeatBookings() {
       amount_from_agent: amounts.amountFromAgent,
       agent_collection_status: booking.bookingType === 'agent' ? 'pending' : 'not_applicable',
       travels_name: booking.travelsName || null,
+      destination: booking.destination || null,
       bus_name: booking.busName || null,
       passenger_name: booking.passengerName || null,
       notes: booking.notes || null,

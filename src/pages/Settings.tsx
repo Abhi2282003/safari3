@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin } from 'lucide-react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CompanySettings, ReceiverName, TravelsConfig, PickupLocation } from '@/types/ticket';
+import { CompanySettings, ReceiverName, TravelsConfig, PickupLocation, DestinationCity } from '@/types/ticket';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,13 +45,16 @@ export default function Settings() {
   const [receivers, setReceivers] = useState<ReceiverName[]>([]);
   const [travels, setTravels] = useState<TravelsConfig[]>([]);
   const [pickups, setPickups] = useState<PickupLocation[]>([]);
+  const [destinations, setDestinations] = useState<DestinationCity[]>([]);
   const [newReceiverName, setNewReceiverName] = useState('');
   const [newTravelName, setNewTravelName] = useState('');
   const [newTravelPercent, setNewTravelPercent] = useState('10');
   const [newPickupName, setNewPickupName] = useState('');
+  const [newDestinationName, setNewDestinationName] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTravelId, setDeleteTravelId] = useState<string | null>(null);
   const [deletePickupId, setDeletePickupId] = useState<string | null>(null);
+  const [deleteDestinationId, setDeleteDestinationId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -125,6 +128,21 @@ export default function Settings() {
           id: p.id,
           name: p.name,
           active: p.active ?? true,
+        })));
+      }
+
+      // Fetch destination cities from Supabase
+      const { data: destinationsData } = await supabase
+        .from('destination_cities')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (destinationsData) {
+        setDestinations(destinationsData.map(d => ({
+          id: d.id,
+          name: d.name,
+          active: d.active ?? true,
         })));
       }
     } catch (error) {
@@ -408,6 +426,81 @@ export default function Settings() {
       toast.error('Failed to delete pickup location');
     } finally {
       setDeletePickupId(null);
+    }
+  };
+
+  // Destination cities management
+  const handleAddDestination = async () => {
+    if (!user) return;
+    if (!newDestinationName.trim()) {
+      toast.error('Please enter a destination city name');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('destination_cities')
+        .insert({
+          user_id: user.id,
+          name: newDestinationName.trim(),
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setDestinations([...destinations, {
+        id: data.id,
+        name: data.name,
+        active: data.active ?? true,
+      }]);
+      setNewDestinationName('');
+      toast.success('Destination added successfully');
+    } catch (error) {
+      console.error('Error adding destination:', error);
+      toast.error('Failed to add destination');
+    }
+  };
+
+  const handleToggleDestination = async (destination: DestinationCity) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('destination_cities')
+        .update({ active: !destination.active })
+        .eq('id', destination.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setDestinations(destinations.map(d => 
+        d.id === destination.id ? { ...d, active: !d.active } : d
+      ));
+    } catch (error) {
+      console.error('Error updating destination:', error);
+      toast.error('Failed to update destination');
+    }
+  };
+
+  const handleDeleteDestination = async () => {
+    if (!deleteDestinationId || !user) return;
+    try {
+      const { error } = await supabase
+        .from('destination_cities')
+        .delete()
+        .eq('id', deleteDestinationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setDestinations(destinations.filter(d => d.id !== deleteDestinationId));
+      toast.success('Destination deleted');
+    } catch (error) {
+      console.error('Error deleting destination:', error);
+      toast.error('Failed to delete destination');
+    } finally {
+      setDeleteDestinationId(null);
     }
   };
 
@@ -696,6 +789,76 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* Destination Cities */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Navigation className="h-5 w-5" />
+                Destination Cities
+              </CardTitle>
+              <CardDescription>
+                Add destination cities for seat bookings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Add New */}
+              <div className="flex gap-2 mb-6">
+                <Input
+                  value={newDestinationName}
+                  onChange={(e) => setNewDestinationName(e.target.value)}
+                  placeholder="Enter destination city"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddDestination()}
+                />
+                <Button onClick={handleAddDestination} className="gap-2 shrink-0">
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+
+              {/* List */}
+              {destinations.length > 0 ? (
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>City</TableHead>
+                        <TableHead className="text-center">Active</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {destinations.map((destination) => (
+                        <TableRow key={destination.id}>
+                          <TableCell className="font-medium">{destination.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={destination.active}
+                              onCheckedChange={() => handleToggleDestination(destination)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteDestinationId(destination.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No destinations added yet
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Receiver Names */}
           <Card>
             <CardHeader>
@@ -812,6 +975,24 @@ export default function Settings() {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeletePickup} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Destination Dialog */}
+        <AlertDialog open={!!deleteDestinationId} onOpenChange={() => setDeleteDestinationId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Destination</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this destination city? This won't affect existing bookings.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteDestination} className="bg-destructive hover:bg-destructive/90">
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
