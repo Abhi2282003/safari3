@@ -133,7 +133,7 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
 
           {/* Paid By - Dropdown */}
           <div className="grid gap-2">
-            <Label htmlFor="paidBy">Paid To *</Label>
+            <Label htmlFor="paidBy">Paid By *</Label>
             <Select value={paidBy} onValueChange={setPaidBy}>
               <SelectTrigger id="paidBy">
                 <SelectValue placeholder="Select who to pay" />
