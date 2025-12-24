@@ -67,7 +67,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
     branch: '',
     bookedBy: '',
     withFamily: false,
-    paymentMode: '' as '' | 'Cash' | 'UPI' | 'Card' | 'Other',
+    paymentMode: '' as 'Cash' | 'UPI' | 'Card' | 'Other' | '',
   });
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         bookedBy: formData.bookedBy || undefined,
         withFamily: formData.withFamily,
         collectionStatus: existingTicket?.collectionStatus || 'Unpaid' as const,
-        paymentMode: formData.paymentMode || undefined,
+        paymentMode: (formData.paymentMode as 'Cash' | 'UPI' | 'Card' | 'Other') || undefined,
       };
 
       const savedId = await saveTicket(ticketData);
@@ -371,7 +371,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
             </div>
             <div className="grid gap-2">
               <Label>Payment Mode</Label>
-              <Select value={formData.paymentMode} onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMode: value as typeof prev.paymentMode }))}>
+              <Select value={formData.paymentMode || undefined} onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMode: value as 'Cash' | 'UPI' | 'Card' | 'Other' }))}>
                 <SelectTrigger><SelectValue placeholder="Select payment mode" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Cash">Cash</SelectItem>
