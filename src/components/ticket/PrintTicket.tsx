@@ -159,12 +159,23 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                     </div>
                   </div>
 
-                  {/* Travels & Booked By */}
+                  {/* Travels & Bus Details */}
                   <div className="flex gap-2 text-xs">
                     <div className="flex-1 border border-gray-300 px-2 py-1" style={{ borderRadius: "2mm" }}>
                       <span className="text-gray-600 font-bold">Travels: </span>
                       <span className="font-black">{ticket.travelsName || "—"}</span>
                     </div>
+                    <div className="flex-1 border border-gray-300 px-2 py-1" style={{ borderRadius: "2mm" }}>
+                      <span className="text-gray-600 font-bold">Bus: </span>
+                      <span className="font-black">{ticket.busName || "—"}</span>
+                      {ticket.busNo && (
+                        <span className="font-black ml-1">({ticket.busNo})</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Booked By */}
+                  <div className="flex gap-2 text-xs">
                     <div className="flex-1 border border-gray-300 px-2 py-1" style={{ borderRadius: "2mm" }}>
                       <span className="text-gray-600 font-bold">Booked By: </span>
                       <span className="font-black">{ticket.bookedBy || "—"}</span>
