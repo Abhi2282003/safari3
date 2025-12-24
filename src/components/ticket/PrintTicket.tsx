@@ -229,34 +229,88 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
               Boarding Pass
             </div>
 
-            <div className="p-2 flex-1 flex flex-col relative z-10 text-sm">
+            <div className="p-2 flex-1 flex flex-col relative z-10 text-xs">
               {/* Ticket Number */}
               <div className="flex justify-between items-center border-b border-gray-300 pb-1 mb-1">
                 <span className="text-xs text-gray-600 font-bold">Ticket No</span>
-                <span className="text-lg font-black">{ticketNumberShort}</span>
+                <span className="text-base font-black">{ticketNumberShort}</span>
               </div>
 
               {/* Passenger */}
               <div className="border-b border-gray-300 pb-1 mb-1">
                 <div className="text-xs text-gray-600 font-bold">Passenger</div>
-                <div className="font-black truncate">{ticket.passengerName}</div>
-                <div className="text-xs font-bold">📱 {ticket.passengerPhone}</div>
+                <div className="font-black truncate text-sm">{ticket.passengerName}</div>
+                <div className="font-bold">📱 {ticket.passengerPhone}</div>
               </div>
 
-              {/* Destination */}
+              {/* Destination & Journey */}
               <div className="border-b border-gray-300 pb-1 mb-1">
-                <div className="text-xs text-gray-600 font-bold">Destination</div>
-                <div className="font-black truncate">{ticket.toursTo}</div>
-                <div className="flex justify-between text-xs font-bold mt-0.5">
-                  <span>📅 {format(new Date(ticket.journeyDate), "dd/MM/yy")}</span>
-                  <span>💺 {ticket.seatNo || "—"}</span>
+                <div className="flex justify-between">
+                  <div>
+                    <span className="text-gray-600 font-bold">To: </span>
+                    <span className="font-black">{ticket.toursTo}</span>
+                  </div>
+                  <span className="font-black">📅 {format(new Date(ticket.journeyDate), "dd/MM/yy")}</span>
+                </div>
+              </div>
+
+              {/* Pickup */}
+              {ticket.pickup && (
+                <div className="border-b border-gray-300 pb-1 mb-1">
+                  <span className="text-gray-600 font-bold">📍 Pickup: </span>
+                  <span className="font-black">{ticket.pickup}</span>
+                </div>
+              )}
+
+              {/* Bus Details */}
+              <div className="border-b border-gray-300 pb-1 mb-1">
+                <div className="flex justify-between">
+                  <div>
+                    <span className="text-gray-600 font-bold">Travels: </span>
+                    <span className="font-black">{ticket.travelsName || "—"}</span>
+                  </div>
+                </div>
+                {(ticket.busName || ticket.busNo) && (
+                  <div className="flex justify-between mt-0.5">
+                    <div>
+                      <span className="text-gray-600 font-bold">Bus: </span>
+                      <span className="font-black">{ticket.busName || "—"}</span>
+                    </div>
+                    {ticket.busNo && (
+                      <span className="font-black">{ticket.busNo}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Timing & Seat */}
+              <div className="border-b border-gray-300 pb-1 mb-1">
+                <div className="flex justify-between">
+                  <div>
+                    <span className="text-gray-600 font-bold">Seat: </span>
+                    <span className="font-black">{ticket.seatNo || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-bold">Pax: </span>
+                    <span className="font-black">{ticket.noOfTourist}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-0.5">
+                  <div>
+                    <span className="text-gray-600 font-bold">🕐 Report: </span>
+                    <span className="font-black">{ticket.repTime || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-bold">Dep: </span>
+                    <span className="font-black">{ticket.depTime || "—"}</span>
+                  </div>
                 </div>
               </div>
 
               {/* Amount */}
               <div className="bg-gray-100 border border-gray-400 text-center py-1 mt-auto" style={{ borderRadius: "2mm" }}>
                 <div className="text-xs text-gray-600 font-bold">Total</div>
-                <div className="text-xl font-black">₹{ticket.amount.toLocaleString()}</div>
+                <div className="text-lg font-black">₹{ticket.amount.toLocaleString()}</div>
               </div>
 
               {/* Footer */}
