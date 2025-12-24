@@ -164,6 +164,51 @@ export type Database = {
         }
         Relationships: []
       }
+      luggage_bookings: {
+        Row: {
+          amount_to_owner: number
+          bus_name: string
+          created_at: string
+          destination: string
+          id: string
+          journey_date: string
+          notes: string | null
+          our_earning: number
+          quantity: number
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_to_owner?: number
+          bus_name: string
+          created_at?: string
+          destination: string
+          id?: string
+          journey_date: string
+          notes?: string | null
+          our_earning?: number
+          quantity?: number
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_to_owner?: number
+          bus_name?: string
+          created_at?: string
+          destination?: string
+          id?: string
+          journey_date?: string
+          notes?: string | null
+          our_earning?: number
+          quantity?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           created_at: string
