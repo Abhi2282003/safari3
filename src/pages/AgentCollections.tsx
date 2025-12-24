@@ -128,32 +128,46 @@ export default function AgentCollections() {
         .sort((a, b) => new Date(a.journeyDate).getTime() - new Date(b.journeyDate).getTime());
 
       let remainingAmount = amount;
-      const bookingsToUpdate: string[] = [];
+      const fullyPaidBookingIds: string[] = [];
+      const partialPaymentUpdates: { id: string; newAmountFromAgent: number }[] = [];
 
-      // Mark bookings as collected until amount is exhausted
+      // Process bookings - mark fully paid ones as collected, reduce amount for partial
       for (const booking of pendingBookings) {
+        if (remainingAmount <= 0) break;
+        
         if (remainingAmount >= booking.amountFromAgent) {
-          bookingsToUpdate.push(booking.id);
+          // Fully paid - mark as collected
+          fullyPaidBookingIds.push(booking.id);
           remainingAmount -= booking.amountFromAgent;
-        } else if (remainingAmount > 0) {
-          // Partial payment - mark as collected anyway for simplicity
-          // In a real system, you might want to track partial amounts
-          bookingsToUpdate.push(booking.id);
+        } else {
+          // Partial payment - reduce the pending amount
+          const newAmountFromAgent = booking.amountFromAgent - remainingAmount;
+          partialPaymentUpdates.push({ id: booking.id, newAmountFromAgent });
           remainingAmount = 0;
         }
-        
-        if (remainingAmount <= 0) break;
       }
 
-      // Update bookings as collected
-      if (bookingsToUpdate.length > 0) {
+      // Update fully paid bookings as collected
+      if (fullyPaidBookingIds.length > 0) {
         const { error } = await supabase
           .from('seat_bookings')
           .update({
             agent_collection_status: 'collected',
             collected_at: new Date().toISOString(),
           })
-          .in('id', bookingsToUpdate);
+          .in('id', fullyPaidBookingIds);
+
+        if (error) throw error;
+      }
+
+      // Update partial payment bookings - reduce the amount_from_agent
+      for (const update of partialPaymentUpdates) {
+        const { error } = await supabase
+          .from('seat_bookings')
+          .update({
+            amount_from_agent: update.newAmountFromAgent,
+          })
+          .eq('id', update.id);
 
         if (error) throw error;
       }
