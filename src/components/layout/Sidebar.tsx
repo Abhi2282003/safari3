@@ -8,7 +8,10 @@ import {
   Bus,
   LogOut,
   Menu,
-  X
+  X,
+  Armchair,
+  Users,
+  TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +22,9 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/new-ticket', label: 'New Ticket', icon: Plus },
+  { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
+  { href: '/agent-collections', label: 'Agent Collections', icon: Users },
+  { href: '/profit', label: 'Profit', icon: TrendingUp },
   { href: '/reports', label: 'Reports', icon: FileText },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
