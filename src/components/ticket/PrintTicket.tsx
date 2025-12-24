@@ -61,10 +61,10 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
             {/* Header - Logo in corner, company info centered */}
             <header className="bg-gray-900 text-white relative z-10 py-2 px-3">
               <div className="flex items-center gap-3">
-                {/* Logo - Corner */}
+                {/* Logo - Corner - Bigger */}
                 <div 
-                  className="shrink-0 bg-white p-1 shadow"
-                  style={{ width: "18mm", height: "18mm", borderRadius: "2mm" }}
+                  className="shrink-0 bg-white p-1.5 shadow"
+                  style={{ width: "22mm", height: "22mm", borderRadius: "2mm" }}
                 >
                   <img
                     src={settings.logoUrl || companyLogo}
@@ -73,16 +73,16 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   />
                 </div>
 
-                {/* Company Info - Center */}
+                {/* Company Info - Center - Bold */}
                 <div className="flex-1 text-center">
                   <h1 className="text-2xl font-black uppercase tracking-wide leading-none">
                     {settings.name}
                   </h1>
                   {companyAddress && (
-                    <p className="text-sm font-medium leading-tight mt-1">{companyAddress}</p>
+                    <p className="text-sm font-bold leading-tight mt-1">{companyAddress}</p>
                   )}
                   {companyPhone && (
-                    <p className="text-base font-bold mt-0.5">📞 {companyPhone}</p>
+                    <p className="text-base font-black mt-0.5">📞 {companyPhone}</p>
                   )}
                 </div>
 
@@ -91,7 +91,7 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   className="shrink-0 bg-yellow-400 text-black px-3 py-1.5 text-center shadow"
                   style={{ borderRadius: "2mm" }}
                 >
-                  <div className="text-xs font-bold uppercase">Ticket</div>
+                  <div className="text-xs font-black uppercase">Ticket</div>
                   <div className="text-xl font-black">{ticketNumberShort}</div>
                 </div>
               </div>
@@ -106,18 +106,18 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   <div className="border border-gray-400 p-2" style={{ borderRadius: "2mm" }}>
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-xs text-gray-600 font-semibold">PASSENGER: </span>
+                        <span className="text-xs text-gray-600 font-bold">PASSENGER: </span>
                         <span className="font-black text-base">{ticket.passengerName}</span>
-                        {ticket.withFamily && <span className="text-xs ml-1">(Family)</span>}
+                        {ticket.withFamily && <span className="text-xs font-bold ml-1">(Family)</span>}
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-gray-600">Pax: </span>
-                        <span className="font-bold">{ticket.noOfTourist}</span>
+                        <span className="text-xs text-gray-600 font-bold">Pax: </span>
+                        <span className="font-black">{ticket.noOfTourist}</span>
                       </div>
                     </div>
                     <div className="mt-1">
-                      <span className="text-xs text-gray-600">Mobile: </span>
-                      <span className="font-bold font-mono">{ticket.passengerPhone}</span>
+                      <span className="text-xs text-gray-600 font-bold">Mobile: </span>
+                      <span className="font-black font-mono">{ticket.passengerPhone}</span>
                     </div>
                   </div>
 
@@ -125,28 +125,28 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   <div className="border border-gray-400 p-2" style={{ borderRadius: "2mm" }}>
                     <div className="flex justify-between">
                       <div>
-                        <span className="text-xs text-gray-600">TO: </span>
+                        <span className="text-xs text-gray-600 font-bold">TO: </span>
                         <span className="font-black text-base">{ticket.toursTo}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-gray-600">Journey: </span>
-                        <span className="font-bold">{format(new Date(ticket.journeyDate), "dd/MM/yyyy")}</span>
+                        <span className="text-xs text-gray-600 font-bold">Journey: </span>
+                        <span className="font-black">{format(new Date(ticket.journeyDate), "dd/MM/yyyy")}</span>
                       </div>
                     </div>
                     <div className="flex justify-between mt-1">
                       <div>
-                        <span className="text-xs text-gray-600">Seat: </span>
-                        <span className="font-bold">{ticket.seatNo || "—"}</span>
-                        <span className="mx-2">|</span>
-                        <span className="text-xs text-gray-600">Report: </span>
-                        <span className="font-bold">{ticket.repTime || "—"}</span>
-                        <span className="mx-2">|</span>
-                        <span className="text-xs text-gray-600">Dep: </span>
-                        <span className="font-bold">{ticket.depTime || "—"}</span>
+                        <span className="text-xs text-gray-600 font-bold">Seat: </span>
+                        <span className="font-black">{ticket.seatNo || "—"}</span>
+                        <span className="mx-2 font-bold">|</span>
+                        <span className="text-xs text-gray-600 font-bold">Report: </span>
+                        <span className="font-black">{ticket.repTime || "—"}</span>
+                        <span className="mx-2 font-bold">|</span>
+                        <span className="text-xs text-gray-600 font-bold">Dep: </span>
+                        <span className="font-black">{ticket.depTime || "—"}</span>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-600">Booked: </span>
-                        <span className="font-bold">{format(new Date(ticket.bookingDateTime), "dd/MM/yy")}</span>
+                        <span className="text-xs text-gray-600 font-bold">Booked: </span>
+                        <span className="font-black">{format(new Date(ticket.bookingDateTime), "dd/MM/yy")}</span>
                       </div>
                     </div>
                   </div>
@@ -154,12 +154,12 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   {/* Travels & Booked By */}
                   <div className="flex gap-2 text-xs">
                     <div className="flex-1 border border-gray-300 px-2 py-1" style={{ borderRadius: "2mm" }}>
-                      <span className="text-gray-600">Travels: </span>
-                      <span className="font-bold">{ticket.travelsName || "—"}</span>
+                      <span className="text-gray-600 font-bold">Travels: </span>
+                      <span className="font-black">{ticket.travelsName || "—"}</span>
                     </div>
                     <div className="flex-1 border border-gray-300 px-2 py-1" style={{ borderRadius: "2mm" }}>
-                      <span className="text-gray-600">Booked By: </span>
-                      <span className="font-bold">{ticket.bookedBy || "—"}</span>
+                      <span className="text-gray-600 font-bold">Booked By: </span>
+                      <span className="font-black">{ticket.bookedBy || "—"}</span>
                     </div>
                   </div>
                 </div>
@@ -169,9 +169,9 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
                   className="w-28 border-2 border-gray-800 bg-gray-100 flex flex-col items-center justify-center text-center"
                   style={{ borderRadius: "2mm" }}
                 >
-                  <div className="text-xs font-bold text-gray-600 uppercase">Total Amount</div>
+                  <div className="text-xs font-black text-gray-600 uppercase">Total Amount</div>
                   <div className="text-2xl font-black mt-1">₹{ticket.amount.toLocaleString()}</div>
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs font-bold text-gray-600 mt-1">
                     Base: ₹{baseAmount.toLocaleString()}
                     {ticket.surcharges && ticket.surcharges > 0 && (
                       <><br/>Sur: ₹{ticket.surcharges.toLocaleString()}</>
@@ -182,8 +182,8 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
 
               {/* Footer */}
               <div className="mt-2 text-center border-t border-gray-300 pt-1">
-                <p className="text-xs text-gray-600">यात्री अपने सामान की रक्षा स्वयं करें ट्रॅव्हल्स की जिम्मेदारी नहीं होगी।</p>
-                <p className="text-sm font-bold">{settings.footerNote || "Wish you a Happy Journey!"}</p>
+                <p className="text-xs font-bold text-gray-600">यात्री अपने सामान की रक्षा स्वयं करें ट्रॅव्हल्स की जिम्मेदारी नहीं होगी।</p>
+                <p className="text-sm font-black">{settings.footerNote || "Wish you a Happy Journey!"}</p>
               </div>
             </div>
           </section>
@@ -214,7 +214,7 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
             {/* Header */}
             <header className="bg-gray-900 text-white text-center py-1.5 px-2 relative z-10">
               <div className="text-sm font-black uppercase">{settings.name}</div>
-              {companyPhone && <div className="text-xs">📞 {companyPhone}</div>}
+              {companyPhone && <div className="text-xs font-bold">📞 {companyPhone}</div>}
             </header>
 
             <div className="bg-yellow-400 text-black text-center py-1 text-sm font-black uppercase relative z-10">
@@ -224,22 +224,22 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
             <div className="p-2 flex-1 flex flex-col relative z-10 text-sm">
               {/* Ticket Number */}
               <div className="flex justify-between items-center border-b border-gray-300 pb-1 mb-1">
-                <span className="text-xs text-gray-600">Ticket No</span>
+                <span className="text-xs text-gray-600 font-bold">Ticket No</span>
                 <span className="text-lg font-black">{ticketNumberShort}</span>
               </div>
 
               {/* Passenger */}
               <div className="border-b border-gray-300 pb-1 mb-1">
-                <div className="text-xs text-gray-600">Passenger</div>
-                <div className="font-bold truncate">{ticket.passengerName}</div>
-                <div className="text-xs">📱 {ticket.passengerPhone}</div>
+                <div className="text-xs text-gray-600 font-bold">Passenger</div>
+                <div className="font-black truncate">{ticket.passengerName}</div>
+                <div className="text-xs font-bold">📱 {ticket.passengerPhone}</div>
               </div>
 
               {/* Destination */}
               <div className="border-b border-gray-300 pb-1 mb-1">
-                <div className="text-xs text-gray-600">Destination</div>
-                <div className="font-bold truncate">{ticket.toursTo}</div>
-                <div className="flex justify-between text-xs mt-0.5">
+                <div className="text-xs text-gray-600 font-bold">Destination</div>
+                <div className="font-black truncate">{ticket.toursTo}</div>
+                <div className="flex justify-between text-xs font-bold mt-0.5">
                   <span>📅 {format(new Date(ticket.journeyDate), "dd/MM/yy")}</span>
                   <span>💺 {ticket.seatNo || "—"}</span>
                 </div>
@@ -247,13 +247,13 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
 
               {/* Amount */}
               <div className="bg-gray-100 border border-gray-400 text-center py-1 mt-auto" style={{ borderRadius: "2mm" }}>
-                <div className="text-xs text-gray-600">Total</div>
+                <div className="text-xs text-gray-600 font-bold">Total</div>
                 <div className="text-xl font-black">₹{ticket.amount.toLocaleString()}</div>
               </div>
 
               {/* Footer */}
               <div className="text-center mt-1">
-                <p className="text-xs font-bold">{settings.footerNote || "Happy Journey!"}</p>
+                <p className="text-xs font-black">{settings.footerNote || "Happy Journey!"}</p>
               </div>
             </div>
           </aside>
