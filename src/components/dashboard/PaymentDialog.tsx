@@ -29,6 +29,7 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentDialogProps) {
+  const [paidBy, setPaidBy] = useState('');
   const [receiverName, setReceiverName] = useState('');
   const [receiverMobile, setReceiverMobile] = useState('');
   const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Other'>('Cash');
@@ -65,23 +66,31 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
 
   const handleSubmit = async () => {
     if (!ticket) return;
+    if (!paidBy) {
+      toast.error('Please select who to pay');
+      return;
+    }
     if (!receiverName.trim()) {
       toast.error('Please enter receiver name');
       return;
     }
 
-    // Combine name and mobile for the paidBy field
-    const paidByInfo = receiverMobile.trim() 
+    // Combine receiver info with paidBy
+    const receiverInfo = receiverMobile.trim() 
       ? `${receiverName.trim()} (${receiverMobile.trim()})`
       : receiverName.trim();
+    
+    // Store both paid by and receiver info
+    const paymentInfo = `${paidBy} | Receiver: ${receiverInfo}`;
 
     setIsSubmitting(true);
     try {
-      await onSubmit(paidByInfo, paymentMode, payableAmount);
+      await onSubmit(paymentInfo, paymentMode, payableAmount);
       toast.success('Payment recorded successfully');
       onOpenChange(false);
       
       // Reset form
+      setPaidBy('');
       setReceiverName('');
       setReceiverMobile('');
       setPaymentMode('Cash');
@@ -91,10 +100,6 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleReceiverSelect = (name: string) => {
-    setReceiverName(name);
   };
 
   return (
@@ -126,44 +131,42 @@ export function PaymentDialog({ ticket, open, onOpenChange, onSubmit }: PaymentD
             </div>
           </div>
 
-          {/* Quick Select from saved receivers */}
-          {activeReceivers.length > 0 && (
-            <div className="grid gap-2">
-              <Label>Quick Select (Optional)</Label>
-              <Select onValueChange={handleReceiverSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select from saved receivers" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeReceivers.map((receiver) => (
-                    <SelectItem key={receiver.id} value={receiver.name}>
-                      {receiver.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Manual Receiver Name Input */}
+          {/* Paid By - Dropdown */}
           <div className="grid gap-2">
-            <Label htmlFor="receiverName">Received By (Name) *</Label>
+            <Label htmlFor="paidBy">Paid To *</Label>
+            <Select value={paidBy} onValueChange={setPaidBy}>
+              <SelectTrigger id="paidBy">
+                <SelectValue placeholder="Select who to pay" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeReceivers.map((receiver) => (
+                  <SelectItem key={receiver.id} value={receiver.name}>
+                    {receiver.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Receiver Name - Manual Input */}
+          <div className="grid gap-2">
+            <Label htmlFor="receiverName">Receiver Name *</Label>
             <Input
               id="receiverName"
               value={receiverName}
               onChange={(e) => setReceiverName(e.target.value)}
-              placeholder="Enter receiver name"
+              placeholder="Who received the payment"
             />
           </div>
 
-          {/* Manual Receiver Mobile Input */}
+          {/* Receiver Mobile - Manual Input */}
           <div className="grid gap-2">
             <Label htmlFor="receiverMobile">Receiver Mobile (Optional)</Label>
             <Input
               id="receiverMobile"
               value={receiverMobile}
               onChange={(e) => setReceiverMobile(e.target.value)}
-              placeholder="Enter mobile number"
+              placeholder="Receiver's mobile number"
               type="tel"
             />
           </div>
