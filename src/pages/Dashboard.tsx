@@ -53,17 +53,19 @@ export default function Dashboard() {
 
   const stats = useMemo(() => calculateStats(dateTickets, travels), [dateTickets, travels]);
 
-  // Calculate booked by summary
+  // Calculate booked by summary with payment mode breakdown
   const bookedBySummary = useMemo(() => {
-    const summary: Record<string, { count: number; total: number }> = {};
+    const summary: Record<string, { count: number; total: number; paymentModes: Record<string, number> }> = {};
     dateTickets.forEach((ticket) => {
       const bookedBy = ticket.bookedBy || 'Unknown';
       const baseAmount = ticket.surcharges ? ticket.amount - ticket.surcharges : ticket.amount;
+      const paymentMode = ticket.paymentMode || 'Not Set';
       if (!summary[bookedBy]) {
-        summary[bookedBy] = { count: 0, total: 0 };
+        summary[bookedBy] = { count: 0, total: 0, paymentModes: {} };
       }
       summary[bookedBy].count += 1;
       summary[bookedBy].total += baseAmount;
+      summary[bookedBy].paymentModes[paymentMode] = (summary[bookedBy].paymentModes[paymentMode] || 0) + baseAmount;
     });
     return Object.entries(summary).sort((a, b) => b[1].total - a[1].total);
   }, [dateTickets]);
@@ -184,12 +186,19 @@ export default function Dashboard() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {bookedBySummary.map(([name, data]) => (
-                <div key={name} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                  <div>
+                <div key={name} className="p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center justify-between mb-2">
                     <p className="font-medium text-foreground">{name}</p>
-                    <p className="text-sm text-muted-foreground">{data.count} ticket{data.count > 1 ? 's' : ''}</p>
+                    <p className="font-semibold text-primary">₹{data.total.toLocaleString()}</p>
                   </div>
-                  <p className="font-semibold text-primary">₹{data.total.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{data.count} ticket{data.count > 1 ? 's' : ''}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(data.paymentModes).map(([mode, amount]) => (
+                      <span key={mode} className="text-xs px-2 py-0.5 rounded bg-background border">
+                        {mode}: ₹{amount.toLocaleString()}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

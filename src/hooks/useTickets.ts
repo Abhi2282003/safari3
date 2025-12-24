@@ -26,6 +26,7 @@ export interface Ticket {
   bookedBy?: string;
   withFamily?: boolean;
   collectionStatus: 'Paid' | 'Unpaid';
+  paymentMode?: 'Cash' | 'UPI' | 'Card' | 'Other';
 }
 
 export interface Payment {
@@ -139,6 +140,7 @@ export function useTickets() {
       bookedBy: t.booked_by || undefined,
       withFamily: t.with_family || false,
       collectionStatus: t.collection_status as 'Paid' | 'Unpaid',
+      paymentMode: (t as any).payment_mode as Ticket['paymentMode'] || undefined,
       payment: paymentsData?.find((p) => p.ticket_id === t.id)
         ? {
             id: paymentsData.find((p) => p.ticket_id === t.id)!.id,
@@ -201,7 +203,7 @@ export function useTickets() {
 
     const ticketNo = ticket.ticketNo || (await generateTicketNo());
 
-    const dbTicket = {
+    const dbTicket: Record<string, any> = {
       user_id: user.id,
       ticket_no: ticketNo,
       booking_date_time: ticket.bookingDateTime,
@@ -223,12 +225,13 @@ export function useTickets() {
       booked_by: ticket.bookedBy || null,
       with_family: ticket.withFamily || false,
       collection_status: ticket.collectionStatus,
+      payment_mode: ticket.paymentMode || null,
     };
 
     if (ticket.id) {
       const { error } = await supabase
         .from('tickets')
-        .update(dbTicket)
+        .update(dbTicket as any)
         .eq('id', ticket.id);
       
       if (error) {
@@ -239,7 +242,7 @@ export function useTickets() {
     } else {
       const { data, error } = await supabase
         .from('tickets')
-        .insert(dbTicket)
+        .insert(dbTicket as any)
         .select('id')
         .single();
       

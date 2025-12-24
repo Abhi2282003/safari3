@@ -183,6 +183,7 @@ export type Database = {
           passenger_address: string | null
           passenger_name: string
           passenger_phone: string
+          payment_mode: string | null
           rep_time: string | null
           seat_no: string | null
           surcharges: number | null
@@ -209,6 +210,7 @@ export type Database = {
           passenger_address?: string | null
           passenger_name: string
           passenger_phone: string
+          payment_mode?: string | null
           rep_time?: string | null
           seat_no?: string | null
           surcharges?: number | null
@@ -235,6 +237,7 @@ export type Database = {
           passenger_address?: string | null
           passenger_name?: string
           passenger_phone?: string
+          payment_mode?: string | null
           rep_time?: string | null
           seat_no?: string | null
           surcharges?: number | null
