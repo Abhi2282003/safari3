@@ -45,46 +45,42 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
         <div className="flex gap-3" style={{ minHeight: `${ticketHeight - 8}mm` }}>
           {/* Main Ticket */}
           <section className="flex-1 overflow-hidden rounded-xl border-2 border-ticket-border bg-ticket-bg">
-            {/* Header - Company Info Centered */}
+            {/* Header - Logo left, Company Info beside */}
             <header className="bg-gradient-to-br from-primary via-primary/90 to-ticket-accent text-primary-foreground">
-              <div className="p-4 text-center">
-                {/* Logo - Big and Centered */}
-                <div className="mx-auto mb-2" style={{ width: "32mm", height: "32mm" }}>
-                  <div className="rounded-lg bg-card/95 p-2 shadow-lg shadow-primary/20 h-full w-full">
-                    <img
-                      src={settings.logoUrl || companyLogo}
-                      alt="Company logo"
-                      loading="eager"
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
+              <div className="p-3 flex items-center gap-3">
+                {/* Logo - Corner */}
+                <div className="shrink-0 rounded-lg bg-card/95 p-1.5 shadow-lg" style={{ width: "20mm", height: "20mm" }}>
+                  <img
+                    src={settings.logoUrl || companyLogo}
+                    alt="Company logo"
+                    loading="eager"
+                    className="h-full w-full object-contain"
+                  />
                 </div>
 
-                {/* Company Name */}
-                <h1 className="text-xl font-bold uppercase tracking-wide">
-                  {settings.name}
-                </h1>
-                
-                {/* Company Address - Centered */}
-                {companyAddress && (
-                  <p className="mt-1 text-sm leading-snug text-primary-foreground/90">
-                    {companyAddress}
-                  </p>
-                )}
-                
-                {/* Company Phone - Centered */}
-                {companyPhone && (
-                  <p className="mt-1 text-sm font-semibold text-primary-foreground">
-                    📞 {companyPhone}
-                  </p>
-                )}
+                {/* Company Info - Beside Logo */}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-lg font-bold uppercase tracking-wide leading-tight">
+                    {settings.name}
+                  </h1>
+                  {companyAddress && (
+                    <p className="text-xs leading-snug text-primary-foreground/90 mt-0.5">
+                      {companyAddress}
+                    </p>
+                  )}
+                  {companyPhone && (
+                    <p className="text-xs font-semibold text-primary-foreground mt-0.5">
+                      📞 {companyPhone}
+                    </p>
+                  )}
+                </div>
 
                 {/* Ticket Number Badge */}
-                <div className="mt-3 inline-block rounded-lg bg-accent px-4 py-2 text-accent-foreground">
-                  <div className="text-xs font-semibold uppercase tracking-wider opacity-90">
-                    Ticket No.
+                <div className="shrink-0 rounded-lg bg-accent px-3 py-2 text-center text-accent-foreground">
+                  <div className="text-[9px] font-semibold uppercase tracking-wider opacity-90">
+                    Ticket
                   </div>
-                  <div className="ticket-number text-lg font-bold">
+                  <div className="ticket-number text-base font-bold">
                     {ticketNumberShort}
                   </div>
                 </div>
@@ -224,25 +220,25 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
           <aside className="flex shrink-0 flex-col overflow-hidden rounded-xl border-2 border-ticket-border bg-ticket-bg" style={{ width: "85mm" }}>
             {/* Header */}
             <header className="bg-gradient-to-br from-primary to-ticket-accent text-primary-foreground">
-              <div className="p-3 text-center">
-                <div className="mx-auto mb-2" style={{ width: "22mm", height: "22mm" }}>
-                  <div className="rounded-lg bg-card/95 p-1.5 shadow-lg h-full w-full">
-                    <img
-                      src={settings.logoUrl || companyLogo}
-                      alt="Company logo"
-                      loading="eager"
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
+              <div className="p-2 flex items-center gap-2">
+                <div className="shrink-0 rounded-lg bg-card/95 p-1 shadow-lg" style={{ width: "14mm", height: "14mm" }}>
+                  <img
+                    src={settings.logoUrl || companyLogo}
+                    alt="Company logo"
+                    loading="eager"
+                    className="h-full w-full object-contain"
+                  />
                 </div>
-                <div className="text-sm font-bold uppercase tracking-wide">
-                  {settings.name}
-                </div>
-                {companyPhone && (
-                  <div className="mt-0.5 text-xs text-primary-foreground/90">
-                    📞 {companyPhone}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold uppercase tracking-wide leading-tight truncate">
+                    {settings.name}
                   </div>
-                )}
+                  {companyPhone && (
+                    <div className="text-[10px] text-primary-foreground/90 mt-0.5">
+                      📞 {companyPhone}
+                    </div>
+                  )}
+                </div>
               </div>
             </header>
 
