@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CompanySettings, ReceiverName, TravelsConfig } from '@/types/ticket';
+import { CompanySettings, ReceiverName, TravelsConfig, PickupLocation } from '@/types/ticket';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,11 +44,14 @@ export default function Settings() {
   });
   const [receivers, setReceivers] = useState<ReceiverName[]>([]);
   const [travels, setTravels] = useState<TravelsConfig[]>([]);
+  const [pickups, setPickups] = useState<PickupLocation[]>([]);
   const [newReceiverName, setNewReceiverName] = useState('');
   const [newTravelName, setNewTravelName] = useState('');
   const [newTravelPercent, setNewTravelPercent] = useState('10');
+  const [newPickupName, setNewPickupName] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTravelId, setDeleteTravelId] = useState<string | null>(null);
+  const [deletePickupId, setDeletePickupId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -107,6 +110,21 @@ export default function Settings() {
           name: t.name,
           commissionPercent: Number(t.commission_percent),
           active: t.active ?? true,
+        })));
+      }
+
+      // Fetch pickup locations from Supabase
+      const { data: pickupsData } = await supabase
+        .from('pickup_locations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (pickupsData) {
+        setPickups(pickupsData.map(p => ({
+          id: p.id,
+          name: p.name,
+          active: p.active ?? true,
         })));
       }
     } catch (error) {
@@ -315,6 +333,81 @@ export default function Settings() {
       toast.error('Failed to delete travels');
     } finally {
       setDeleteTravelId(null);
+    }
+  };
+
+  // Pickup locations management
+  const handleAddPickup = async () => {
+    if (!user) return;
+    if (!newPickupName.trim()) {
+      toast.error('Please enter a pickup location name');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('pickup_locations')
+        .insert({
+          user_id: user.id,
+          name: newPickupName.trim(),
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPickups([...pickups, {
+        id: data.id,
+        name: data.name,
+        active: data.active ?? true,
+      }]);
+      setNewPickupName('');
+      toast.success('Pickup location added successfully');
+    } catch (error) {
+      console.error('Error adding pickup:', error);
+      toast.error('Failed to add pickup location');
+    }
+  };
+
+  const handleTogglePickup = async (pickup: PickupLocation) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('pickup_locations')
+        .update({ active: !pickup.active })
+        .eq('id', pickup.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setPickups(pickups.map(p => 
+        p.id === pickup.id ? { ...p, active: !p.active } : p
+      ));
+    } catch (error) {
+      console.error('Error updating pickup:', error);
+      toast.error('Failed to update pickup location');
+    }
+  };
+
+  const handleDeletePickup = async () => {
+    if (!deletePickupId || !user) return;
+    try {
+      const { error } = await supabase
+        .from('pickup_locations')
+        .delete()
+        .eq('id', deletePickupId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setPickups(pickups.filter(p => p.id !== deletePickupId));
+      toast.success('Pickup location deleted');
+    } catch (error) {
+      console.error('Error deleting pickup:', error);
+      toast.error('Failed to delete pickup location');
+    } finally {
+      setDeletePickupId(null);
     }
   };
 
@@ -533,6 +626,76 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* Pickup Locations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Pickup Locations
+              </CardTitle>
+              <CardDescription>
+                Add pickup locations to select in the ticket form
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Add New */}
+              <div className="flex gap-2 mb-6">
+                <Input
+                  value={newPickupName}
+                  onChange={(e) => setNewPickupName(e.target.value)}
+                  placeholder="Enter pickup location"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddPickup()}
+                />
+                <Button onClick={handleAddPickup} className="gap-2 shrink-0">
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+
+              {/* List */}
+              {pickups.length > 0 ? (
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Location</TableHead>
+                        <TableHead className="text-center">Active</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pickups.map((pickup) => (
+                        <TableRow key={pickup.id}>
+                          <TableCell className="font-medium">{pickup.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={pickup.active}
+                              onCheckedChange={() => handleTogglePickup(pickup)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletePickupId(pickup.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No pickup locations added yet
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Receiver Names */}
           <Card>
             <CardHeader>
@@ -631,6 +794,24 @@ export default function Settings() {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteTravel} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Pickup Dialog */}
+        <AlertDialog open={!!deletePickupId} onOpenChange={() => setDeletePickupId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Pickup Location</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this pickup location? This won't affect existing tickets.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeletePickup} className="bg-destructive hover:bg-destructive/90">
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>

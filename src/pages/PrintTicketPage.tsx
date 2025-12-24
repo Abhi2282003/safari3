@@ -50,7 +50,7 @@ export default function PrintTicketPage() {
             journeyDate: ticketData.journey_date,
             passengerName: ticketData.passenger_name,
             passengerPhone: ticketData.passenger_phone,
-            passengerAddress: ticketData.passenger_address || undefined,
+            pickup: ticketData.passenger_address || undefined,
             toursTo: ticketData.tours_to,
             noOfTourist: ticketData.no_of_tourist,
             seatNo: ticketData.seat_no || undefined,
