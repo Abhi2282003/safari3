@@ -211,7 +211,17 @@ export default function Dashboard() {
           ticket={paymentTicket}
           open={!!paymentTicket}
           onOpenChange={(open) => !open && setPaymentTicket(null)}
-          onSuccess={fetchTickets}
+          onSubmit={async (paidBy, paymentMode, paidAmount) => {
+            if (!paymentTicket) return;
+            await savePayment({
+              ticketId: paymentTicket.id,
+              receivedByName: paidBy,
+              paymentMode,
+              paidAmount,
+              paidAt: new Date().toISOString(),
+            });
+            setPaymentTicket(null);
+          }}
         />
       </div>
     </Layout>
