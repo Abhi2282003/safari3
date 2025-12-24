@@ -17,8 +17,9 @@ export const PrintTicket = forwardRef<HTMLDivElement, PrintTicketProps>(
   ({ ticket, settings }, ref) => {
     const ticketNumberShort = ticket.ticketNo.split("-").pop() || ticket.ticketNo;
 
-    const ticketWidth = settings.ticketWidth || 280;
-    const ticketHeight = settings.ticketHeight || 140;
+    // Fixed ticket size: 25.5cm × 10.5cm
+    const ticketWidth = 255; // mm
+    const ticketHeight = 105; // mm
 
     const companyPhone = settings.phone?.trim();
     const companyAddress = settings.address?.trim();
