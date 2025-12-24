@@ -9,7 +9,8 @@ import {
   CalendarIcon,
   Search,
   Download,
-  Filter
+  Filter,
+  Users
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -51,6 +52,21 @@ export default function Dashboard() {
   }, [tickets, selectedDate]);
 
   const stats = useMemo(() => calculateStats(dateTickets, travels), [dateTickets, travels]);
+
+  // Calculate booked by summary
+  const bookedBySummary = useMemo(() => {
+    const summary: Record<string, { count: number; total: number }> = {};
+    dateTickets.forEach((ticket) => {
+      const bookedBy = ticket.bookedBy || 'Unknown';
+      const baseAmount = ticket.surcharges ? ticket.amount - ticket.surcharges : ticket.amount;
+      if (!summary[bookedBy]) {
+        summary[bookedBy] = { count: 0, total: 0 };
+      }
+      summary[bookedBy].count += 1;
+      summary[bookedBy].total += baseAmount;
+    });
+    return Object.entries(summary).sort((a, b) => b[1].total - a[1].total);
+  }, [dateTickets]);
 
   // Memoize filtered tickets
   const filteredTickets = useMemo(() => {
@@ -158,6 +174,27 @@ export default function Dashboard() {
             variant="destructive"
           />
         </div>
+
+        {/* Booked By Summary */}
+        {bookedBySummary.length > 0 && (
+          <div className="mb-8 rounded-lg border bg-card p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Booked By Summary</h3>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {bookedBySummary.map(([name, data]) => (
+                <div key={name} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                  <div>
+                    <p className="font-medium text-foreground">{name}</p>
+                    <p className="text-sm text-muted-foreground">{data.count} ticket{data.count > 1 ? 's' : ''}</p>
+                  </div>
+                  <p className="font-semibold text-primary">₹{data.total.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
