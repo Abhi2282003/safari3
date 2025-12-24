@@ -42,7 +42,7 @@ const calculateReportingTime = (depTime: string): string => {
 export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getTicketById, saveTicket } = useTickets();
+  const { tickets, saveTicket } = useTickets();
   const { receivers } = useReceivers();
   const { travels } = useTravels();
   const { pickups } = usePickupLocations();
@@ -72,7 +72,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
 
   useEffect(() => {
     if (mode === 'edit' && ticketId) {
-      const ticket = getTicketById(ticketId);
+      const ticket = tickets.find((t) => t.id === ticketId);
       if (ticket) {
         setFormData({
           passengerName: ticket.passengerName,
@@ -97,7 +97,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
         });
       }
     }
-  }, [ticketId, mode, getTicketById]);
+  }, [ticketId, mode, tickets]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +128,7 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
     setIsSubmitting(true);
 
     try {
-      const existingTicket = ticketId ? getTicketById(ticketId) : null;
+      const existingTicket = ticketId ? tickets.find((t) => t.id === ticketId) : null;
       const surcharges = parseFloat(formData.surcharges) || 0;
       const totalAmount = baseAmount + surcharges;
       const repTime = calculateReportingTime(formData.depTime);
