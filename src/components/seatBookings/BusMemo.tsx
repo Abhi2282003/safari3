@@ -64,7 +64,7 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     const agentGroups = useMemo(() => groupBookings(agentBookings, 15), [agentBookings]);
     const selfGroups = useMemo(() => groupBookings(selfBookings, 15), [selfBookings]);
 
-    // Calculate totals
+    // Calculate totals for agent and self
     const agentTotal = agentBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
     const agentDeduction = agentBookings.reduce((sum, b) => sum + (b.bookingAmount * 0.15), 0);
     const agentNet = agentTotal - agentDeduction;
@@ -73,23 +73,31 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     const selfDeduction = selfBookings.reduce((sum, b) => sum + (b.bookingAmount * 0.15), 0);
     const selfNet = selfTotal - selfDeduction;
 
-    // Online: just show total minus deduction (5%)
+    // Online: 5% commission - owner gets 95%
     const onlineTotal = onlineBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
-    const onlineDeduction = onlineBookings.reduce((sum, b) => sum + b.ourEarning, 0);
-    const onlineNet = onlineTotal - onlineDeduction;
+    const onlineCommission = onlineBookings.reduce((sum, b) => sum + b.ourEarning, 0); // 5%
+    const onlineNet = onlineTotal - onlineCommission;
 
-    // Return: just show total minus deduction (5%), nothing to owner
+    // Return: 5% commission - owner gets NOTHING (company bus)
     const returnTotal = returnBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
-    const returnDeduction = returnBookings.reduce((sum, b) => sum + b.ourEarning, 0);
-    // Return net is 0 for owner (we keep nothing to owner)
+    const returnCommission = returnBookings.reduce((sum, b) => sum + b.ourEarning, 0); // 5%
+    // Return net to owner is 0
 
     // Luggage: 30% commission, 70% to owner
     const luggageTotal = luggageBookings.reduce((sum, b) => sum + b.totalAmount, 0);
     const luggageToOwner = luggageBookings.reduce((sum, b) => sum + b.amountToOwner, 0);
 
-    // Grand total to pay owner
-    const totalSeatsToOwner = agentNet + selfNet + onlineNet;
-    const grandTotalToOwner = totalSeatsToOwner + luggageToOwner;
+    // Total deductions to show (online commission + full return amount since nothing goes to owner)
+    const otherDeductions = onlineCommission + returnTotal;
+
+    // Subtotal from agent + self
+    const agentSelfSubtotal = agentNet + selfNet;
+
+    // Add online net (what owner gets from online)
+    const seatsSubtotal = agentSelfSubtotal + onlineNet;
+
+    // Grand total to pay owner (return adds nothing)
+    const grandTotalToOwner = seatsSubtotal + luggageToOwner;
 
     return (
       <div ref={ref} className="p-6 bg-white text-black min-w-[400px] font-mono text-sm relative">
@@ -193,27 +201,27 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
             </div>
           )}
 
-          {/* Online Bookings - Just show deducted amount */}
+          <hr className="border-black my-3" />
+
+          {/* Subtotal from Agent + Self */}
+          <div className="flex justify-between text-sm mb-2">
+            <span>Agent + Self Net</span>
+            <span>₹{agentSelfSubtotal.toFixed(0)}</span>
+          </div>
+
+          {/* Online net (add to total - don't show separately, just the net amount) */}
           {onlineBookings.length > 0 && (
-            <div className="mb-4">
-              <div className="flex justify-between items-center bg-blue-100 px-2 py-1">
-                <span className="font-bold text-sm">ONLINE ({onlineBookings.length} seats)</span>
-                <span className="text-sm">
-                  ₹{onlineTotal} - ₹{onlineDeduction.toFixed(0)} = <strong>₹{onlineNet.toFixed(0)}</strong>
-                </span>
-              </div>
+            <div className="flex justify-between text-sm mb-2">
+              <span>+ Online ({onlineBookings.length} seats, after 5% deduction)</span>
+              <span>+ ₹{onlineNet.toFixed(0)}</span>
             </div>
           )}
 
-          {/* Return Bookings - Just show deducted amount (nothing to owner) */}
+          {/* Return deduction (full amount since nothing goes to owner) */}
           {returnBookings.length > 0 && (
-            <div className="mb-4">
-              <div className="flex justify-between items-center bg-purple-100 px-2 py-1">
-                <span className="font-bold text-sm">RETURN ({returnBookings.length} seats)</span>
-                <span className="text-sm">
-                  ₹{returnTotal} - ₹{returnDeduction.toFixed(0)} = <strong>₹0</strong> (Company Bus)
-                </span>
-              </div>
+            <div className="flex justify-between text-sm text-red-600 mb-2">
+              <span>- Return ({returnBookings.length} seats, Company Bus)</span>
+              <span>- ₹{returnTotal.toFixed(0)}</span>
             </div>
           )}
 
@@ -222,27 +230,17 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
           {/* Seats Subtotal */}
           <div className="flex justify-between text-base font-semibold mb-3">
             <span>SEATS SUBTOTAL</span>
-            <span>₹{totalSeatsToOwner.toFixed(0)}</span>
+            <span>₹{seatsSubtotal.toFixed(0)}</span>
           </div>
 
           {/* Luggage */}
           {luggageBookings.length > 0 && (
-            <div className="mb-3">
-              <div className="flex justify-between items-center bg-gray-100 px-2 py-1">
-                <span className="font-bold text-sm">LUGGAGE ({luggageBookings.length} items)</span>
-                <span className="text-sm">
-                  ₹{luggageTotal} - 30% = <strong>₹{luggageToOwner.toFixed(0)}</strong>
-                </span>
+            <>
+              <div className="flex justify-between text-sm mb-2 bg-gray-100 px-2 py-1">
+                <span>Luggage ({luggageBookings.length} items, after 30%)</span>
+                <span>+ ₹{luggageToOwner.toFixed(0)}</span>
               </div>
-            </div>
-          )}
-
-          {/* Add luggage to total */}
-          {luggageBookings.length > 0 && (
-            <div className="flex justify-between text-sm mb-2 px-2">
-              <span>+ Luggage to Owner</span>
-              <span>+ ₹{luggageToOwner.toFixed(0)}</span>
-            </div>
+            </>
           )}
 
           <hr className="border-black border-double my-3" />
