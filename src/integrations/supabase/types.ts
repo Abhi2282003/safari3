@@ -599,7 +599,7 @@ export type Database = {
       next_ticket_no: { Args: never; Returns: string }
     }
     Enums: {
-      booking_type: "online" | "agent" | "self"
+      booking_type: "online" | "agent" | "self" | "return"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -727,7 +727,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      booking_type: ["online", "agent", "self"],
+      booking_type: ["online", "agent", "self", "return"],
     },
   },
 } as const

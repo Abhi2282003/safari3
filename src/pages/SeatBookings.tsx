@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { format, addDays } from 'date-fns';
 import { useReactToPrint } from 'react-to-print';
 import { Layout } from '@/components/layout/Layout';
@@ -33,11 +33,14 @@ import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
 import { BusMemo } from '@/components/seatBookings/BusMemo';
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TOTAL_SEATS = 36;
 const MEMO_PASSWORD = 'safari123';
 
 export default function SeatBookings() {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [busName, setBusName] = useState('');
   const [busConfirmed, setBusConfirmed] = useState(false);
@@ -51,6 +54,30 @@ export default function SeatBookings() {
   
   const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
   const [memoPassword, setMemoPassword] = useState('');
+  
+  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string }>({
+    name: 'ROYAL SAFARI',
+    logoUrl: '',
+  });
+
+  // Fetch company settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('company_settings')
+        .select('name, logo_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setCompanySettings({
+          name: data.name || 'ROYAL SAFARI',
+          logoUrl: data.logo_url || '',
+        });
+      }
+    };
+    fetchSettings();
+  }, [user]);
 
   const { seatBookings, loading, getSeatsByDate, saveSeatBooking, markCollected, deleteSeatBooking } = useSeatBookings();
   const { luggageBookings, loading: luggageLoading, saveLuggageBooking, deleteLuggageBooking, getLuggageByDateAndBus } = useLuggageBookings();
@@ -242,12 +269,14 @@ export default function SeatBookings() {
     const online = busBookings.filter((b) => b.bookingType === 'online');
     const agent = busBookings.filter((b) => b.bookingType === 'agent');
     const self = busBookings.filter((b) => b.bookingType === 'self');
+    const returnBookings = busBookings.filter((b) => b.bookingType === 'return');
 
     return {
       total: busBookings.length,
       online: online.length,
       agent: agent.length,
       self: self.length,
+      return: returnBookings.length,
       luggageCount: busLuggage.length,
     };
   }, [busBookings, busLuggage]);
@@ -333,39 +362,24 @@ export default function SeatBookings() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <Label>Bus Number / Name</Label>
-                <Input
+                <Label>Select Bus</Label>
+                <Select
                   value={busName}
-                  onChange={(e) => { 
-                    setBusName(e.target.value); 
-                    setBusConfirmed(false); 
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && busName.trim()) {
-                      setBusConfirmed(true);
-                    }
-                  }}
-                  placeholder="Enter bus number and press Enter"
-                  className="mt-1"
-                />
+                  onValueChange={(v) => { setBusName(v); setBusConfirmed(true); }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select a bus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBuses.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-
-            {availableBuses.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <span className="text-sm text-muted-foreground">Available:</span>
-                {availableBuses.map((b) => (
-                  <Badge
-                    key={b}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-muted"
-                    onClick={() => { setBusName(b); setBusConfirmed(true); }}
-                  >
-                    {b}
-                  </Badge>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -386,7 +400,7 @@ export default function SeatBookings() {
                     <span>Booked Seats</span>
                     <span className="font-medium">{busSummary.total} / {TOTAL_SEATS}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="grid grid-cols-4 gap-2 text-center">
                     <div className="p-2 bg-blue-500/10 rounded">
                       <p className="text-lg font-semibold text-blue-600">{busSummary.online}</p>
                       <p className="text-xs text-muted-foreground">Online</p>
@@ -398,6 +412,10 @@ export default function SeatBookings() {
                     <div className="p-2 bg-green-500/10 rounded">
                       <p className="text-lg font-semibold text-green-600">{busSummary.self}</p>
                       <p className="text-xs text-muted-foreground">Self</p>
+                    </div>
+                    <div className="p-2 bg-purple-500/10 rounded">
+                      <p className="text-lg font-semibold text-purple-600">{busSummary.return}</p>
+                      <p className="text-xs text-muted-foreground">Return</p>
                     </div>
                   </div>
                   <div className="flex justify-between text-muted-foreground pt-2 border-t">
@@ -466,6 +484,10 @@ export default function SeatBookings() {
                   <div className="w-4 h-4 rounded bg-green-500" />
                   <span>Self</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-purple-500" />
+                  <span>Return</span>
+                </div>
               </div>
             </div>
 
@@ -487,6 +509,7 @@ export default function SeatBookings() {
                     if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
                     if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
                     if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
+                    if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white';
 
                     return (
                       <button
@@ -537,6 +560,7 @@ export default function SeatBookings() {
                     <SelectItem value="online">Online</SelectItem>
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="self">Self</SelectItem>
+                    <SelectItem value="return">Return</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -723,6 +747,8 @@ export default function SeatBookings() {
             busName={busName}
             seatBookings={busBookings}
             luggageBookings={busLuggage}
+            companyName={companySettings.name}
+            companyLogo={companySettings.logoUrl}
           />
         </div>
       </div>
