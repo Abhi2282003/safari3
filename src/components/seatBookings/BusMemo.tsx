@@ -2,7 +2,6 @@ import { forwardRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { SeatBooking } from '@/hooks/useSeatBookings';
 import { LuggageBooking } from '@/hooks/useLuggageBookings';
-import watermarkLogo from '@/assets/royal-safari-watermark.png';
 
 interface BusMemoProps {
   date: Date;
@@ -93,63 +92,51 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     return (
       <div 
         ref={ref} 
-        className="p-6 bg-white text-gray-800 min-w-[420px] max-w-[500px] relative border border-gray-200"
-        style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
+        className="p-8 bg-amber-50/50 text-gray-800 min-h-[700px] flex flex-col"
+        style={{ 
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          width: '100%',
+          maxWidth: '550px'
+        }}
       >
-        {/* Watermark */}
-        <div 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{ zIndex: 0 }}
-        >
-          <img 
-            src={watermarkLogo} 
-            alt="" 
-            className="w-64 h-64 object-contain opacity-[0.08]" 
-          />
-        </div>
-
         {/* Content */}
-        <div className="relative" style={{ zIndex: 1 }}>
+        <div className="flex-1 flex flex-col">
           {/* Hindi Blessing at top */}
-          <div className="text-center mb-2">
-            <p className="text-red-600 font-bold text-base">
+          <div className="text-center mb-3">
+            <p className="text-red-600 font-bold text-lg">
               || श्री गजानन महाराज प्रसन्न ||
             </p>
           </div>
 
           {/* Header */}
-          <div className="text-center mb-4 pb-3 border-b-2 border-orange-400">
-            <h1 className="text-2xl font-bold text-orange-600 tracking-wide">{companyName}</h1>
+          <div className="text-center mb-6 pb-4 border-b-2 border-amber-300">
+            <h1 className="text-2xl font-bold text-amber-800 tracking-wide">{companyName}</h1>
             {companyAddress && (
               <p className="text-xs text-gray-600 mt-1">{companyAddress}</p>
             )}
             
-            <div className="flex justify-center gap-6 mt-3 text-sm">
+            <div className="flex justify-center gap-10 mt-4">
               <div className="text-center">
                 <span className="text-xs text-gray-500 block">Date</span>
-                <span className="font-semibold">{format(date, 'dd/MM/yyyy')}</span>
+                <span className="font-semibold text-gray-800">{format(date, 'dd/MM/yyyy')}</span>
               </div>
               <div className="text-center">
                 <span className="text-xs text-gray-500 block">Bus</span>
-                <span className="font-semibold">{busName}</span>
-              </div>
-              <div className="text-center">
-                <span className="text-xs text-gray-500 block">Total Seats</span>
-                <span className="font-semibold">{mainBookings.length}</span>
+                <span className="font-semibold text-gray-800">{busName}</span>
               </div>
             </div>
           </div>
 
           {/* Combined Bookings */}
           {mainGroups.length > 0 && (
-            <div className="mb-4">
-              <h2 className="font-bold text-sm bg-orange-100 px-3 py-1.5 border-l-4 border-orange-500 mb-2">
+            <div className="mb-6 flex-1">
+              <h2 className="font-bold text-sm bg-amber-100 px-3 py-2 border-l-4 border-amber-500 mb-3 text-amber-800">
                 BOOKINGS
               </h2>
-              <table className="w-full text-xs">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-300 text-gray-600">
-                    <th className="text-left py-1.5 font-semibold">Destination</th>
+                  <tr className="border-b-2 border-amber-200 text-gray-600">
+                    <th className="text-left py-2 font-semibold">Destination</th>
                     <th className="text-center font-semibold">Rate</th>
                     <th className="text-center font-semibold">Seats</th>
                     <th className="text-right font-semibold">Amount</th>
@@ -159,20 +146,20 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
                 </thead>
                 <tbody>
                   {mainGroups.map((g, i) => (
-                    <tr key={i} className="border-b border-gray-100">
-                      <td className="py-1.5 font-medium">{g.destination}</td>
+                    <tr key={i} className="border-b border-amber-100">
+                      <td className="py-2 font-medium text-gray-800">{g.destination}</td>
                       <td className="text-center text-gray-600">₹{g.rate}</td>
-                      <td className="text-center text-gray-600 text-[10px]">{g.seats.join(', ')}</td>
-                      <td className="text-right">₹{g.totalAmount}</td>
+                      <td className="text-center text-gray-600 text-xs">{g.seats.join(', ')}</td>
+                      <td className="text-right text-gray-800">₹{g.totalAmount}</td>
                       <td className="text-right text-red-500">-₹{g.deduction.toFixed(0)}</td>
-                      <td className="text-right font-semibold">₹{g.netAmount.toFixed(0)}</td>
+                      <td className="text-right font-semibold text-gray-800">₹{g.netAmount.toFixed(0)}</td>
                     </tr>
                   ))}
-                  <tr className="font-bold bg-gray-50">
-                    <td colSpan={3} className="py-1.5">Total</td>
-                    <td className="text-right">₹{mainTotal}</td>
+                  <tr className="font-bold bg-amber-100/70">
+                    <td colSpan={3} className="py-2 text-amber-800">Total</td>
+                    <td className="text-right text-gray-800">₹{mainTotal}</td>
                     <td className="text-right text-red-500">-₹{mainDeduction.toFixed(0)}</td>
-                    <td className="text-right">₹{mainNet.toFixed(0)}</td>
+                    <td className="text-right text-gray-800">₹{mainNet.toFixed(0)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -180,35 +167,35 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
           )}
 
           {/* Summary Section */}
-          <div className="bg-gray-50 rounded p-3 text-sm">
-            <div className="flex justify-between mb-1.5 pb-1.5 border-b border-dashed border-gray-300">
+          <div className="bg-amber-100/50 rounded-lg p-4 text-sm mt-auto">
+            <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-amber-300">
               <span className="text-gray-600">Seats Subtotal</span>
-              <span className="font-medium">₹{seatsSubtotal.toFixed(0)}</span>
+              <span className="font-medium text-gray-800">₹{seatsSubtotal.toFixed(0)}</span>
             </div>
 
             {otherCommission > 0 && (
-              <div className="flex justify-between mb-1.5 pb-1.5 border-b border-dashed border-gray-300">
+              <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-amber-300">
                 <span className="text-red-600">Less (5%)</span>
                 <span className="text-red-600 font-medium">- ₹{otherCommission.toFixed(0)}</span>
               </div>
             )}
 
             {luggageToOwner > 0 && (
-              <div className="flex justify-between mb-1.5 pb-1.5 border-b border-dashed border-gray-300">
+              <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-amber-300">
                 <span className="text-gray-600">+ Luggage</span>
-                <span className="font-medium">+ ₹{luggageToOwner.toFixed(0)}</span>
+                <span className="font-medium text-gray-800">+ ₹{luggageToOwner.toFixed(0)}</span>
               </div>
             )}
 
             {/* Final Total */}
-            <div className="flex justify-between items-center font-bold bg-green-600 text-white px-3 py-2 rounded mt-2 -mx-1">
-              <span>TOTAL PAYABLE</span>
-              <span className="text-lg">₹{grandTotalToOwner.toFixed(0)}</span>
+            <div className="flex justify-between items-center font-bold text-gray-900 px-4 py-3 bg-amber-200/60 rounded-lg mt-3 border-2 border-amber-400">
+              <span className="text-lg">TOTAL PAYABLE</span>
+              <span className="text-xl">₹{grandTotalToOwner.toFixed(0)}</span>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="text-center text-[10px] text-gray-400 mt-3 pt-2 border-t border-gray-200">
+          <div className="text-center text-xs text-gray-400 mt-6 pt-3 border-t border-amber-200">
             Generated: {format(new Date(), 'dd/MM/yyyy, hh:mm a')}
           </div>
         </div>
