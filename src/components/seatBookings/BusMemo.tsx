@@ -2,6 +2,7 @@ import { forwardRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { SeatBooking } from '@/hooks/useSeatBookings';
 import { LuggageBooking } from '@/hooks/useLuggageBookings';
+import watermarkLogo from '@/assets/royal-safari-watermark.png';
 
 interface BusMemoProps {
   date: Date;
@@ -92,148 +93,182 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     const grandTotalToOwner = afterDeduction + luggageToOwner;
 
     return (
-      <div ref={ref} className="p-6 bg-white text-black min-w-[400px] font-mono text-sm relative">
+      <div 
+        ref={ref} 
+        className="p-8 bg-gradient-to-br from-amber-50 to-orange-50 text-gray-800 min-w-[450px] relative overflow-hidden"
+        style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
+      >
+        {/* Decorative corners */}
+        <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-orange-400 rounded-tl-lg" />
+        <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-orange-400 rounded-tr-lg" />
+        <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-orange-400 rounded-bl-lg" />
+        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-orange-400 rounded-br-lg" />
+
         {/* Watermark */}
         <div 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
           style={{ zIndex: 0 }}
         >
-          {companyLogo ? (
-            <img src={companyLogo} alt="" className="w-64 h-64 object-contain" />
-          ) : (
-            <div className="text-8xl font-bold text-gray-400 rotate-[-30deg]">
-              {companyName}
-            </div>
-          )}
+          <img 
+            src={watermarkLogo} 
+            alt="" 
+            className="w-80 h-80 object-contain opacity-10" 
+          />
         </div>
 
         {/* Content */}
         <div className="relative" style={{ zIndex: 1 }}>
+          {/* Hindi Blessing at top */}
+          <div className="text-center mb-3">
+            <p className="text-red-600 font-bold text-lg tracking-wide">
+              || श्री गजानन महाराज प्रसन्न ||
+            </p>
+          </div>
+
           {/* Header */}
-          <div className="text-center mb-4 border-b-2 border-black pb-3">
-            <h1 className="text-2xl font-bold">{companyName}</h1>
-            <p className="text-lg font-semibold mt-1">BUS SETTLEMENT MEMO</p>
-            <div className="flex justify-center gap-8 mt-2 text-sm">
-              <span><strong>Date:</strong> {format(date, 'dd/MM/yyyy')}</span>
-              <span><strong>Bus:</strong> {busName}</span>
+          <div className="text-center mb-6 pb-4 border-b-2 border-orange-300">
+            <h1 className="text-3xl font-bold text-orange-600 tracking-wider">{companyName}</h1>
+            <p className="text-sm text-gray-600 italic mt-1">Makes Your Journey Royal</p>
+            
+            <div className="flex justify-center gap-8 mt-4">
+              <div className="bg-white/70 px-4 py-2 rounded-lg shadow-sm">
+                <span className="text-xs text-gray-500 block">Date</span>
+                <span className="font-semibold text-gray-800">{format(date, 'dd MMM yyyy')}</span>
+              </div>
+              <div className="bg-white/70 px-4 py-2 rounded-lg shadow-sm">
+                <span className="text-xs text-gray-500 block">Bus</span>
+                <span className="font-semibold text-gray-800">{busName}</span>
+              </div>
             </div>
           </div>
 
           {/* Agent Bookings - Grouped */}
           {agentGroups.length > 0 && (
-            <div className="mb-4">
-              <h2 className="font-bold text-sm bg-amber-100 px-2 py-1 mb-2">AGENT BOOKINGS ({agentBookings.length} seats)</h2>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-1">Destination</th>
-                    <th className="text-center">Rate</th>
-                    <th className="text-center">Seats</th>
-                    <th className="text-right">Amount</th>
-                    <th className="text-right text-red-600">-15%</th>
-                    <th className="text-right font-semibold">Net</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {agentGroups.map((g, i) => (
-                    <tr key={i} className="border-b border-dashed">
-                      <td className="py-1">{g.destination}</td>
-                      <td className="text-center">₹{g.rate}</td>
-                      <td className="text-center">{g.seats.join(', ')}</td>
-                      <td className="text-right">₹{g.totalAmount}</td>
-                      <td className="text-right text-red-600">-₹{g.deduction.toFixed(0)}</td>
-                      <td className="text-right font-semibold">₹{g.netAmount.toFixed(0)}</td>
+            <div className="mb-5">
+              <h2 className="font-bold text-sm bg-gradient-to-r from-amber-200 to-amber-100 px-3 py-2 rounded-t-lg border-b-2 border-amber-300 flex items-center gap-2">
+                <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                AGENT BOOKINGS 
+                <span className="ml-auto bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{agentBookings.length} seats</span>
+              </h2>
+              <div className="bg-white/60 rounded-b-lg p-3">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-amber-200 text-gray-600">
+                      <th className="text-left py-2 font-medium">Destination</th>
+                      <th className="text-center font-medium">Rate</th>
+                      <th className="text-center font-medium">Seats</th>
+                      <th className="text-right font-medium">Amount</th>
+                      <th className="text-right text-red-500 font-medium">-15%</th>
+                      <th className="text-right font-semibold">Net</th>
                     </tr>
-                  ))}
-                  <tr className="font-bold border-t-2 border-black">
-                    <td colSpan={3} className="py-1">Agent Total</td>
-                    <td className="text-right">₹{agentTotal}</td>
-                    <td className="text-right text-red-600">-₹{agentDeduction.toFixed(0)}</td>
-                    <td className="text-right">₹{agentNet.toFixed(0)}</td>
-                  </tr>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {agentGroups.map((g, i) => (
+                      <tr key={i} className="border-b border-amber-100 hover:bg-amber-50/50">
+                        <td className="py-2 font-medium">{g.destination}</td>
+                        <td className="text-center text-gray-600">₹{g.rate}</td>
+                        <td className="text-center text-gray-600">{g.seats.join(', ')}</td>
+                        <td className="text-right">₹{g.totalAmount}</td>
+                        <td className="text-right text-red-500">-₹{g.deduction.toFixed(0)}</td>
+                        <td className="text-right font-bold text-green-700">₹{g.netAmount.toFixed(0)}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-bold bg-amber-100/50">
+                      <td colSpan={3} className="py-2 text-amber-800">Agent Total</td>
+                      <td className="text-right">₹{agentTotal}</td>
+                      <td className="text-right text-red-500">-₹{agentDeduction.toFixed(0)}</td>
+                      <td className="text-right text-green-700">₹{agentNet.toFixed(0)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {/* Self Bookings - Grouped */}
           {selfGroups.length > 0 && (
-            <div className="mb-4">
-              <h2 className="font-bold text-sm bg-green-100 px-2 py-1 mb-2">SELF BOOKINGS ({selfBookings.length} seats)</h2>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-1">Destination</th>
-                    <th className="text-center">Rate</th>
-                    <th className="text-center">Seats</th>
-                    <th className="text-right">Amount</th>
-                    <th className="text-right text-red-600">-15%</th>
-                    <th className="text-right font-semibold">Net</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selfGroups.map((g, i) => (
-                    <tr key={i} className="border-b border-dashed">
-                      <td className="py-1">{g.destination}</td>
-                      <td className="text-center">₹{g.rate}</td>
-                      <td className="text-center">{g.seats.join(', ')}</td>
-                      <td className="text-right">₹{g.totalAmount}</td>
-                      <td className="text-right text-red-600">-₹{g.deduction.toFixed(0)}</td>
-                      <td className="text-right font-semibold">₹{g.netAmount.toFixed(0)}</td>
+            <div className="mb-5">
+              <h2 className="font-bold text-sm bg-gradient-to-r from-green-200 to-green-100 px-3 py-2 rounded-t-lg border-b-2 border-green-300 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                SELF BOOKINGS 
+                <span className="ml-auto bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">{selfBookings.length} seats</span>
+              </h2>
+              <div className="bg-white/60 rounded-b-lg p-3">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-green-200 text-gray-600">
+                      <th className="text-left py-2 font-medium">Destination</th>
+                      <th className="text-center font-medium">Rate</th>
+                      <th className="text-center font-medium">Seats</th>
+                      <th className="text-right font-medium">Amount</th>
+                      <th className="text-right text-red-500 font-medium">-15%</th>
+                      <th className="text-right font-semibold">Net</th>
                     </tr>
-                  ))}
-                  <tr className="font-bold border-t-2 border-black">
-                    <td colSpan={3} className="py-1">Self Total</td>
-                    <td className="text-right">₹{selfTotal}</td>
-                    <td className="text-right text-red-600">-₹{selfDeduction.toFixed(0)}</td>
-                    <td className="text-right">₹{selfNet.toFixed(0)}</td>
-                  </tr>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {selfGroups.map((g, i) => (
+                      <tr key={i} className="border-b border-green-100 hover:bg-green-50/50">
+                        <td className="py-2 font-medium">{g.destination}</td>
+                        <td className="text-center text-gray-600">₹{g.rate}</td>
+                        <td className="text-center text-gray-600">{g.seats.join(', ')}</td>
+                        <td className="text-right">₹{g.totalAmount}</td>
+                        <td className="text-right text-red-500">-₹{g.deduction.toFixed(0)}</td>
+                        <td className="text-right font-bold text-green-700">₹{g.netAmount.toFixed(0)}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-bold bg-green-100/50">
+                      <td colSpan={3} className="py-2 text-green-800">Self Total</td>
+                      <td className="text-right">₹{selfTotal}</td>
+                      <td className="text-right text-red-500">-₹{selfDeduction.toFixed(0)}</td>
+                      <td className="text-right text-green-700">₹{selfNet.toFixed(0)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          <hr className="border-black my-3" />
-
-          {/* Subtotal from Agent + Self */}
-          <div className="flex justify-between text-sm mb-1">
-            <span>Seats Total</span>
-            <span>₹{seatsSubtotal.toFixed(0)}</span>
-          </div>
-
-          {/* Show 5% deduction if there are online/return bookings */}
-          {otherCommission > 0 && (
-            <div className="flex justify-between text-sm text-red-600 mb-1">
-              <span>Less (5%)</span>
-              <span>- ₹{otherCommission.toFixed(0)}</span>
+          {/* Summary Section */}
+          <div className="bg-white/70 rounded-lg p-4 shadow-sm border border-orange-200">
+            {/* Subtotal from Agent + Self */}
+            <div className="flex justify-between text-sm mb-2 pb-2 border-b border-dashed border-gray-300">
+              <span className="text-gray-600">Seats Total (After 15% Commission)</span>
+              <span className="font-medium">₹{seatsSubtotal.toFixed(0)}</span>
             </div>
-          )}
 
-          {/* Seats subtotal after deduction */}
-          <div className="flex justify-between text-base font-semibold mb-2">
-            <span>SEATS SUBTOTAL</span>
-            <span>₹{afterDeduction.toFixed(0)}</span>
-          </div>
+            {/* Show 5% deduction if there are online/return bookings */}
+            {otherCommission > 0 && (
+              <div className="flex justify-between text-sm mb-2 pb-2 border-b border-dashed border-gray-300">
+                <span className="text-red-600">Less: Online/Return Commission (5%)</span>
+                <span className="text-red-600 font-medium">- ₹{otherCommission.toFixed(0)}</span>
+              </div>
+            )}
 
-          {/* Luggage */}
-          {luggageToOwner > 0 && (
-            <div className="flex justify-between text-sm mb-2">
-              <span>+ Luggage</span>
-              <span>+ ₹{luggageToOwner.toFixed(0)}</span>
+            {/* Seats subtotal after deduction */}
+            <div className="flex justify-between text-base font-semibold mb-2 pb-2 border-b border-dashed border-gray-300">
+              <span>SEATS SUBTOTAL</span>
+              <span className="text-orange-600">₹{afterDeduction.toFixed(0)}</span>
             </div>
-          )}
 
-          <hr className="border-black border-double my-3" />
+            {/* Luggage */}
+            {luggageToOwner > 0 && (
+              <div className="flex justify-between text-sm mb-2 pb-2 border-b border-dashed border-gray-300">
+                <span className="text-blue-600">+ Luggage (70% to Owner)</span>
+                <span className="text-blue-600 font-medium">+ ₹{luggageToOwner.toFixed(0)}</span>
+              </div>
+            )}
 
-          {/* Final Pay to Owner - simplified label */}
-          <div className="flex justify-between text-xl font-bold bg-green-200 px-3 py-2 rounded">
-            <span>TOTAL PAYABLE</span>
-            <span>₹{grandTotalToOwner.toFixed(0)}</span>
+            {/* Final Pay to Owner */}
+            <div className="flex justify-between items-center text-xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg mt-3 shadow-md">
+              <span>TOTAL PAYABLE</span>
+              <span className="text-2xl">₹{grandTotalToOwner.toFixed(0)}</span>
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs text-gray-500 mt-4 pt-2 border-t">
-            Generated on {format(new Date(), 'dd MMM yyyy, HH:mm')}
+          <div className="text-center text-xs text-gray-500 mt-6 pt-3 border-t border-orange-200">
+            <p className="font-medium text-orange-600">Thank You for Your Business!</p>
+            <p className="mt-1">Generated on {format(new Date(), 'dd MMM yyyy, hh:mm a')}</p>
           </div>
         </div>
       </div>
