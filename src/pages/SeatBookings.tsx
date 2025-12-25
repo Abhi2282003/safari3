@@ -54,6 +54,7 @@ export default function SeatBookings() {
   
   const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
   const [memoPassword, setMemoPassword] = useState('');
+  const [memoPreviewOpen, setMemoPreviewOpen] = useState(false);
   
   const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string }>({
     name: 'ROYAL SAFARI',
@@ -254,10 +255,14 @@ export default function SeatBookings() {
   const handleMemoPasswordSubmit = () => {
     if (memoPassword === MEMO_PASSWORD) {
       setMemoPasswordDialog(false);
-      setTimeout(() => handlePrint(), 100);
+      setMemoPreviewOpen(true);
     } else {
       toast.error('Incorrect password');
     }
+  };
+
+  const handlePrintFromPreview = () => {
+    handlePrint();
   };
 
   const amounts = useMemo(() => {
@@ -735,6 +740,30 @@ export default function SeatBookings() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setMemoPasswordDialog(false)}>Cancel</Button>
               <Button onClick={handleMemoPasswordSubmit}>Generate</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Memo Preview Dialog */}
+        <Dialog open={memoPreviewOpen} onOpenChange={setMemoPreviewOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Memo Preview</DialogTitle>
+              <DialogDescription>Review the memo before printing</DialogDescription>
+            </DialogHeader>
+            <div className="border rounded-lg overflow-auto max-h-[60vh]">
+              <BusMemo
+                date={selectedDate}
+                busName={busName}
+                seatBookings={busBookings}
+                luggageBookings={busLuggage}
+                companyName={companySettings.name}
+                companyLogo={companySettings.logoUrl}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setMemoPreviewOpen(false)}>Close</Button>
+              <Button onClick={handlePrintFromPreview}>Print</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

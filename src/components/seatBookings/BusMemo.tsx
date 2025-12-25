@@ -201,35 +201,19 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
             <span>₹{seatsSubtotal.toFixed(0)}</span>
           </div>
 
-          {/* 5% Commission deduction (from online/return - just the amount, no labels) */}
-          {otherCommission > 0 && (
-            <div className="flex justify-between text-sm text-red-600 mb-2">
-              <span>Less: Commission (5%)</span>
-              <span>- ₹{otherCommission.toFixed(0)}</span>
-            </div>
-          )}
-
-          {/* After deduction */}
-          {otherCommission > 0 && (
-            <div className="flex justify-between text-sm mb-2">
-              <span>After Deduction</span>
-              <span>₹{afterDeduction.toFixed(0)}</span>
-            </div>
-          )}
-
-          {/* Luggage to owner */}
+          {/* Luggage */}
           {luggageToOwner > 0 && (
             <div className="flex justify-between text-sm mb-2">
-              <span>+ Luggage (to Owner)</span>
+              <span>+ Luggage</span>
               <span>+ ₹{luggageToOwner.toFixed(0)}</span>
             </div>
           )}
 
           <hr className="border-black border-double my-3" />
 
-          {/* Final Pay to Owner */}
+          {/* Final Pay to Owner - simplified label */}
           <div className="flex justify-between text-xl font-bold bg-green-200 px-3 py-2 rounded">
-            <span>PAY TO OWNER</span>
+            <span>TOTAL PAYABLE</span>
             <span>₹{grandTotalToOwner.toFixed(0)}</span>
           </div>
 
