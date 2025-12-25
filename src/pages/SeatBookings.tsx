@@ -751,12 +751,12 @@ export default function SeatBookings() {
 
         {/* Memo Preview Dialog */}
         <Dialog open={memoPreviewOpen} onOpenChange={setMemoPreviewOpen}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[95vh] overflow-auto p-0">
+            <DialogHeader className="p-4 pb-0">
               <DialogTitle>Memo Preview</DialogTitle>
               <DialogDescription>Review the memo before printing</DialogDescription>
             </DialogHeader>
-            <div className="border rounded-lg overflow-auto max-h-[60vh]">
+            <div className="overflow-auto p-4" style={{ maxHeight: 'calc(95vh - 120px)' }}>
               <BusMemo
                 date={selectedDate}
                 busName={busName}
