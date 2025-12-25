@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 
-export type BookingType = 'online' | 'agent' | 'self';
+export type BookingType = 'online' | 'agent' | 'self' | 'return';
 
 export interface Agent {
   id: string;
@@ -51,10 +51,11 @@ export interface DailyProfitSummary {
 }
 
 // Commission rates
-const COMMISSION_RATES = {
+const COMMISSION_RATES: Record<BookingType, number> = {
   online: 5,    // We earn 5%
   agent: 15,    // Total 15% (10% to agent, 5% to us)
   self: 15,     // We earn full 15%
+  return: 5,    // We earn 5%, nothing to owner (company bus return)
 };
 
 export function calculateBookingAmounts(
@@ -86,6 +87,12 @@ export function calculateBookingAmounts(
       // We earn 15%
       ourEarning = totalCommission;
       amountToOwner = totalAmount - totalCommission;
+      amountFromAgent = 0;
+      break;
+    case 'return':
+      // Company bus return - we earn 5%, nothing to owner
+      ourEarning = totalCommission;
+      amountToOwner = 0;
       amountFromAgent = 0;
       break;
   }
