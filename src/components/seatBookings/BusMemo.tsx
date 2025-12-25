@@ -92,111 +92,105 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     return (
       <div 
         ref={ref} 
-        className="p-8 bg-amber-50/50 text-gray-800 min-h-[700px] flex flex-col"
+        className="bg-amber-50 text-gray-800"
         style={{ 
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-          width: '100%',
-          maxWidth: '550px'
+          width: '210mm',
+          minHeight: '297mm',
+          padding: '15mm 20mm',
+          boxSizing: 'border-box'
         }}
       >
-        {/* Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Hindi Blessing at top */}
-          <div className="text-center mb-3">
-            <p className="text-red-600 font-bold text-lg">
-              || श्री गजानन महाराज प्रसन्न ||
-            </p>
-          </div>
+        {/* Hindi Blessing at top */}
+        <div className="text-center mb-4">
+          <p className="text-red-600 font-bold text-xl">
+            || श्री गजानन महाराज प्रसन्न ||
+          </p>
+        </div>
 
-          {/* Header */}
-          <div className="text-center mb-6 pb-4 border-b-2 border-amber-300">
-            <h1 className="text-2xl font-bold text-amber-800 tracking-wide">{companyName}</h1>
-            {companyAddress && (
-              <p className="text-xs text-gray-600 mt-1">{companyAddress}</p>
-            )}
-            
-            <div className="flex justify-center gap-10 mt-4">
-              <div className="text-center">
-                <span className="text-xs text-gray-500 block">Date</span>
-                <span className="font-semibold text-gray-800">{format(date, 'dd/MM/yyyy')}</span>
-              </div>
-              <div className="text-center">
-                <span className="text-xs text-gray-500 block">Bus</span>
-                <span className="font-semibold text-gray-800">{busName}</span>
-              </div>
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-amber-900 tracking-wide">{companyName}</h1>
+          {companyAddress && (
+            <p className="text-sm text-gray-600 mt-1">{companyAddress}</p>
+          )}
+          
+          <div className="flex justify-center gap-20 mt-6">
+            <div className="text-center">
+              <span className="text-xs text-gray-500 block">Date</span>
+              <span className="font-bold text-lg text-gray-800">{format(date, 'dd/MM/yyyy')}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-xs text-gray-500 block">Bus</span>
+              <span className="font-bold text-lg text-gray-800">{busName}</span>
             </div>
           </div>
+        </div>
 
-          {/* Combined Bookings */}
-          {mainGroups.length > 0 && (
-            <div className="mb-6 flex-1">
-              <h2 className="font-bold text-sm bg-amber-100 px-3 py-2 border-l-4 border-amber-500 mb-3 text-amber-800">
-                BOOKINGS
-              </h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-amber-200 text-gray-600">
-                    <th className="text-left py-2 font-semibold">Destination</th>
-                    <th className="text-center font-semibold">Rate</th>
-                    <th className="text-center font-semibold">Seats</th>
-                    <th className="text-right font-semibold">Amount</th>
-                    <th className="text-right text-red-600 font-semibold">-15%</th>
-                    <th className="text-right font-semibold">Net</th>
+        {/* Combined Bookings */}
+        {mainGroups.length > 0 && (
+          <div className="mb-8">
+            <h2 className="font-bold text-base bg-amber-100 px-4 py-2 border-l-4 border-amber-500 mb-4 text-amber-800">
+              BOOKINGS
+            </h2>
+            <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+              <thead>
+                <tr className="border-b-2 border-amber-300 text-gray-500">
+                  <th className="text-left py-3 font-semibold w-[22%]">Destination</th>
+                  <th className="text-center font-semibold w-[13%]">Rate</th>
+                  <th className="text-center font-semibold w-[20%]">Seats</th>
+                  <th className="text-right font-semibold w-[15%]">Amount</th>
+                  <th className="text-right text-red-500 font-semibold w-[15%]">-15%</th>
+                  <th className="text-right font-semibold w-[15%]">Net</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mainGroups.map((g, i) => (
+                  <tr key={i} className="border-b border-amber-200">
+                    <td className="py-3 font-semibold text-gray-800">{g.destination}</td>
+                    <td className="text-center text-gray-600">₹{g.rate}</td>
+                    <td className="text-center text-gray-600 text-xs">{g.seats.join(', ')}</td>
+                    <td className="text-right text-gray-800">₹{g.totalAmount}</td>
+                    <td className="text-right text-red-500">-₹{g.deduction.toFixed(0)}</td>
+                    <td className="text-right font-bold text-gray-800">₹{g.netAmount.toFixed(0)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {mainGroups.map((g, i) => (
-                    <tr key={i} className="border-b border-amber-100">
-                      <td className="py-2 font-medium text-gray-800">{g.destination}</td>
-                      <td className="text-center text-gray-600">₹{g.rate}</td>
-                      <td className="text-center text-gray-600 text-xs">{g.seats.join(', ')}</td>
-                      <td className="text-right text-gray-800">₹{g.totalAmount}</td>
-                      <td className="text-right text-red-500">-₹{g.deduction.toFixed(0)}</td>
-                      <td className="text-right font-semibold text-gray-800">₹{g.netAmount.toFixed(0)}</td>
-                    </tr>
-                  ))}
-                  <tr className="font-bold bg-amber-100/70">
-                    <td colSpan={3} className="py-2 text-amber-800">Total</td>
-                    <td className="text-right text-gray-800">₹{mainTotal}</td>
-                    <td className="text-right text-red-500">-₹{mainDeduction.toFixed(0)}</td>
-                    <td className="text-right text-gray-800">₹{mainNet.toFixed(0)}</td>
-                  </tr>
-                </tbody>
-              </table>
+                ))}
+                <tr className="bg-amber-100">
+                  <td colSpan={3} className="py-3 font-bold text-amber-800">Total</td>
+                  <td className="text-right font-bold text-gray-800">₹{mainTotal}</td>
+                  <td className="text-right font-bold text-red-500">-₹{mainDeduction.toFixed(0)}</td>
+                  <td className="text-right font-bold text-gray-800">₹{mainNet.toFixed(0)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Summary Section */}
+        <div className="bg-amber-100/60 rounded p-5 text-base">
+          <div className="flex justify-between mb-3 pb-3 border-b border-amber-300">
+            <span className="text-gray-700">Seats Subtotal</span>
+            <span className="font-semibold text-gray-800">₹{seatsSubtotal.toFixed(0)}</span>
+          </div>
+
+          {otherCommission > 0 && (
+            <div className="flex justify-between mb-3 pb-3 border-b border-amber-300">
+              <span className="text-red-600">Less (5%)</span>
+              <span className="text-red-600 font-semibold">- ₹{otherCommission.toFixed(0)}</span>
             </div>
           )}
 
-          {/* Summary Section */}
-          <div className="bg-amber-100/50 rounded-lg p-4 text-sm mt-auto">
-            <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-amber-300">
-              <span className="text-gray-600">Seats Subtotal</span>
-              <span className="font-medium text-gray-800">₹{seatsSubtotal.toFixed(0)}</span>
+          {luggageToOwner > 0 && (
+            <div className="flex justify-between mb-3 pb-3 border-b border-amber-300">
+              <span className="text-gray-700">+ Luggage</span>
+              <span className="font-semibold text-gray-800">+ ₹{luggageToOwner.toFixed(0)}</span>
             </div>
+          )}
 
-            {otherCommission > 0 && (
-              <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-amber-300">
-                <span className="text-red-600">Less (5%)</span>
-                <span className="text-red-600 font-medium">- ₹{otherCommission.toFixed(0)}</span>
-              </div>
-            )}
-
-            {luggageToOwner > 0 && (
-              <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-amber-300">
-                <span className="text-gray-600">+ Luggage</span>
-                <span className="font-medium text-gray-800">+ ₹{luggageToOwner.toFixed(0)}</span>
-              </div>
-            )}
-
-            {/* Final Total */}
-            <div className="flex justify-between items-center font-bold text-gray-900 px-4 py-3 bg-amber-200/60 rounded-lg mt-3 border-2 border-amber-400">
-              <span className="text-lg">TOTAL PAYABLE</span>
-              <span className="text-xl">₹{grandTotalToOwner.toFixed(0)}</span>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center text-xs text-gray-400 mt-6 pt-3 border-t border-amber-200">
-            Generated: {format(new Date(), 'dd/MM/yyyy, hh:mm a')}
+          {/* Final Total */}
+          <div className="flex justify-between items-center font-bold text-gray-900 px-5 py-4 bg-amber-200 rounded mt-4 border-2 border-amber-400">
+            <span className="text-xl">TOTAL PAYABLE</span>
+            <span className="text-2xl">₹{grandTotalToOwner.toFixed(0)}</span>
           </div>
         </div>
       </div>
