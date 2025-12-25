@@ -45,6 +45,8 @@ export interface DailyProfitSummary {
   agentProfit: number;
   selfCount: number;
   selfProfit: number;
+  returnCount: number;
+  returnProfit: number;
   totalProfit: number;
   totalSeats: number;
   pendingCollections: number;
@@ -317,6 +319,7 @@ export function useSeatBookings() {
       const online = dayBookings.filter((s) => s.bookingType === 'online');
       const agent = dayBookings.filter((s) => s.bookingType === 'agent');
       const self = dayBookings.filter((s) => s.bookingType === 'self');
+      const returnBookings = dayBookings.filter((s) => s.bookingType === 'return');
 
       const pendingCollections = agent
         .filter((s) => s.agentCollectionStatus === 'pending')
@@ -330,6 +333,8 @@ export function useSeatBookings() {
         agentProfit: agent.reduce((sum, s) => sum + s.ourEarning, 0),
         selfCount: self.length,
         selfProfit: self.reduce((sum, s) => sum + s.ourEarning, 0),
+        returnCount: returnBookings.length,
+        returnProfit: returnBookings.reduce((sum, s) => sum + s.ourEarning, 0),
         totalProfit: dayBookings.reduce((sum, s) => sum + s.ourEarning, 0),
         totalSeats: dayBookings.length,
         pendingCollections,
