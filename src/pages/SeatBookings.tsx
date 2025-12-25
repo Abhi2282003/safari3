@@ -56,9 +56,10 @@ export default function SeatBookings() {
   const [memoPassword, setMemoPassword] = useState('');
   const [memoPreviewOpen, setMemoPreviewOpen] = useState(false);
   
-  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string }>({
+  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string }>({
     name: 'ROYAL SAFARI',
     logoUrl: '',
+    address: '',
   });
 
   // Fetch company settings
@@ -67,13 +68,14 @@ export default function SeatBookings() {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('name, logo_url')
+        .select('name, logo_url, address')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
         setCompanySettings({
           name: data.name || 'ROYAL SAFARI',
           logoUrl: data.logo_url || '',
+          address: data.address || '',
         });
       }
     };
@@ -762,6 +764,7 @@ export default function SeatBookings() {
                 luggageBookings={busLuggage}
                 companyName={companySettings.name}
                 companyLogo={companySettings.logoUrl}
+                companyAddress={companySettings.address}
               />
             </div>
             <DialogFooter className="gap-2">
@@ -781,6 +784,7 @@ export default function SeatBookings() {
             luggageBookings={busLuggage}
             companyName={companySettings.name}
             companyLogo={companySettings.logoUrl}
+            companyAddress={companySettings.address}
           />
         </div>
       </div>
