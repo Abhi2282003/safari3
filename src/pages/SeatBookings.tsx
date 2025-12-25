@@ -255,7 +255,10 @@ export default function SeatBookings() {
   const handleMemoPasswordSubmit = () => {
     if (memoPassword === MEMO_PASSWORD) {
       setMemoPasswordDialog(false);
-      setMemoPreviewOpen(true);
+      // Small delay to allow password dialog to close before opening preview
+      setTimeout(() => {
+        setMemoPreviewOpen(true);
+      }, 100);
     } else {
       toast.error('Incorrect password');
     }
