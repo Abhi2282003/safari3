@@ -10,6 +10,7 @@ export interface Agent {
   name: string;
   phone?: string;
   active: boolean;
+  advanceBalance: number;
 }
 
 export interface SeatBooking {
@@ -121,6 +122,7 @@ export function useAgents() {
       name: a.name,
       phone: a.phone || undefined,
       active: a.active ?? true,
+      advanceBalance: Number((a as any).advance_balance) || 0,
     })));
     setLoading(false);
   }, [user]);

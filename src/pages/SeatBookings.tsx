@@ -336,16 +336,18 @@ export default function SeatBookings() {
                 <Label>Bus Number / Name</Label>
                 <Input
                   value={busName}
-                  onChange={(e) => { setBusName(e.target.value); setBusConfirmed(false); }}
-                  placeholder="Enter bus number (e.g., KA-01-1234)"
+                  onChange={(e) => { 
+                    setBusName(e.target.value); 
+                    setBusConfirmed(false); 
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && busName.trim()) {
+                      setBusConfirmed(true);
+                    }
+                  }}
+                  placeholder="Enter bus number and press Enter"
                   className="mt-1"
                 />
-              </div>
-              <div className="sm:self-end">
-                <Button onClick={() => busName.trim() && setBusConfirmed(true)} disabled={!busName.trim()} className="w-full sm:w-auto">
-                  <Bus className="h-4 w-4 mr-2" />
-                  Load Bus
-                </Button>
               </div>
             </div>
 
