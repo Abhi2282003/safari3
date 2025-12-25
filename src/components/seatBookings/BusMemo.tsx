@@ -22,9 +22,10 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     const agentTotal = agentBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
     const selfTotal = selfBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
 
-    // Deductions (our commission from online + agent booking)
+    // Deductions (our commission)
     const onlineCommission = onlineBookings.reduce((sum, b) => sum + b.ourEarning, 0);
-    const agentCommission = agentBookings.reduce((sum, b) => sum + b.ourEarning, 0);
+    // Agent bookings: 15% commission
+    const agentCommission = agentBookings.reduce((sum, b) => sum + (b.bookingAmount * 0.15), 0);
     const selfCommission = selfBookings.reduce((sum, b) => sum + b.ourEarning, 0);
     const totalSeatCommission = onlineCommission + agentCommission + selfCommission;
 
