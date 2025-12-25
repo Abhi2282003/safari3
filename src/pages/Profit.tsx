@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Loader2, Lock, TrendingUp, IndianRupee, Download, Users, Wifi, UserCheck, Package, Ticket } from 'lucide-react';
+import { CalendarIcon, Loader2, Lock, TrendingUp, IndianRupee, Download, Users, Wifi, UserCheck, Package, Ticket, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSeatBookings } from '@/hooks/useSeatBookings';
 import { useLuggageBookings } from '@/hooks/useLuggageBookings';
@@ -100,6 +100,8 @@ export default function Profit() {
           agentProfit: 0,
           selfCount: 0,
           selfProfit: 0,
+          returnCount: 0,
+          returnProfit: 0,
           totalProfit: 0,
           totalSeats: 0,
           pendingCollections: 0,
@@ -111,6 +113,8 @@ export default function Profit() {
       months[monthKey].agentProfit += day.agentProfit;
       months[monthKey].selfCount += day.selfCount;
       months[monthKey].selfProfit += day.selfProfit;
+      months[monthKey].returnCount += day.returnCount;
+      months[monthKey].returnProfit += day.returnProfit;
       months[monthKey].totalProfit += day.totalProfit;
       months[monthKey].totalSeats += day.totalSeats;
       months[monthKey].pendingCollections += day.pendingCollections;
@@ -128,6 +132,8 @@ export default function Profit() {
         agentProfit: acc.agentProfit + day.agentProfit,
         selfCount: acc.selfCount + day.selfCount,
         selfProfit: acc.selfProfit + day.selfProfit,
+        returnCount: acc.returnCount + day.returnCount,
+        returnProfit: acc.returnProfit + day.returnProfit,
         totalProfit: acc.totalProfit + day.totalProfit,
         totalSeats: acc.totalSeats + day.totalSeats,
         pendingCollections: acc.pendingCollections + day.pendingCollections,
@@ -139,6 +145,8 @@ export default function Profit() {
         agentProfit: 0,
         selfCount: 0,
         selfProfit: 0,
+        returnCount: 0,
+        returnProfit: 0,
         totalProfit: 0,
         totalSeats: 0,
         pendingCollections: 0,
@@ -304,8 +312,8 @@ export default function Profit() {
         </Card>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-6">
-          <Card className="col-span-2 lg:col-span-1 xl:col-span-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 mb-6">
+          <Card className="col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <IndianRupee className="h-4 w-4" />
@@ -356,6 +364,19 @@ export default function Profit() {
             <CardContent>
               <div className="text-2xl font-bold text-green-600">₹{totals.selfProfit.toFixed(0)}</div>
               <p className="text-xs text-muted-foreground mt-1">{totals.selfCount} bookings</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <RotateCcw className="h-4 w-4" />
+                Return (5%)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-rose-600">₹{totals.returnProfit.toFixed(0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">{totals.returnCount} bookings</p>
             </CardContent>
           </Card>
 
@@ -425,6 +446,7 @@ export default function Profit() {
                         <TableHead className="text-right">Online</TableHead>
                         <TableHead className="text-right">Agent</TableHead>
                         <TableHead className="text-right">Self</TableHead>
+                        <TableHead className="text-right">Return</TableHead>
                         <TableHead className="text-right">Luggage</TableHead>
                         <TableHead className="text-right">Tickets</TableHead>
                         <TableHead className="text-right">Total</TableHead>
@@ -458,6 +480,10 @@ export default function Profit() {
                               <TableCell className="text-right">
                                 <span className="text-muted-foreground">{day.selfCount}× </span>
                                 <span className="text-green-600">₹{day.selfProfit.toFixed(0)}</span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="text-muted-foreground">{day.returnCount}× </span>
+                                <span className="text-rose-600">₹{day.returnProfit.toFixed(0)}</span>
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="text-muted-foreground">{luggageData.count}× </span>
@@ -502,6 +528,7 @@ export default function Profit() {
                         <TableHead className="text-right">Online</TableHead>
                         <TableHead className="text-right">Agent</TableHead>
                         <TableHead className="text-right">Self</TableHead>
+                        <TableHead className="text-right">Return</TableHead>
                         <TableHead className="text-right">Luggage</TableHead>
                         <TableHead className="text-right">Tickets</TableHead>
                         <TableHead className="text-right">Total</TableHead>
@@ -547,6 +574,10 @@ export default function Profit() {
                             <TableCell className="text-right">
                               <span className="text-muted-foreground">{month.selfCount}× </span>
                               <span className="text-green-600">₹{month.selfProfit.toFixed(0)}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-muted-foreground">{month.returnCount}× </span>
+                              <span className="text-rose-600">₹{month.returnProfit.toFixed(0)}</span>
                             </TableCell>
                             <TableCell className="text-right">
                               <span className="text-muted-foreground">{monthLuggageCount}× </span>
