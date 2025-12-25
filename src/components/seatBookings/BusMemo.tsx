@@ -195,10 +195,10 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
 
           <hr className="border-black my-3" />
 
-          {/* Subtotal from Agent + Self */}
+          {/* Subtotal from Agent + Self (after 5% deduction from other bookings) */}
           <div className="flex justify-between text-base font-semibold mb-2">
             <span>SEATS SUBTOTAL</span>
-            <span>₹{seatsSubtotal.toFixed(0)}</span>
+            <span>₹{afterDeduction.toFixed(0)}</span>
           </div>
 
           {/* Luggage */}
