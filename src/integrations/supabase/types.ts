@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_collection_payments: {
+        Row: {
+          agent_id: string
+          amount_paid: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_mode: string
+          received_by: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          amount_paid: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          received_by: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          amount_paid?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          received_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_collection_payments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_collections: {
         Row: {
           agent_id: string
@@ -74,6 +118,7 @@ export type Database = {
       agents: {
         Row: {
           active: boolean | null
+          advance_balance: number
           created_at: string
           id: string
           name: string
@@ -82,6 +127,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          advance_balance?: number
           created_at?: string
           id?: string
           name: string
@@ -90,6 +136,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          advance_balance?: number
           created_at?: string
           id?: string
           name?: string
