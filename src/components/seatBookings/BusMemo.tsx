@@ -73,31 +73,23 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     const selfDeduction = selfBookings.reduce((sum, b) => sum + (b.bookingAmount * 0.15), 0);
     const selfNet = selfTotal - selfDeduction;
 
-    // Online: 5% commission - owner gets 95%
-    const onlineTotal = onlineBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
-    const onlineCommission = onlineBookings.reduce((sum, b) => sum + b.ourEarning, 0); // 5%
-    const onlineNet = onlineTotal - onlineCommission;
-
-    // Return: 5% commission - owner gets NOTHING (company bus)
-    const returnTotal = returnBookings.reduce((sum, b) => sum + b.bookingAmount, 0);
-    const returnCommission = returnBookings.reduce((sum, b) => sum + b.ourEarning, 0); // 5%
-    // Return net to owner is 0
+    // Online and Return: We don't pay owner anything, we just take 5% commission
+    // Just calculate the 5% deduction to show
+    const onlineCommission = onlineBookings.reduce((sum, b) => sum + b.ourEarning, 0);
+    const returnCommission = returnBookings.reduce((sum, b) => sum + b.ourEarning, 0);
+    const otherCommission = onlineCommission + returnCommission;
 
     // Luggage: 30% commission, 70% to owner
-    const luggageTotal = luggageBookings.reduce((sum, b) => sum + b.totalAmount, 0);
     const luggageToOwner = luggageBookings.reduce((sum, b) => sum + b.amountToOwner, 0);
 
-    // Total deductions to show (online commission + full return amount since nothing goes to owner)
-    const otherDeductions = onlineCommission + returnTotal;
+    // Subtotal from agent + self (what we owe owner from these)
+    const seatsSubtotal = agentNet + selfNet;
 
-    // Subtotal from agent + self
-    const agentSelfSubtotal = agentNet + selfNet;
+    // Deduct the 5% commission (from online/return - just showing the deduction)
+    const afterDeduction = seatsSubtotal - otherCommission;
 
-    // Add online net (what owner gets from online)
-    const seatsSubtotal = agentSelfSubtotal + onlineNet;
-
-    // Grand total to pay owner (return adds nothing)
-    const grandTotalToOwner = seatsSubtotal + luggageToOwner;
+    // Add luggage to owner
+    const grandTotalToOwner = afterDeduction + luggageToOwner;
 
     return (
       <div ref={ref} className="p-6 bg-white text-black min-w-[400px] font-mono text-sm relative">
@@ -204,43 +196,33 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
           <hr className="border-black my-3" />
 
           {/* Subtotal from Agent + Self */}
-          <div className="flex justify-between text-sm mb-2">
-            <span>Agent + Self Net</span>
-            <span>₹{agentSelfSubtotal.toFixed(0)}</span>
-          </div>
-
-          {/* Online net (add to total - don't show separately, just the net amount) */}
-          {onlineBookings.length > 0 && (
-            <div className="flex justify-between text-sm mb-2">
-              <span>+ Online ({onlineBookings.length} seats, after 5% deduction)</span>
-              <span>+ ₹{onlineNet.toFixed(0)}</span>
-            </div>
-          )}
-
-          {/* Return deduction (full amount since nothing goes to owner) */}
-          {returnBookings.length > 0 && (
-            <div className="flex justify-between text-sm text-red-600 mb-2">
-              <span>- Return ({returnBookings.length} seats, Company Bus)</span>
-              <span>- ₹{returnTotal.toFixed(0)}</span>
-            </div>
-          )}
-
-          <hr className="border-black my-3" />
-
-          {/* Seats Subtotal */}
-          <div className="flex justify-between text-base font-semibold mb-3">
+          <div className="flex justify-between text-base font-semibold mb-2">
             <span>SEATS SUBTOTAL</span>
             <span>₹{seatsSubtotal.toFixed(0)}</span>
           </div>
 
-          {/* Luggage */}
-          {luggageBookings.length > 0 && (
-            <>
-              <div className="flex justify-between text-sm mb-2 bg-gray-100 px-2 py-1">
-                <span>Luggage ({luggageBookings.length} items, after 30%)</span>
-                <span>+ ₹{luggageToOwner.toFixed(0)}</span>
-              </div>
-            </>
+          {/* 5% Commission deduction (from online/return - just the amount, no labels) */}
+          {otherCommission > 0 && (
+            <div className="flex justify-between text-sm text-red-600 mb-2">
+              <span>Less: Commission (5%)</span>
+              <span>- ₹{otherCommission.toFixed(0)}</span>
+            </div>
+          )}
+
+          {/* After deduction */}
+          {otherCommission > 0 && (
+            <div className="flex justify-between text-sm mb-2">
+              <span>After Deduction</span>
+              <span>₹{afterDeduction.toFixed(0)}</span>
+            </div>
+          )}
+
+          {/* Luggage to owner */}
+          {luggageToOwner > 0 && (
+            <div className="flex justify-between text-sm mb-2">
+              <span>+ Luggage (to Owner)</span>
+              <span>+ ₹{luggageToOwner.toFixed(0)}</span>
+            </div>
           )}
 
           <hr className="border-black border-double my-3" />
