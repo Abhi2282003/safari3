@@ -366,7 +366,22 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="amount">Base Amount (₹) *</Label>
-                <Input id="amount" type="number" min={0} step={0.01} value={formData.amount} onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))} placeholder="Enter base amount" className="text-lg font-semibold" required />
+                <Input 
+                  id="amount" 
+                  type="number" 
+                  min={0} 
+                  step={0.01} 
+                  value={formData.amount} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))} 
+                  placeholder="Enter base amount" 
+                  className="text-lg font-semibold" 
+                  required 
+                  disabled={mode === 'edit'}
+                  title={mode === 'edit' ? 'Base amount cannot be changed' : undefined}
+                />
+                {mode === 'edit' && (
+                  <p className="text-xs text-muted-foreground">Base amount cannot be modified</p>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="surcharges">Surcharges (₹)</Label>
