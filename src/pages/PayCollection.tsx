@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { IndianRupee, CheckCircle, Clock } from 'lucide-react';
@@ -21,8 +22,10 @@ export default function PayCollection() {
   const [activeTab, setActiveTab] = useState<'unpaid' | 'paid'>('unpaid');
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<typeof tickets[0] | null>(null);
+  const [paidBy, setPaidBy] = useState('');
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverMobile, setReceiverMobile] = useState('');
   const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Other'>('Cash');
-  const [receivedBy, setReceivedBy] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get commission for a travel
@@ -89,14 +92,16 @@ export default function PayCollection() {
 
   const handlePayClick = (ticket: typeof tickets[0]) => {
     setSelectedTicket(ticket);
+    setPaidBy('');
+    setReceiverName('');
+    setReceiverMobile('');
     setPaymentMode('Cash');
-    setReceivedBy(receivers[0]?.name || '');
     setPayDialogOpen(true);
   };
 
   const handlePaySubmit = async () => {
-    if (!selectedTicket || !receivedBy) {
-      toast.error('Please select who received the payment');
+    if (!selectedTicket || !paidBy || !receiverName.trim()) {
+      toast.error('Please fill in Paid By and Receiver Name');
       return;
     }
 
@@ -105,9 +110,13 @@ export default function PayCollection() {
       const commission = getCommission(selectedTicket.travelsName);
       const payableAmount = calculatePayableAmount(selectedTicket.amount || 0, commission);
 
+      const receiverInfo = receiverMobile.trim() 
+        ? `${receiverName.trim()} (${receiverMobile.trim()})` 
+        : receiverName.trim();
+
       await savePayment({
         ticketId: selectedTicket.id,
-        receivedByName: receivedBy,
+        receivedByName: `${paidBy} | ${receiverInfo}`,
         paymentMode,
         paidAmount: payableAmount,
         paidAt: new Date().toISOString(),
@@ -286,71 +295,99 @@ export default function PayCollection() {
 
       {/* Pay Dialog */}
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
+            {selectedTicket && (
+              <DialogDescription>
+                Mark ticket <span className="font-mono">{selectedTicket.ticketNo}</span> as paid
+              </DialogDescription>
+            )}
           </DialogHeader>
-          {selectedTicket && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Ticket:</span>
-                  <p className="font-mono">{selectedTicket.ticketNo}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Travel:</span>
-                  <p>{selectedTicket.travelsName || 'N/A'}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Base Fare:</span>
-                  <p>₹{(selectedTicket.amount || 0).toLocaleString('en-IN')}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Amount to Pay:</span>
-                  <p className="font-bold text-lg">
-                    ₹{calculatePayableAmount(
-                      selectedTicket.amount || 0, 
-                      getCommission(selectedTicket.travelsName)
-                    ).toLocaleString('en-IN')}
-                  </p>
-                </div>
-              </div>
+          {selectedTicket && (() => {
+            const commission = getCommission(selectedTicket.travelsName);
+            const baseFare = selectedTicket.amount || 0;
+            const commissionAmount = baseFare * commission / 100;
+            const payableAmount = baseFare - commissionAmount;
 
-              <div className="space-y-2">
-                <Label>Payment Mode</Label>
-                <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as typeof paymentMode)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="UPI">UPI</SelectItem>
-                    <SelectItem value="Card">Card</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            return (
+              <div className="space-y-4">
+                {/* Amount Breakdown Card */}
+                <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Base Amount:</span>
+                    <span>₹{baseFare.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Commission ({selectedTicket.travelsName || 'default'}):
+                    </span>
+                    <span className="text-destructive">-₹{commissionAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="border-t pt-2 flex justify-between font-semibold">
+                    <span>Payable Amount:</span>
+                    <span className="text-lg">₹{payableAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Received By</Label>
-                <Select value={receivedBy} onValueChange={setReceivedBy}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select receiver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {receivers.filter(r => r.active).map((receiver) => (
-                      <SelectItem key={receiver.id} value={receiver.name}>
-                        {receiver.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Paid By Dropdown */}
+                <div className="space-y-2">
+                  <Label>Paid By <span className="text-destructive">*</span></Label>
+                  <Select value={paidBy} onValueChange={setPaidBy}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select who to pay" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {receivers.filter(r => r.active).map((receiver) => (
+                        <SelectItem key={receiver.id} value={receiver.name}>
+                          {receiver.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Receiver Name */}
+                <div className="space-y-2">
+                  <Label>Receiver Name <span className="text-destructive">*</span></Label>
+                  <Input 
+                    placeholder="Who received the payment"
+                    value={receiverName}
+                    onChange={(e) => setReceiverName(e.target.value)}
+                  />
+                </div>
+
+                {/* Receiver Mobile */}
+                <div className="space-y-2">
+                  <Label>Receiver Mobile (Optional)</Label>
+                  <Input 
+                    placeholder="Receiver's mobile number"
+                    value={receiverMobile}
+                    onChange={(e) => setReceiverMobile(e.target.value)}
+                  />
+                </div>
+
+                {/* Payment Mode */}
+                <div className="space-y-2">
+                  <Label>Payment Mode</Label>
+                  <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as typeof paymentMode)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="UPI">UPI</SelectItem>
+                      <SelectItem value="Card">Card</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-          )}
-          <DialogFooter>
+            );
+          })()}
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setPayDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handlePaySubmit} disabled={isSubmitting}>
+            <Button onClick={handlePaySubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
               {isSubmitting ? 'Processing...' : 'Confirm Payment'}
             </Button>
           </DialogFooter>
