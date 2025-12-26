@@ -107,16 +107,16 @@ export default function Tickets() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Tickets</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold">Tickets</h1>
+            <p className="text-sm text-muted-foreground">
               {filteredTickets.length} tickets for {format(selectedDate, 'EEE, dd MMM yyyy')}
             </p>
           </div>
-          <Link to="/new-ticket">
+          <Link to="/new-ticket" className="w-full sm:w-auto">
             <Button className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               New Ticket
@@ -125,7 +125,8 @@ export default function Tickets() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col gap-3">
+        <div className="space-y-3">
+          {/* Date and Search Row */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Popover>
               <PopoverTrigger asChild>
@@ -145,7 +146,7 @@ export default function Tickets() {
               </PopoverContent>
             </Popover>
 
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search ticket, name, phone..."
@@ -156,10 +157,11 @@ export default function Tickets() {
             </div>
           </div>
 
+          {/* Filter and Export Row */}
           <div className="flex gap-3">
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
               <SelectTrigger className="flex-1 sm:w-[140px] sm:flex-none">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 mr-2 shrink-0" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -177,7 +179,7 @@ export default function Tickets() {
           </div>
         </div>
 
-        {/* Ticket Table */}
+        {/* Ticket Table/Cards */}
         <TicketTable 
           tickets={filteredTickets} 
           onRefresh={fetchTickets}

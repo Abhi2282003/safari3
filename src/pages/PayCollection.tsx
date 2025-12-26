@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -14,11 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { IndianRupee, CheckCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function PayCollection() {
   const { tickets, loading, savePayment, fetchTickets } = useTickets();
   const { travels } = useTravels();
   const { receivers } = useReceivers();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'unpaid' | 'paid'>('unpaid');
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<typeof tickets[0] | null>(null);
@@ -144,56 +145,59 @@ export default function PayCollection() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold">Pay Collection</h1>
-          <p className="text-muted-foreground">Manage ticket payments grouped by travel name</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Pay Collection</h1>
+          <p className="text-sm text-muted-foreground">Manage ticket payments grouped by travel name</p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <Card className="border-destructive/30 bg-destructive/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4 text-destructive" />
-                Unpaid Collection
+            <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
+                <span className="hidden sm:inline">Unpaid Collection</span>
+                <span className="sm:hidden">Unpaid</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive flex items-center">
-                <IndianRupee className="h-5 w-5" />
+            <CardContent className="p-3 sm:p-4 pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-destructive flex items-center">
+                <IndianRupee className="h-4 w-4 sm:h-5 sm:w-5" />
                 {totals.unpaidTotal.toLocaleString('en-IN')}
               </div>
-              <p className="text-xs text-muted-foreground">{totals.unpaidCount} tickets pending</p>
+              <p className="text-xs text-muted-foreground">{totals.unpaidCount} pending</p>
             </CardContent>
           </Card>
 
           <Card className="border-green-500/30 bg-green-500/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                Paid Collection
+            <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                <span className="hidden sm:inline">Paid Collection</span>
+                <span className="sm:hidden">Paid</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600 flex items-center">
-                <IndianRupee className="h-5 w-5" />
+            <CardContent className="p-3 sm:p-4 pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-green-600 flex items-center">
+                <IndianRupee className="h-4 w-4 sm:h-5 sm:w-5" />
                 {totals.paidTotal.toLocaleString('en-IN')}
               </div>
-              <p className="text-xs text-muted-foreground">{totals.paidCount} tickets collected</p>
+              <p className="text-xs text-muted-foreground">{totals.paidCount} collected</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'unpaid' | 'paid')}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="unpaid" className="gap-2">
-              <Clock className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="unpaid" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
               Unpaid ({totals.unpaidCount})
             </TabsTrigger>
-            <TabsTrigger value="paid" className="gap-2">
-              <CheckCircle className="h-4 w-4" />
+            <TabsTrigger value="paid" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
               Paid ({totals.paidCount})
             </TabsTrigger>
           </TabsList>
@@ -213,76 +217,114 @@ export default function PayCollection() {
                   const groupTotal = ticketList.reduce((sum, t) => sum + calculatePayableAmount(t.amount || 0, commission), 0);
 
                   return (
-                    <AccordionItem key={travelsName} value={travelsName} className="border rounded-lg px-4">
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center justify-between w-full pr-4">
-                          <div className="flex items-center gap-3">
-                            <span className="font-semibold">{travelsName}</span>
-                            <Badge variant="secondary">{ticketList.length} tickets</Badge>
+                    <AccordionItem key={travelsName} value={travelsName} className="border rounded-lg px-3 sm:px-4">
+                      <AccordionTrigger className="hover:no-underline py-3">
+                        <div className="flex items-center justify-between w-full pr-2 sm:pr-4 gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <span className="font-semibold text-sm sm:text-base truncate">{travelsName}</span>
+                            <Badge variant="secondary" className="text-xs shrink-0">{ticketList.length}</Badge>
                           </div>
-                          <div className="flex items-center font-semibold">
-                            <IndianRupee className="h-4 w-4" />
+                          <div className="flex items-center font-semibold text-sm sm:text-base shrink-0">
+                            <IndianRupee className="h-3 w-3 sm:h-4 sm:w-4" />
                             {groupTotal.toLocaleString('en-IN')}
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Ticket No</TableHead>
-                                <TableHead>Journey Date</TableHead>
-                                <TableHead className="text-right">Base Fare</TableHead>
-                                <TableHead className="text-right">To Pay</TableHead>
-                                {activeTab === 'paid' ? (
-                                  <>
-                                    <TableHead>Paid At</TableHead>
-                                    <TableHead>Received By</TableHead>
-                                  </>
-                                ) : (
-                                  <TableHead className="text-right">Action</TableHead>
-                                )}
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {ticketList.map((ticket) => {
-                                const payableAmount = calculatePayableAmount(ticket.amount || 0, commission);
-                                return (
-                                  <TableRow key={ticket.id}>
-                                    <TableCell className="font-mono text-xs">{ticket.ticketNo}</TableCell>
-                                    <TableCell>{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</TableCell>
-                                    <TableCell className="text-right">
-                                      ₹{(ticket.amount || 0).toLocaleString('en-IN')}
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      ₹{payableAmount.toLocaleString('en-IN')}
-                                    </TableCell>
-                                    {activeTab === 'paid' ? (
-                                      <>
-                                        <TableCell className="text-xs">
-                                          {ticket.payment?.paidAt 
-                                            ? format(new Date(ticket.payment.paidAt), 'dd/MM/yyyy hh:mm a')
-                                            : '-'}
-                                        </TableCell>
-                                        <TableCell>{ticket.payment?.receivedByName || '-'}</TableCell>
-                                      </>
-                                    ) : (
-                                      <TableCell className="text-right">
-                                        <Button 
-                                          size="sm" 
-                                          onClick={() => handlePayClick(ticket)}
-                                        >
-                                          Pay
-                                        </Button>
-                                      </TableCell>
+                      <AccordionContent className="pb-3">
+                        {/* Mobile Card View */}
+                        {isMobile ? (
+                          <div className="space-y-2">
+                            {ticketList.map((ticket) => {
+                              const payableAmount = calculatePayableAmount(ticket.amount || 0, commission);
+                              return (
+                                <div key={ticket.id} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="font-mono text-xs text-primary truncate">{ticket.ticketNo}</p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}
+                                      </p>
+                                    </div>
+                                    {activeTab === 'unpaid' && (
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handlePayClick(ticket)}
+                                        className="shrink-0 h-7 text-xs"
+                                      >
+                                        Pay
+                                      </Button>
                                     )}
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground">Base: </span>
+                                      <span>₹{(ticket.amount || 0).toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div className="font-semibold">
+                                      <span className="text-muted-foreground font-normal">To Pay: </span>
+                                      ₹{payableAmount.toLocaleString('en-IN')}
+                                    </div>
+                                  </div>
+                                  {activeTab === 'paid' && ticket.payment && (
+                                    <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                                      <p>Paid: {format(new Date(ticket.payment.paidAt), 'dd/MM/yy hh:mm a')}</p>
+                                      <p className="truncate">By: {ticket.payment.receivedByName}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Desktop Table View */
+                          <div className="overflow-x-auto -mx-3 sm:-mx-4">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b text-left">
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground">Ticket No</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground">Journey Date</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground text-right">Base Fare</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground text-right">To Pay</th>
+                                  {activeTab === 'paid' ? (
+                                    <>
+                                      <th className="pb-2 px-3 font-medium text-muted-foreground">Paid At</th>
+                                      <th className="pb-2 px-3 font-medium text-muted-foreground">Received By</th>
+                                    </>
+                                  ) : (
+                                    <th className="pb-2 px-3 font-medium text-muted-foreground text-right">Action</th>
+                                  )}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {ticketList.map((ticket) => {
+                                  const payableAmount = calculatePayableAmount(ticket.amount || 0, commission);
+                                  return (
+                                    <tr key={ticket.id} className="border-b last:border-0">
+                                      <td className="py-2 px-3 font-mono text-xs">{ticket.ticketNo}</td>
+                                      <td className="py-2 px-3">{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</td>
+                                      <td className="py-2 px-3 text-right">₹{(ticket.amount || 0).toLocaleString('en-IN')}</td>
+                                      <td className="py-2 px-3 text-right font-medium">₹{payableAmount.toLocaleString('en-IN')}</td>
+                                      {activeTab === 'paid' ? (
+                                        <>
+                                          <td className="py-2 px-3 text-xs">
+                                            {ticket.payment?.paidAt 
+                                              ? format(new Date(ticket.payment.paidAt), 'dd/MM/yy hh:mm a')
+                                              : '-'}
+                                          </td>
+                                          <td className="py-2 px-3 max-w-[150px] truncate">{ticket.payment?.receivedByName || '-'}</td>
+                                        </>
+                                      ) : (
+                                        <td className="py-2 px-3 text-right">
+                                          <Button size="sm" onClick={() => handlePayClick(ticket)}>Pay</Button>
+                                        </td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </AccordionContent>
                     </AccordionItem>
                   );
@@ -295,12 +337,12 @@ export default function PayCollection() {
 
       {/* Pay Dialog */}
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             {selectedTicket && (
-              <DialogDescription>
-                Mark ticket <span className="font-mono">{selectedTicket.ticketNo}</span> as paid
+              <DialogDescription className="break-all">
+                Mark ticket <span className="font-mono text-xs">{selectedTicket.ticketNo}</span> as paid
               </DialogDescription>
             )}
           </DialogHeader>
@@ -313,26 +355,26 @@ export default function PayCollection() {
             return (
               <div className="space-y-4">
                 {/* Amount Breakdown Card */}
-                <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Base Amount:</span>
                     <span>₹{baseFare.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground truncate mr-2">
                       Commission ({selectedTicket.travelsName || 'default'}):
                     </span>
-                    <span className="text-destructive">-₹{commissionAmount.toLocaleString('en-IN')}</span>
+                    <span className="text-destructive shrink-0">-₹{commissionAmount.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="border-t pt-2 flex justify-between font-semibold">
                     <span>Payable Amount:</span>
-                    <span className="text-lg">₹{payableAmount.toLocaleString('en-IN')}</span>
+                    <span className="text-base sm:text-lg">₹{payableAmount.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
                 {/* Paid By Dropdown */}
                 <div className="space-y-2">
-                  <Label>Paid By <span className="text-destructive">*</span></Label>
+                  <Label className="text-sm">Paid By <span className="text-destructive">*</span></Label>
                   <Select value={paidBy} onValueChange={setPaidBy}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select who to pay" />
@@ -349,7 +391,7 @@ export default function PayCollection() {
 
                 {/* Receiver Name */}
                 <div className="space-y-2">
-                  <Label>Receiver Name <span className="text-destructive">*</span></Label>
+                  <Label className="text-sm">Receiver Name <span className="text-destructive">*</span></Label>
                   <Input 
                     placeholder="Who received the payment"
                     value={receiverName}
@@ -359,7 +401,7 @@ export default function PayCollection() {
 
                 {/* Receiver Mobile */}
                 <div className="space-y-2">
-                  <Label>Receiver Mobile (Optional)</Label>
+                  <Label className="text-sm">Receiver Mobile (Optional)</Label>
                   <Input 
                     placeholder="Receiver's mobile number"
                     value={receiverMobile}
@@ -369,7 +411,7 @@ export default function PayCollection() {
 
                 {/* Payment Mode */}
                 <div className="space-y-2">
-                  <Label>Payment Mode</Label>
+                  <Label className="text-sm">Payment Mode</Label>
                   <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as typeof paymentMode)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -385,9 +427,15 @@ export default function PayCollection() {
               </div>
             );
           })()}
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setPayDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handlePaySubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
+          <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row">
+            <Button variant="outline" onClick={() => setPayDialogOpen(false)} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handlePaySubmit} 
+              disabled={isSubmitting} 
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+            >
               {isSubmitting ? 'Processing...' : 'Confirm Payment'}
             </Button>
           </DialogFooter>

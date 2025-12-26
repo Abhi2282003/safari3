@@ -20,7 +20,7 @@ export function Layout({ children }: LayoutProps) {
       
       <Sidebar />
       {/* Add padding-top for mobile header, margin-left for desktop sidebar */}
-      <main className="pt-14 lg:pt-0 lg:ml-64 min-h-screen relative z-10">
+      <main className="pt-14 lg:pt-0 lg:ml-64 min-h-screen relative z-10 p-4 sm:p-6 lg:p-8">
         {children}
       </main>
     </div>
