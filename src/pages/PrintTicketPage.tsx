@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Printer, Loader2, FileText } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { PrintTicket } from '@/components/ticket/PrintTicket';
-import { PrintOnPrePrintedTicket } from '@/components/ticket/PrintOnPrePrintedTicket';
+import { PrePrintedTicketPreview } from '@/components/ticket/PrePrintedTicketPreview';
 import { Button } from '@/components/ui/button';
 import { TicketWithPayment, CompanySettings, Ticket, Payment } from '@/types/ticket';
 import { useReactToPrint } from 'react-to-print';
@@ -129,6 +129,10 @@ export default function PrintTicketPage() {
   const handlePrePrintedPrint = useReactToPrint({
     contentRef: prePrintedRef,
     documentTitle: `Ticket-${ticket?.ticketNo}-PrePrinted`,
+    pageStyle: `
+      @page { size: 175mm 105mm; margin: 0mm; }
+      html, body { margin: 0; padding: 0; }
+    `,
   });
 
   if (loading) {
@@ -225,28 +229,8 @@ export default function PrintTicketPage() {
               <PrintTicket ref={printRef} ticket={ticket} settings={settings} />
             </div>
           ) : (
-            <div 
-              className="mx-auto border-2 border-dashed border-gray-400 bg-amber-50" 
-              style={{ 
-                width: '175mm', 
-                height: '105mm',
-                position: 'relative',
-              }}
-            >
-              {/* Guide text for pre-printed mode */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 text-center p-4">
-                <p className="text-xs text-gray-600">
-                  175mm x 105mm
-                </p>
-              </div>
-              <PrintOnPrePrintedTicket ref={prePrintedRef} ticket={ticket} />
-            </div>
+            <PrePrintedTicketPreview ref={prePrintedRef} ticket={ticket} userId={user?.id} />
           )}
-        </div>
-
-        {/* Hidden print area for pre-printed ticket */}
-        <div className="hidden">
-          <PrintOnPrePrintedTicket ref={prePrintedRef} ticket={ticket} />
         </div>
       </div>
     </Layout>
