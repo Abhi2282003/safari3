@@ -76,6 +76,7 @@ export default function AgentCollections() {
   
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentWithCollections | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<SeatBooking | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [paymentMode, setPaymentMode] = useState('Cash');
@@ -85,6 +86,7 @@ export default function AgentCollections() {
   const [sortBy, setSortBy] = useState<SortOption>('pending-desc');
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
+  const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
 
   // Fetch agent payments
   useEffect(() => {
@@ -230,11 +232,100 @@ export default function AgentCollections() {
 
   const handleOpenPayment = (agent: AgentWithCollections) => {
     setSelectedAgent(agent);
+    setSelectedBooking(null);
     setPaymentAmount(agent.totalPending.toString());
     setReceivedBy('');
     setPaymentMode('Cash');
     setPaymentNotes('');
     setPaymentDialogOpen(true);
+  };
+
+  const handleOpenSeatPayment = (agent: AgentWithCollections, booking: SeatBooking) => {
+    setSelectedAgent(agent);
+    setSelectedBooking(booking);
+    setPaymentAmount(booking.amountFromAgent.toString());
+    setReceivedBy('');
+    setPaymentMode('Cash');
+    setPaymentNotes('');
+    setSeatPaymentDialogOpen(true);
+  };
+
+  const handleSeatPayment = async () => {
+    if (!selectedAgent || !selectedBooking || !user) return;
+    
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (!receivedBy.trim()) {
+      toast.error('Please enter receiver name');
+      return;
+    }
+
+    if (amount > selectedBooking.amountFromAgent) {
+      toast.error('Amount cannot exceed pending amount');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const isFullPayment = amount >= selectedBooking.amountFromAgent;
+      
+      if (isFullPayment) {
+        // Mark booking as collected
+        const { error } = await supabase
+          .from('seat_bookings')
+          .update({
+            agent_collection_status: 'collected',
+            collected_at: new Date().toISOString(),
+          })
+          .eq('id', selectedBooking.id);
+
+        if (error) throw error;
+      } else {
+        // Partial payment - reduce the pending amount
+        const newAmountFromAgent = selectedBooking.amountFromAgent - amount;
+        const { error } = await supabase
+          .from('seat_bookings')
+          .update({
+            amount_from_agent: newAmountFromAgent,
+          })
+          .eq('id', selectedBooking.id);
+
+        if (error) throw error;
+      }
+
+      // Record the payment
+      const { error: paymentError } = await supabase
+        .from('agent_collection_payments')
+        .insert({
+          user_id: user.id,
+          agent_id: selectedAgent.id,
+          amount_paid: amount,
+          received_by: receivedBy.trim(),
+          payment_mode: paymentMode,
+          notes: paymentNotes.trim() || `Seat #${selectedBooking.seatNumber}`,
+        });
+
+      if (paymentError) throw paymentError;
+
+      toast.success(`₹${amount.toFixed(0)} collected for Seat #${selectedBooking.seatNumber}`);
+      setSeatPaymentDialogOpen(false);
+      setPaymentAmount('');
+      setReceivedBy('');
+      setPaymentNotes('');
+      setSelectedBooking(null);
+      fetchSeatBookings();
+      fetchAgents();
+    } catch (error) {
+      console.error('Error processing seat payment:', error);
+      toast.error('Failed to process payment');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handlePayment = async () => {
@@ -590,6 +681,7 @@ export default function AgentCollections() {
                                   <TableHead className="text-xs">Seat</TableHead>
                                   <TableHead className="text-right text-xs">Amount</TableHead>
                                   <TableHead className="text-right text-xs">To Collect</TableHead>
+                                  <TableHead className="text-right text-xs">Action</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -611,6 +703,16 @@ export default function AgentCollections() {
                                     <TableCell className="text-right text-xs sm:text-sm">₹{booking.bookingAmount.toFixed(0)}</TableCell>
                                     <TableCell className="text-right text-xs sm:text-sm font-medium text-amber-600">
                                       ₹{booking.amountFromAgent.toFixed(0)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => handleOpenSeatPayment(agent, booking)}
+                                        className="h-7 px-2 text-xs"
+                                      >
+                                        Receive
+                                      </Button>
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -926,6 +1028,130 @@ export default function AgentCollections() {
                 Cancel
               </Button>
               <Button onClick={handlePayment} disabled={isProcessing}>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Collect ₹{parseFloat(paymentAmount) || 0}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Seat Payment Dialog */}
+        <Dialog open={seatPaymentDialogOpen} onOpenChange={setSeatPaymentDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <IndianRupee className="h-5 w-5" />
+                Receive Seat Payment
+              </DialogTitle>
+              <DialogDescription>
+                Collect payment for Seat #{selectedBooking?.seatNumber} from {selectedAgent?.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedAgent && selectedBooking && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-muted/50 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Agent</span>
+                    <span className="font-medium">{selectedAgent.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Seat</span>
+                    <span className="font-medium">#{selectedBooking.seatNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bus</span>
+                    <span>{selectedBooking.busName || '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Journey Date</span>
+                    <span>{format(new Date(selectedBooking.journeyDate), 'dd MMM yyyy')}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-600 border-t pt-2">
+                    <span>Amount to Collect</span>
+                    <span className="font-bold">₹{selectedBooking.amountFromAgent.toFixed(0)}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-3">
+                  <div>
+                    <Label>Amount Received (₹) *</Label>
+                    <Input
+                      type="number"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      className="mt-1"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPaymentAmount(selectedBooking.amountFromAgent.toString())}
+                      >
+                        Full
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPaymentAmount((selectedBooking.amountFromAgent / 2).toString())}
+                      >
+                        Half
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Received By *</Label>
+                    <Input
+                      value={receivedBy}
+                      onChange={(e) => setReceivedBy(e.target.value)}
+                      placeholder="Enter receiver name"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Payment Mode</Label>
+                    <Select value={paymentMode} onValueChange={setPaymentMode}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_MODES.map(mode => (
+                          <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Notes (Optional)</Label>
+                    <Input
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      placeholder="Any notes..."
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setSeatPaymentDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSeatPayment} disabled={isProcessing}>
                 {isProcessing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
