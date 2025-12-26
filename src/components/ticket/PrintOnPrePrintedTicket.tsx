@@ -8,24 +8,32 @@ interface PrintOnPrePrintedTicketProps {
 
 /**
  * This component prints ONLY the data values positioned to align with
- * pre-printed Royal ticket forms (105mm x 175mm landscape).
+ * pre-printed Royal ticket forms (105mm width x 175mm height - PORTRAIT).
  * No backgrounds, borders, or labels - just the data at precise positions.
  * 
- * The ticket is oriented in landscape mode (175mm wide x 105mm tall).
- * Positions are calibrated to match the pre-printed form fields.
+ * Field positions (measured from top-left of ticket):
+ * - Passenger Name: after "Shri/Smt." line
+ * - Tours To: destination field
+ * - Address: pickup location
+ * - Ph: phone number
+ * - No. of Tourist, Seat No., PNR No., Bus No. (yellow boxes row 1)
+ * - Rep. Time, Dep. Time, Branch/Ticket No. (yellow boxes row 2)
+ * - Journey Date, Booking Date, with Family checkbox
+ * - Amount Rs., Sig. of Tourist
+ * - TICKET No. (red box at bottom)
  */
 export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrintedTicketProps>(
   ({ ticket }, ref) => {
     const ticketNumberShort = ticket.ticketNo.split("-").pop() || ticket.ticketNo;
 
-    // Ticket dimensions: 175mm x 105mm (landscape)
-    const ticketWidth = 175; // mm
-    const ticketHeight = 105; // mm
+    // Ticket dimensions: 105mm x 175mm (PORTRAIT - width x height)
+    const ticketWidth = 105; // mm
+    const ticketHeight = 175; // mm
 
     return (
       <div
         ref={ref}
-        className="preprinted-ticket-print bg-transparent text-black font-sans print:p-0"
+        className="preprinted-ticket-print bg-transparent text-black print:p-0"
         style={{
           width: `${ticketWidth}mm`,
           height: `${ticketHeight}mm`,
@@ -33,36 +41,15 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
           fontFamily: "Arial, sans-serif",
         }}
       >
-        {/* 
-          Positions are measured from top-left of the ticket.
-          The pre-printed form has these fields:
-          - Name (after "Shri/Smt."): ~45mm from left, ~22mm from top
-          - Tours To: ~45mm from left, ~30mm from top
-          - Address: ~25mm from left, ~38mm from top
-          - Ph: ~85mm from left, ~38mm from top
-          - No. of Tourist: ~30mm from left, ~50mm from top
-          - Seat No.: ~58mm from left, ~50mm from top
-          - PNR No.: ~85mm from left, ~50mm from top (we'll use bus name)
-          - Bus No.: ~115mm from left, ~50mm from top
-          - Rep. Time: ~30mm from left, ~62mm from top
-          - Dep. Time: ~60mm from left, ~62mm from top
-          - Branch (Ticket No): ~95mm from left, ~62mm from top
-          - Journey Date: ~35mm from left, ~75mm from top
-          - Booking Date: ~100mm from left, ~75mm from top
-          - Amount Rs.: ~45mm from left, ~85mm from top
-          - Sig. of Tourist: ~105mm from left, ~85mm from top (skip)
-          - TICKET No. (bottom): ~25mm from left, ~92mm from top
-        */}
-
-        {/* Passenger Name - After "Shri/Smt." */}
+        {/* Passenger Name - After "Shri/Smt." on the line */}
         <div
           style={{
             position: "absolute",
-            left: "50mm",
-            top: "20mm",
-            fontSize: "12pt",
+            left: "32mm",
+            top: "38mm",
+            fontSize: "11pt",
             fontWeight: "bold",
-            maxWidth: "80mm",
+            maxWidth: "68mm",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -75,11 +62,11 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         <div
           style={{
             position: "absolute",
-            left: "52mm",
-            top: "27mm",
-            fontSize: "12pt",
+            left: "48mm",
+            top: "45mm",
+            fontSize: "11pt",
             fontWeight: "bold",
-            maxWidth: "70mm",
+            maxWidth: "52mm",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -92,42 +79,45 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         <div
           style={{
             position: "absolute",
-            left: "28mm",
-            top: "35mm",
+            left: "22mm",
+            top: "52mm",
             fontSize: "10pt",
             fontWeight: "bold",
-            maxWidth: "50mm",
+            maxWidth: "35mm",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {ticket.pickup || "—"}
+          {ticket.pickup || ""}
         </div>
 
         {/* Phone */}
         <div
           style={{
             position: "absolute",
-            left: "92mm",
-            top: "35mm",
+            left: "68mm",
+            top: "52mm",
             fontSize: "10pt",
             fontWeight: "bold",
+            maxWidth: "32mm",
           }}
         >
           {ticket.passengerPhone}
         </div>
 
+        {/* === Yellow Boxes Row 1 === */}
+        
         {/* No. of Tourist */}
         <div
           style={{
             position: "absolute",
-            left: "38mm",
-            top: "47mm",
+            left: "5mm",
+            top: "66mm",
             fontSize: "11pt",
             fontWeight: "bold",
             textAlign: "center",
-            width: "15mm",
+            width: "22mm",
           }}
         >
           {ticket.noOfTourist}
@@ -137,103 +127,109 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         <div
           style={{
             position: "absolute",
-            left: "65mm",
-            top: "47mm",
+            left: "28mm",
+            top: "66mm",
             fontSize: "11pt",
             fontWeight: "bold",
             textAlign: "center",
-            width: "18mm",
+            width: "22mm",
           }}
         >
-          {ticket.seatNo || "—"}
+          {ticket.seatNo || ""}
         </div>
 
-        {/* PNR No. - Using Travels Name or Bus Name */}
+        {/* PNR No. - Using Travels Name */}
         <div
           style={{
             position: "absolute",
-            left: "92mm",
-            top: "47mm",
-            fontSize: "10pt",
+            left: "51mm",
+            top: "66mm",
+            fontSize: "9pt",
             fontWeight: "bold",
-            maxWidth: "25mm",
+            textAlign: "center",
+            width: "24mm",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {ticket.travelsName || "—"}
+          {ticket.travelsName || ""}
         </div>
 
         {/* Bus No. */}
         <div
           style={{
             position: "absolute",
-            left: "125mm",
-            top: "47mm",
-            fontSize: "10pt",
+            left: "76mm",
+            top: "66mm",
+            fontSize: "9pt",
             fontWeight: "bold",
-            maxWidth: "30mm",
+            textAlign: "center",
+            width: "26mm",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {ticket.busNo || ticket.busName || "—"}
+          {ticket.busNo || ticket.busName || ""}
         </div>
+
+        {/* === Yellow Boxes Row 2 === */}
 
         {/* Rep. Time */}
         <div
           style={{
             position: "absolute",
-            left: "32mm",
-            top: "60mm",
+            left: "5mm",
+            top: "82mm",
             fontSize: "11pt",
             fontWeight: "bold",
             textAlign: "center",
-            width: "20mm",
+            width: "28mm",
           }}
         >
-          {ticket.repTime || "—"}
+          {ticket.repTime || ""}
         </div>
 
         {/* Dep. Time */}
         <div
           style={{
             position: "absolute",
-            left: "65mm",
-            top: "60mm",
+            left: "34mm",
+            top: "82mm",
             fontSize: "11pt",
             fontWeight: "bold",
             textAlign: "center",
-            width: "20mm",
+            width: "28mm",
           }}
         >
-          {ticket.depTime || "—"}
+          {ticket.depTime || ""}
         </div>
 
         {/* Branch - Using Ticket Number */}
         <div
           style={{
             position: "absolute",
-            left: "105mm",
-            top: "60mm",
+            left: "63mm",
+            top: "82mm",
             fontSize: "12pt",
             fontWeight: "bold",
             textAlign: "center",
-            width: "30mm",
+            width: "38mm",
           }}
         >
           {ticketNumberShort}
         </div>
 
+        {/* === Bottom Section === */}
+
         {/* Journey Date */}
         <div
           style={{
             position: "absolute",
-            left: "42mm",
-            top: "74mm",
-            fontSize: "11pt",
+            left: "32mm",
+            top: "98mm",
+            fontSize: "10pt",
             fontWeight: "bold",
           }}
         >
@@ -244,8 +240,8 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         <div
           style={{
             position: "absolute",
-            left: "105mm",
-            top: "74mm",
+            left: "32mm",
+            top: "106mm",
             fontSize: "10pt",
             fontWeight: "bold",
           }}
@@ -253,14 +249,14 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
           {format(new Date(ticket.bookingDateTime), "dd/MM/yyyy")}
         </div>
 
-        {/* with Family / Friends checkbox area */}
+        {/* with Family / Friends checkbox */}
         {ticket.withFamily && (
           <div
             style={{
               position: "absolute",
-              left: "154mm",
-              top: "74mm",
-              fontSize: "16pt",
+              left: "75mm",
+              top: "106mm",
+              fontSize: "14pt",
               fontWeight: "bold",
             }}
           >
@@ -272,24 +268,27 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         <div
           style={{
             position: "absolute",
-            left: "45mm",
-            top: "85mm",
+            left: "28mm",
+            top: "120mm",
             fontSize: "12pt",
             fontWeight: "bold",
+            textAlign: "center",
+            width: "30mm",
           }}
         >
           {ticket.amount.toLocaleString()}/-
         </div>
 
-        {/* Ticket No. (bottom left corner) */}
+        {/* Ticket No. (bottom red box) */}
         <div
           style={{
             position: "absolute",
-            left: "20mm",
-            top: "92mm",
+            left: "5mm",
+            top: "142mm",
             fontSize: "14pt",
             fontWeight: "bold",
-            color: "#000",
+            textAlign: "center",
+            width: "25mm",
           }}
         >
           {ticketNumberShort}
