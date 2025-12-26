@@ -279,6 +279,7 @@ export default function SeatBookings() {
     const online = busBookings.filter((b) => b.bookingType === 'online');
     const agent = busBookings.filter((b) => b.bookingType === 'agent');
     const self = busBookings.filter((b) => b.bookingType === 'self');
+    const sonu = busBookings.filter((b) => b.bookingType === 'sonu');
     const returnBookings = busBookings.filter((b) => b.bookingType === 'return');
 
     return {
@@ -286,6 +287,7 @@ export default function SeatBookings() {
       online: online.length,
       agent: agent.length,
       self: self.length,
+      sonu: sonu.length,
       return: returnBookings.length,
       luggageCount: busLuggage.length,
     };
@@ -410,7 +412,7 @@ export default function SeatBookings() {
                     <span>Booked Seats</span>
                     <span className="font-medium">{busSummary.total} / {TOTAL_SEATS}</span>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="grid grid-cols-5 gap-2 text-center">
                     <div className="p-2 bg-blue-500/10 rounded">
                       <p className="text-lg font-semibold text-blue-600">{busSummary.online}</p>
                       <p className="text-xs text-muted-foreground">Online</p>
@@ -422,6 +424,10 @@ export default function SeatBookings() {
                     <div className="p-2 bg-green-500/10 rounded">
                       <p className="text-lg font-semibold text-green-600">{busSummary.self}</p>
                       <p className="text-xs text-muted-foreground">Self</p>
+                    </div>
+                    <div className="p-2 bg-pink-500/10 rounded">
+                      <p className="text-lg font-semibold text-pink-600">{busSummary.sonu}</p>
+                      <p className="text-xs text-muted-foreground">Sonu</p>
                     </div>
                     <div className="p-2 bg-purple-500/10 rounded">
                       <p className="text-lg font-semibold text-purple-600">{busSummary.return}</p>
@@ -495,6 +501,10 @@ export default function SeatBookings() {
                   <span>Self</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-pink-500" />
+                  <span>Sonu</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded bg-purple-500" />
                   <span>Return</span>
                 </div>
@@ -519,6 +529,7 @@ export default function SeatBookings() {
                     if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
                     if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
                     if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
+                    if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white';
                     if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white';
 
                     return (
@@ -570,6 +581,7 @@ export default function SeatBookings() {
                     <SelectItem value="online">Online</SelectItem>
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="self">Self</SelectItem>
+                    <SelectItem value="sonu">Sonu</SelectItem>
                     <SelectItem value="return">Return</SelectItem>
                   </SelectContent>
                 </Select>
