@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { TicketTable } from '@/components/dashboard/TicketTable';
 import { PaymentDialog } from '@/components/dashboard/PaymentDialog';
+import { BookedBySummary } from '@/components/dashboard/BookedBySummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -178,6 +179,15 @@ export default function Tickets() {
             </Button>
           </div>
         </div>
+
+        {/* Booked By Summary for selected date */}
+        <BookedBySummary 
+          tickets={dateTickets.map(t => ({
+            bookedBy: t.bookedBy,
+            amount: t.amount,
+            paymentMode: t.payment?.paymentMode || t.paymentMode,
+          }))} 
+        />
 
         {/* Ticket Table/Cards */}
         <TicketTable 
