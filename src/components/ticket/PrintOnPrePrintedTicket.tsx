@@ -55,6 +55,8 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
   ({ ticket, layout = DEFAULT_PREPRINTED_LAYOUT }, ref) => {
     const ticketNumberShort = ticket.ticketNo.split("-").pop() || ticket.ticketNo;
 
+    const FONT_SCALE = 0.85;
+
     const styleFor = (k: keyof PrePrintedLayout) => {
       const p = layout[k];
       return {
@@ -62,8 +64,9 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         left: `${p.x}mm`,
         top: `${p.y}mm`,
         width: `${p.w}mm`,
-        fontSize: `${p.fontPt}pt`,
+        fontSize: `${p.fontPt * FONT_SCALE}pt`,
         fontWeight: 700,
+        lineHeight: 1.05,
         textAlign: p.align ?? "left",
         overflow: "hidden" as const,
         textOverflow: "ellipsis" as const,
