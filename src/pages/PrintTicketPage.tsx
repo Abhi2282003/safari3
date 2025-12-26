@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Printer, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, Loader2, FileText } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { PrintTicket } from '@/components/ticket/PrintTicket';
+import { PrintOnPrePrintedTicket } from '@/components/ticket/PrintOnPrePrintedTicket';
 import { Button } from '@/components/ui/button';
 import { TicketWithPayment, CompanySettings, Ticket, Payment } from '@/types/ticket';
 import { useReactToPrint } from 'react-to-print';
@@ -16,7 +17,9 @@ export default function PrintTicketPage() {
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
+  const [printMode, setPrintMode] = useState<'normal' | 'preprinted'>('normal');
   const printRef = useRef<HTMLDivElement>(null);
+  const prePrintedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -123,6 +126,11 @@ export default function PrintTicketPage() {
     documentTitle: `Ticket-${ticket?.ticketNo}`,
   });
 
+  const handlePrePrintedPrint = useReactToPrint({
+    contentRef: prePrintedRef,
+    documentTitle: `Ticket-${ticket?.ticketNo}-PrePrinted`,
+  });
+
   if (loading) {
     return (
       <Layout>
@@ -169,18 +177,77 @@ export default function PrintTicketPage() {
                 </p>
               )}
             </div>
-            <Button onClick={() => handlePrint()} size="lg" className="gap-2">
-              <Printer className="h-5 w-5" />
-              Print Ticket
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => handlePrint()} 
+                size="lg" 
+                className="gap-2"
+                variant={printMode === 'normal' ? 'default' : 'outline'}
+              >
+                <Printer className="h-5 w-5" />
+                Print Ticket
+              </Button>
+              <Button 
+                onClick={() => handlePrePrintedPrint()} 
+                size="lg" 
+                variant="secondary"
+                className="gap-2"
+              >
+                <FileText className="h-5 w-5" />
+                Print on Ticket
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* Print Mode Toggle */}
+        <div className="mb-4 no-print flex gap-2">
+          <Button
+            variant={printMode === 'normal' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPrintMode('normal')}
+          >
+            Normal Print
+          </Button>
+          <Button
+            variant={printMode === 'preprinted' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPrintMode('preprinted')}
+          >
+            Pre-printed Ticket (105mm x 175mm)
+          </Button>
         </div>
 
         {/* Print Preview */}
         <div className="bg-muted p-8 rounded-lg overflow-auto">
-          <div className="bg-white shadow-lg mx-auto" style={{ width: 'fit-content' }}>
-            <PrintTicket ref={printRef} ticket={ticket} settings={settings} />
-          </div>
+          {printMode === 'normal' ? (
+            <div className="bg-white shadow-lg mx-auto" style={{ width: 'fit-content' }}>
+              <PrintTicket ref={printRef} ticket={ticket} settings={settings} />
+            </div>
+          ) : (
+            <div 
+              className="mx-auto border-2 border-dashed border-gray-400 bg-amber-50" 
+              style={{ 
+                width: '175mm', 
+                height: '105mm',
+                position: 'relative',
+              }}
+            >
+              {/* Guide text for pre-printed mode */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-center p-4">
+                <p className="text-sm text-gray-600">
+                  Pre-printed ticket form area (105mm x 175mm)<br/>
+                  Data will be printed at correct positions
+                </p>
+              </div>
+              <PrintOnPrePrintedTicket ref={prePrintedRef} ticket={ticket} />
+            </div>
+          )}
+        </div>
+
+        {/* Hidden print area for pre-printed ticket */}
+        <div className="hidden">
+          <PrintOnPrePrintedTicket ref={prePrintedRef} ticket={ticket} />
         </div>
       </div>
     </Layout>
