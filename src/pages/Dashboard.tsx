@@ -90,27 +90,25 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                Tickets for {format(selectedDate, 'EEE, dd MMM yyyy')}
-              </p>
-            </div>
-            <Link to="/new-ticket" className="w-full sm:w-auto">
-              <Button className="gap-2 w-full sm:w-auto">
-                <Plus className="h-4 w-4" />
-                New Ticket
-              </Button>
-            </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
+              Overview for {format(selectedDate, 'EEE, dd MMM yyyy')}
+            </p>
           </div>
+          <Link to="/new-ticket" className="w-full sm:w-auto">
+            <Button className="gap-2 w-full sm:w-auto">
+              <Plus className="h-4 w-4" />
+              New Ticket
+            </Button>
+          </Link>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Tickets Today"
             value={stats.totalTickets}
