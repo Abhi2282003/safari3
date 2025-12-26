@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { TicketWithPayment } from "@/types/ticket";
 import { PrintOnPrePrintedTicket, type PrePrintedLayout, DEFAULT_PREPRINTED_LAYOUT } from "@/components/ticket/PrintOnPrePrintedTicket";
 import { supabase } from "@/integrations/supabase/client";
+import prePrintedTemplate from "@/assets/royal-preprinted-template.png";
 
 interface PrePrintedTicketPreviewProps {
   ticket: TicketWithPayment;
@@ -52,7 +53,19 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
       );
     }
 
-    return <PrintOnPrePrintedTicket ref={ref} ticket={ticket} layout={layout} />;
+    return (
+      <div className="relative mx-auto" style={{ width: "175mm", height: "105mm" }}>
+        {/* Background template for screen preview only */}
+        <img
+          src={prePrintedTemplate}
+          alt="Pre-printed template"
+          className="absolute inset-0 w-full h-full object-contain print:hidden"
+          style={{ pointerEvents: "none" }}
+        />
+        {/* Printable content */}
+        <PrintOnPrePrintedTicket ref={ref} ticket={ticket} layout={layout} />
+      </div>
+    );
   }
 );
 
