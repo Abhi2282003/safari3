@@ -277,21 +277,23 @@ export default function PayCollection() {
                           </div>
                         ) : (
                           /* Desktop Table View */
-                          <div className="overflow-x-auto -mx-3 sm:-mx-4">
-                            <table className="w-full text-sm">
+                          <div className="w-full overflow-x-auto">
+                            <table
+                              className={`w-full text-sm ${activeTab === 'paid' ? 'min-w-[980px]' : 'min-w-[720px]'}`}
+                            >
                               <thead>
                                 <tr className="border-b text-left">
-                                  <th className="pb-2 px-3 font-medium text-muted-foreground">Ticket No</th>
-                                  <th className="pb-2 px-3 font-medium text-muted-foreground">Journey Date</th>
-                                  <th className="pb-2 px-3 font-medium text-muted-foreground text-right">Base Fare</th>
-                                  <th className="pb-2 px-3 font-medium text-muted-foreground text-right">To Pay</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground whitespace-nowrap">Ticket No</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground whitespace-nowrap">Journey Date</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground text-right whitespace-nowrap">Base Fare</th>
+                                  <th className="pb-2 px-3 font-medium text-muted-foreground text-right whitespace-nowrap">To Pay</th>
                                   {activeTab === 'paid' ? (
                                     <>
-                                      <th className="pb-2 px-3 font-medium text-muted-foreground">Paid At</th>
-                                      <th className="pb-2 px-3 font-medium text-muted-foreground">Received By</th>
+                                      <th className="pb-2 px-3 font-medium text-muted-foreground whitespace-nowrap">Paid At</th>
+                                      <th className="pb-2 px-3 font-medium text-muted-foreground whitespace-nowrap">Received By</th>
                                     </>
                                   ) : (
-                                    <th className="pb-2 px-3 font-medium text-muted-foreground text-right">Action</th>
+                                    <th className="pb-2 px-3 font-medium text-muted-foreground text-right whitespace-nowrap">Action</th>
                                   )}
                                 </tr>
                               </thead>
@@ -300,22 +302,24 @@ export default function PayCollection() {
                                   const payableAmount = calculatePayableAmount(ticket.amount || 0, commission);
                                   return (
                                     <tr key={ticket.id} className="border-b last:border-0">
-                                      <td className="py-2 px-3 font-mono text-xs">{ticket.ticketNo}</td>
-                                      <td className="py-2 px-3">{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</td>
-                                      <td className="py-2 px-3 text-right">₹{(ticket.amount || 0).toLocaleString('en-IN')}</td>
-                                      <td className="py-2 px-3 text-right font-medium">₹{payableAmount.toLocaleString('en-IN')}</td>
+                                      <td className="py-2 px-3 font-mono text-xs whitespace-nowrap">{ticket.ticketNo}</td>
+                                      <td className="py-2 px-3 whitespace-nowrap">{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</td>
+                                      <td className="py-2 px-3 text-right whitespace-nowrap">₹{(ticket.amount || 0).toLocaleString('en-IN')}</td>
+                                      <td className="py-2 px-3 text-right font-medium whitespace-nowrap">₹{payableAmount.toLocaleString('en-IN')}</td>
                                       {activeTab === 'paid' ? (
                                         <>
-                                          <td className="py-2 px-3 text-xs">
-                                            {ticket.payment?.paidAt 
+                                          <td className="py-2 px-3 text-xs whitespace-nowrap">
+                                            {ticket.payment?.paidAt
                                               ? format(new Date(ticket.payment.paidAt), 'dd/MM/yy hh:mm a')
                                               : '-'}
                                           </td>
-                                          <td className="py-2 px-3 max-w-[150px] truncate">{ticket.payment?.receivedByName || '-'}</td>
+                                          <td className="py-2 px-3 max-w-[220px] truncate">{ticket.payment?.receivedByName || '-'}</td>
                                         </>
                                       ) : (
                                         <td className="py-2 px-3 text-right">
-                                          <Button size="sm" onClick={() => handlePayClick(ticket)}>Pay</Button>
+                                          <Button size="sm" onClick={() => handlePayClick(ticket)}>
+                                            Pay
+                                          </Button>
                                         </td>
                                       )}
                                     </tr>
