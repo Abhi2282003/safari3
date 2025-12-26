@@ -16,6 +16,7 @@ import SeatBookings from "./pages/SeatBookings";
 import Profit from "./pages/Profit";
 import AgentCollections from "./pages/AgentCollections";
 import PayCollection from "./pages/PayCollection";
+import Tickets from "./pages/Tickets";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/new-ticket" element={<ProtectedRoute><NewTicket /></ProtectedRoute>} />
+            <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
             <Route path="/edit-ticket/:id" element={<ProtectedRoute><EditTicket /></ProtectedRoute>} />
             <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetails /></ProtectedRoute>} />
             <Route path="/ticket/:id/print" element={<ProtectedRoute><PrintTicketPage /></ProtectedRoute>} />
