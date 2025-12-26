@@ -249,7 +249,7 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
   // Desktop Table View
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      <div className="rounded-lg border bg-card">
         <Table className="min-w-[1000px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
