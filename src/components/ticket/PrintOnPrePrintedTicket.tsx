@@ -59,11 +59,18 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
 
     const styleFor = (k: keyof PrePrintedLayout) => {
       const p = layout[k];
+
+      // Calibration stores x/y in millimeters as an "anchor" point.
+      // - left aligned fields: x is the left edge
+      // - center aligned fields: x is the horizontal center
+      const isCenter = (p.align ?? "left") === "center";
+
       return {
         position: "absolute" as const,
         left: `${p.x}mm`,
         top: `${p.y}mm`,
         width: `${p.w}mm`,
+        transform: isCenter ? "translateX(-50%)" : undefined,
         fontSize: `${p.fontPt * FONT_SCALE}pt`,
         fontWeight: 700,
         lineHeight: 1.05,
