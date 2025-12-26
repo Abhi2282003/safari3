@@ -29,10 +29,11 @@ export const BusMemo = forwardRef<HTMLDivElement, BusMemoProps>(
     const onlineBookings = seatBookings.filter((b) => b.bookingType === 'online');
     const agentBookings = seatBookings.filter((b) => b.bookingType === 'agent');
     const selfBookings = seatBookings.filter((b) => b.bookingType === 'self');
+    const sonuBookings = seatBookings.filter((b) => b.bookingType === 'sonu');
     const returnBookings = seatBookings.filter((b) => b.bookingType === 'return');
 
-    // Combine agent and self bookings for display
-    const mainBookings = [...agentBookings, ...selfBookings];
+    // Combine agent, self and sonu bookings for display (all have 15% deduction)
+    const mainBookings = [...agentBookings, ...selfBookings, ...sonuBookings];
 
     // Group bookings by destination and rate (combined agent + self)
     const groupBookings = (bookings: SeatBooking[], commissionRate: number): GroupedBooking[] => {
