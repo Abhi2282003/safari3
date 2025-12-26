@@ -36,10 +36,10 @@ export function BookedBySummary({ tickets }: BookedBySummaryProps) {
       data.amount += ticket.amount;
       
       const mode = (ticket.paymentMode || 'other').toLowerCase();
-      if (mode === 'cash') data.paymentModes.cash += 1;
-      else if (mode === 'upi') data.paymentModes.upi += 1;
-      else if (mode === 'card') data.paymentModes.card += 1;
-      else data.paymentModes.other += 1;
+      if (mode === 'cash') data.paymentModes.cash += ticket.amount;
+      else if (mode === 'upi') data.paymentModes.upi += ticket.amount;
+      else if (mode === 'card') data.paymentModes.card += ticket.amount;
+      else data.paymentModes.other += ticket.amount;
     });
 
     return Array.from(summary.entries())
@@ -77,16 +77,16 @@ export function BookedBySummary({ tickets }: BookedBySummaryProps) {
               </p>
               <div className="flex flex-wrap gap-1 text-[10px] text-muted-foreground">
                 {booker.paymentModes.cash > 0 && (
-                  <span className="px-1.5 py-0.5 bg-green-500/10 rounded">Cash: {booker.paymentModes.cash}</span>
+                  <span className="px-1.5 py-0.5 bg-green-500/10 rounded">Cash: {booker.paymentModes.cash.toLocaleString()}</span>
                 )}
                 {booker.paymentModes.upi > 0 && (
-                  <span className="px-1.5 py-0.5 bg-blue-500/10 rounded">UPI: {booker.paymentModes.upi}</span>
+                  <span className="px-1.5 py-0.5 bg-blue-500/10 rounded">UPI: {booker.paymentModes.upi.toLocaleString()}</span>
                 )}
                 {booker.paymentModes.card > 0 && (
-                  <span className="px-1.5 py-0.5 bg-purple-500/10 rounded">Card: {booker.paymentModes.card}</span>
+                  <span className="px-1.5 py-0.5 bg-purple-500/10 rounded">Card: {booker.paymentModes.card.toLocaleString()}</span>
                 )}
                 {booker.paymentModes.other > 0 && (
-                  <span className="px-1.5 py-0.5 bg-gray-500/10 rounded">Other: {booker.paymentModes.other}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-500/10 rounded">Other: {booker.paymentModes.other.toLocaleString()}</span>
                 )}
               </div>
             </div>
