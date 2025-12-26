@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown, Bus, Wallet } from 'lucide-react';
@@ -53,6 +54,7 @@ interface AgentWithCollections {
 }
 
 type SortOption = 'pending-desc' | 'pending-asc' | 'name-asc' | 'name-desc' | 'collected-desc';
+type TabType = 'pending' | 'received';
 
 const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
@@ -70,6 +72,7 @@ export default function AgentCollections() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('pending-desc');
+  const [activeTab, setActiveTab] = useState<TabType>('pending');
 
   // Group bookings by agent with pending collections
   const agentCollections = useMemo(() => {
@@ -112,8 +115,7 @@ export default function AgentCollections() {
       });
 
     // Show agents with pending collections OR advance balance
-    let results = Array.from(agentMap.values())
-      .filter(a => a.totalPending > 0 || a.advanceBalance > 0);
+    let results = Array.from(agentMap.values());
     
     // Apply search filter
     if (searchQuery.trim()) {
@@ -145,6 +147,15 @@ export default function AgentCollections() {
     
     return results;
   }, [seatBookings, agents, searchQuery, sortBy]);
+
+  // Filter agents based on active tab
+  const pendingAgents = useMemo(() => {
+    return agentCollections.filter(a => a.totalPending > 0 || a.advanceBalance > 0);
+  }, [agentCollections]);
+
+  const receivedAgents = useMemo(() => {
+    return agentCollections.filter(a => a.totalCollected > 0);
+  }, [agentCollections]);
 
   const summary = useMemo(() => {
     let totalPending = 0;
@@ -436,149 +447,259 @@ export default function AgentCollections() {
           </Select>
         </div>
 
-        {/* Agent-wise Collections */}
-        {agentCollections.length > 0 ? (
-          <Accordion type="multiple" className="space-y-3">
-            {agentCollections.map((agent) => (
-              <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
-                <AccordionTrigger className="hover:no-underline py-3">
-                  <div className="flex items-center justify-between w-full pr-2 sm:pr-4">
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                      </div>
-                      <div className="text-left min-w-0">
-                        <p className="font-semibold text-sm sm:text-base truncate">{agent.name}</p>
-                        {agent.phone && (
-                          <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {agent.phone}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                      {agent.advanceBalance > 0 && (
-                        <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs hidden sm:flex">
-                          <Wallet className="h-3 w-3 mr-1" />
-                          ₹{agent.advanceBalance.toFixed(0)} adv
-                        </Badge>
-                      )}
-                      {agent.totalPending > 0 ? (
-                        <Badge variant="outline" className="text-amber-600 border-amber-600 text-xs">
-                          <Clock className="h-3 w-3 mr-1" />
-                          ₹{agent.totalPending.toFixed(0)}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Clear
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="pt-3 space-y-4">
-                    {/* Advance Balance Notice */}
-                    {agent.advanceBalance > 0 && (
-                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                          <Wallet className="h-4 w-4" />
-                          Advance Balance: <strong>₹{agent.advanceBalance.toFixed(0)}</strong>
-                          {agent.totalPending > 0 && (
-                            <span className="text-xs">
-                              (Net: ₹{Math.max(0, agent.totalPending - agent.advanceBalance).toFixed(0)})
-                            </span>
+        {/* Tabs for Pending/Received */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="pending" className="gap-2">
+              <Clock className="h-4 w-4" />
+              Pending
+              {pendingAgents.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{pendingAgents.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="received" className="gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              Received
+              {receivedAgents.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{receivedAgents.length}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Pending Tab */}
+          <TabsContent value="pending">
+            {pendingAgents.length > 0 ? (
+              <Accordion type="multiple" className="space-y-3">
+                {pendingAgents.map((agent) => (
+                  <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
+                    <AccordionTrigger className="hover:no-underline py-3">
+                      <div className="flex items-center justify-between w-full pr-2 sm:pr-4">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                          </div>
+                          <div className="text-left min-w-0">
+                            <p className="font-semibold text-sm sm:text-base truncate">{agent.name}</p>
+                            {agent.phone && (
+                              <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {agent.phone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                          {agent.advanceBalance > 0 && (
+                            <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs hidden sm:flex">
+                              <Wallet className="h-3 w-3 mr-1" />
+                              ₹{agent.advanceBalance.toFixed(0)} adv
+                            </Badge>
                           )}
-                        </p>
+                          <Badge variant="outline" className="text-amber-600 border-amber-600 text-xs">
+                            <Clock className="h-3 w-3 mr-1" />
+                            ₹{agent.totalPending.toFixed(0)}
+                          </Badge>
+                        </div>
                       </div>
-                    )}
-
-                    {/* Actions */}
-                    {(agent.totalPending > 0 || agent.advanceBalance > 0) && (
-                      <div className="flex gap-2 flex-wrap">
-                        <Button onClick={() => handleOpenPayment(agent)} className="gap-2" size="sm">
-                          <IndianRupee className="h-4 w-4" />
-                          Receive Payment
-                        </Button>
-                        {agent.totalPending > 0 && (
-                          <Button 
-                            variant="outline" 
-                            onClick={() => handleMarkAllCollected(agent)}
-                            className="gap-2"
-                            size="sm"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Mark All Collected
-                          </Button>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="pt-3 space-y-4">
+                        {/* Advance Balance Notice */}
+                        {agent.advanceBalance > 0 && (
+                          <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                            <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                              <Wallet className="h-4 w-4" />
+                              Advance Balance: <strong>₹{agent.advanceBalance.toFixed(0)}</strong>
+                              {agent.totalPending > 0 && (
+                                <span className="text-xs">
+                                  (Net: ₹{Math.max(0, agent.totalPending - agent.advanceBalance).toFixed(0)})
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         )}
-                      </div>
-                    )}
 
-                    {/* Bookings Table */}
-                    {agent.bookings.filter(b => b.agentCollectionStatus === 'pending').length > 0 && (
-                      <div className="rounded-lg border overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="text-xs">Date</TableHead>
-                              <TableHead className="text-xs">Bus</TableHead>
-                              <TableHead className="text-xs">Seat</TableHead>
-                              <TableHead className="text-right text-xs">Amount</TableHead>
-                              <TableHead className="text-right text-xs">To Collect</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {agent.bookings
-                              .filter(b => b.agentCollectionStatus === 'pending')
-                              .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
-                              .map((booking) => (
-                              <TableRow key={booking.id}>
-                                <TableCell className="text-xs sm:text-sm">
-                                  {format(new Date(booking.journeyDate), 'dd MMM')}
-                                </TableCell>
-                                <TableCell className="text-xs sm:text-sm">
-                                  <div className="flex items-center gap-1">
-                                    <Bus className="h-3 w-3 text-muted-foreground" />
-                                    <span className="truncate max-w-[80px]">{booking.busName || '-'}</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
-                                <TableCell className="text-right text-xs sm:text-sm">₹{booking.bookingAmount.toFixed(0)}</TableCell>
-                                <TableCell className="text-right text-xs sm:text-sm font-medium text-amber-600">
-                                  ₹{booking.amountFromAgent.toFixed(0)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
+                        {/* Actions */}
+                        <div className="flex gap-2 flex-wrap">
+                          <Button onClick={() => handleOpenPayment(agent)} className="gap-2" size="sm">
+                            <IndianRupee className="h-4 w-4" />
+                            Receive Payment
+                          </Button>
+                          {agent.totalPending > 0 && (
+                            <Button 
+                              variant="outline" 
+                              onClick={() => handleMarkAllCollected(agent)}
+                              className="gap-2"
+                              size="sm"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                              Mark All Collected
+                            </Button>
+                          )}
+                        </div>
 
-                    {/* Summary */}
-                    <div className="flex flex-wrap gap-4 text-xs sm:text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Pending:</span>{' '}
-                        <span className="font-medium">{agent.bookings.filter(b => b.agentCollectionStatus === 'pending').length} bookings</span>
+                        {/* Bookings Table */}
+                        {agent.bookings.filter(b => b.agentCollectionStatus === 'pending').length > 0 && (
+                          <div className="rounded-lg border overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">Date</TableHead>
+                                  <TableHead className="text-xs">Bus</TableHead>
+                                  <TableHead className="text-xs">Seat</TableHead>
+                                  <TableHead className="text-right text-xs">Amount</TableHead>
+                                  <TableHead className="text-right text-xs">To Collect</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {agent.bookings
+                                  .filter(b => b.agentCollectionStatus === 'pending')
+                                  .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
+                                  .map((booking) => (
+                                  <TableRow key={booking.id}>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      {format(new Date(booking.journeyDate), 'dd MMM')}
+                                    </TableCell>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      <div className="flex items-center gap-1">
+                                        <Bus className="h-3 w-3 text-muted-foreground" />
+                                        <span className="truncate max-w-[80px]">{booking.busName || '-'}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
+                                    <TableCell className="text-right text-xs sm:text-sm">₹{booking.bookingAmount.toFixed(0)}</TableCell>
+                                    <TableCell className="text-right text-xs sm:text-sm font-medium text-amber-600">
+                                      ₹{booking.amountFromAgent.toFixed(0)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+
+                        {/* Summary */}
+                        <div className="flex flex-wrap gap-4 text-xs sm:text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Pending:</span>{' '}
+                            <span className="font-medium">{agent.bookings.filter(b => b.agentCollectionStatus === 'pending').length} bookings</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Total:</span>{' '}
+                            <span className="font-medium text-amber-600">₹{agent.totalPending.toFixed(0)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Total:</span>{' '}
-                        <span className="font-medium text-amber-600">₹{agent.totalPending.toFixed(0)}</span>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  No pending collections. All agent payments are received.
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Received Tab */}
+          <TabsContent value="received">
+            {receivedAgents.length > 0 ? (
+              <Accordion type="multiple" className="space-y-3">
+                {receivedAgents.map((agent) => (
+                  <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
+                    <AccordionTrigger className="hover:no-underline py-3">
+                      <div className="flex items-center justify-between w-full pr-2 sm:pr-4">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                          </div>
+                          <div className="text-left min-w-0">
+                            <p className="font-semibold text-sm sm:text-base truncate">{agent.name}</p>
+                            {agent.phone && (
+                              <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {agent.phone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                          <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            ₹{agent.totalCollected.toFixed(0)}
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        ) : (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              No agent bookings found. Agent bookings will appear here once created in Seat Bookings.
-            </CardContent>
-          </Card>
-        )}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="pt-3 space-y-4">
+                        {/* Collected Bookings Table */}
+                        {agent.bookings.filter(b => b.agentCollectionStatus === 'collected').length > 0 && (
+                          <div className="rounded-lg border overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">Date</TableHead>
+                                  <TableHead className="text-xs">Bus</TableHead>
+                                  <TableHead className="text-xs">Seat</TableHead>
+                                  <TableHead className="text-right text-xs">Amount</TableHead>
+                                  <TableHead className="text-right text-xs">Collected</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {agent.bookings
+                                  .filter(b => b.agentCollectionStatus === 'collected')
+                                  .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
+                                  .map((booking) => (
+                                  <TableRow key={booking.id}>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      {format(new Date(booking.journeyDate), 'dd MMM')}
+                                    </TableCell>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      <div className="flex items-center gap-1">
+                                        <Bus className="h-3 w-3 text-muted-foreground" />
+                                        <span className="truncate max-w-[80px]">{booking.busName || '-'}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
+                                    <TableCell className="text-right text-xs sm:text-sm">₹{booking.bookingAmount.toFixed(0)}</TableCell>
+                                    <TableCell className="text-right text-xs sm:text-sm font-medium text-green-600">
+                                      ₹{(booking.originalAmountFromAgent || booking.amountFromAgent).toFixed(0)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+
+                        {/* Summary */}
+                        <div className="flex flex-wrap gap-4 text-xs sm:text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Collected:</span>{' '}
+                            <span className="font-medium">{agent.bookings.filter(b => b.agentCollectionStatus === 'collected').length} bookings</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Total:</span>{' '}
+                            <span className="font-medium text-green-600">₹{agent.totalCollected.toFixed(0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  No received payments yet. Collected payments will appear here.
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Payment Dialog */}
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
