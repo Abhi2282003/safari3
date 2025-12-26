@@ -39,7 +39,7 @@ interface PrePrintedCalibrationProps {
 export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving }: PrePrintedCalibrationProps) {
   const [showTemplate, setShowTemplate] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
-  const [scale, setScale] = useState(1.5); // default 1.5x for better visibility
+  const [scale, setScale] = useState(1); // default 100%
 
   const pxPerMm = BASE_PX_PER_MM * scale;
 
@@ -123,8 +123,8 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
               size="icon"
               variant="outline"
               className="h-7 w-7"
-              onClick={() => setScale((s) => Math.max(1, s - 0.25))}
-              disabled={scale <= 1}
+              onClick={() => setScale((s) => Math.max(0.75, Number((s - 0.25).toFixed(2))))}
+              disabled={scale <= 0.75}
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
@@ -133,8 +133,8 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
               size="icon"
               variant="outline"
               className="h-7 w-7"
-              onClick={() => setScale((s) => Math.min(2.5, s + 0.25))}
-              disabled={scale >= 2.5}
+              onClick={() => setScale((s) => Math.min(1.75, Number((s + 0.25).toFixed(2))))}
+              disabled={scale >= 1.75}
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
@@ -187,15 +187,11 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
                 <div
                   key={key}
                   onPointerDown={(e) => startDrag(key, e)}
-                  title="Drag to move (top-left position)"
-                  className="absolute z-20 cursor-move select-none rounded border border-primary/60 bg-background/85 px-1 py-0.5 font-semibold text-foreground shadow-sm"
+                  title="Drag to move"
+                  className="absolute z-20 cursor-move select-none rounded border border-primary/60 bg-background/85 px-1 py-0.5 text-[10px] font-semibold text-foreground shadow-sm"
                   style={{
                     left: `${p.x * scale}mm`,
                     top: `${p.y * scale}mm`,
-                    width: `${p.w * scale}mm`,
-                    fontSize: `${p.fontPt * scale}pt`,
-                    lineHeight: 1.1,
-                    textAlign: p.align ?? "left",
                   }}
                 >
                   {key}
