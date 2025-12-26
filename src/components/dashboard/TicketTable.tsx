@@ -45,7 +45,6 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editId, setEditId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -67,19 +66,13 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
     }
   };
 
-  const handleEditPassword = (ticketId: string) => {
-    setEditId(ticketId);
+  const handleEdit = (ticketId: string) => {
+    // Direct navigation to edit - no password required
+    navigate(`/edit-ticket/${ticketId}`);
   };
 
   const handleDeletePassword = (ticketId: string) => {
     setPendingDeleteId(ticketId);
-  };
-
-  const handleEditConfirmed = () => {
-    if (editId) {
-      navigate(`/edit-ticket/${editId}`);
-      setEditId(null);
-    }
   };
 
   const handleDeleteConfirmed = () => {
@@ -183,7 +176,7 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
                           Mark as Paid
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditPassword(ticket.id); }}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(ticket.id); }}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit Ticket
                       </DropdownMenuItem>
@@ -202,15 +195,6 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
             );
           })}
         </div>
-
-        {/* Password Dialog for Edit */}
-        <PasswordDialog
-          open={!!editId}
-          onOpenChange={() => setEditId(null)}
-          onSuccess={handleEditConfirmed}
-          title="Edit Ticket"
-          description="Enter admin password to edit this ticket."
-        />
 
         {/* Password Dialog for Delete */}
         <PasswordDialog
@@ -326,7 +310,7 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
                             Mark as Paid
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={() => handleEditPassword(ticket.id)}>
+                        <DropdownMenuItem onClick={() => handleEdit(ticket.id)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit Ticket
                         </DropdownMenuItem>
@@ -347,15 +331,6 @@ export function TicketTable({ tickets, onRefresh, onMarkPaid, onDeleteTicket }: 
           </TableBody>
         </Table>
       </div>
-
-      {/* Password Dialog for Edit */}
-      <PasswordDialog
-        open={!!editId}
-        onOpenChange={() => setEditId(null)}
-        onSuccess={handleEditConfirmed}
-        title="Edit Ticket"
-        description="Enter admin password to edit this ticket."
-      />
 
       {/* Password Dialog for Delete */}
       <PasswordDialog

@@ -43,7 +43,6 @@ export default function TicketDetails() {
   const [loading, setLoading] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [showEditPassword, setShowEditPassword] = useState(false);
   const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   const loadTicket = useCallback(async () => {
@@ -156,15 +155,12 @@ export default function TicketDetails() {
   };
 
   const handleEditClick = () => {
-    setShowEditPassword(true);
+    // Direct navigation to edit - no password required
+    navigate(`/edit-ticket/${id}`);
   };
 
   const handleDeleteClick = () => {
     setShowDeletePassword(true);
-  };
-
-  const handleEditConfirmed = () => {
-    navigate(`/edit-ticket/${id}`);
   };
 
   const handleDeleteConfirmed = () => {
@@ -438,15 +434,7 @@ export default function TicketDetails() {
           onSubmit={handlePayment}
         />
 
-        {/* Password Dialogs */}
-        <PasswordDialog
-          open={showEditPassword}
-          onOpenChange={setShowEditPassword}
-          onSuccess={handleEditConfirmed}
-          title="Edit Ticket"
-          description="Enter admin password to edit this ticket."
-        />
-
+        {/* Password Dialog for Delete */}
         <PasswordDialog
           open={showDeletePassword}
           onOpenChange={setShowDeletePassword}

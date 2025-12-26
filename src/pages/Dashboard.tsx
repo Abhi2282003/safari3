@@ -5,7 +5,9 @@ import {
   Ticket, 
   Plus,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Printer,
+  Pencil
 } from 'lucide-react';
 import { BookedBySummary } from '@/components/dashboard/BookedBySummary';
 import { Layout } from '@/components/layout/Layout';
@@ -19,6 +21,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useTickets, useTravels, calculateStats } from '@/hooks/useTickets';
 import { useSeatBookings, useAgents } from '@/hooks/useSeatBookings';
 
@@ -120,6 +130,96 @@ export default function Dashboard() {
             trend={`From ${pendingAgentCollections.length} agent${pendingAgentCollections.length !== 1 ? 's' : ''}`}
           />
         </div>
+
+        {/* Daily Tickets Table */}
+        {dateTickets.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Ticket className="h-5 w-5" />
+                  Today's Tickets
+                </CardTitle>
+                <Link to="/tickets">
+                  <Button variant="ghost" size="sm">
+                    View All
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="rounded-lg border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Ticket No</TableHead>
+                      <TableHead className="text-xs">Passenger</TableHead>
+                      <TableHead className="text-xs">Destination</TableHead>
+                      <TableHead className="text-xs">Status</TableHead>
+                      <TableHead className="text-right text-xs">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dateTickets.slice(0, 10).map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell className="text-xs sm:text-sm font-medium">
+                          <Link to={`/ticket/${ticket.id}`} className="hover:underline text-primary">
+                            {ticket.ticketNo}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm">
+                          {ticket.passengerName}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm text-muted-foreground">
+                          {ticket.toursTo}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={ticket.collectionStatus === 'Paid' ? 'default' : 'outline'}
+                            className={ticket.collectionStatus === 'Paid' 
+                              ? 'bg-green-500 hover:bg-green-600 text-xs' 
+                              : 'text-amber-600 border-amber-600 text-xs'
+                            }
+                          >
+                            {ticket.collectionStatus}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => navigate(`/ticket/${ticket.id}/print`)}
+                              title="Print Ticket"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => navigate(`/edit-ticket/${ticket.id}`)}
+                              title="Edit Ticket"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {dateTickets.length > 10 && (
+                <p className="text-sm text-center text-muted-foreground mt-3">
+                  +{dateTickets.length - 10} more tickets
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Booked By Summary */}
         <BookedBySummary tickets={dateTickets} />
