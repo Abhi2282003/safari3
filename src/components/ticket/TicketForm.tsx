@@ -124,6 +124,10 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
       toast.error('Amount must be greater than 0');
       return;
     }
+    if (!formData.paymentMode) {
+      toast.error('Payment mode is required');
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -370,9 +374,11 @@ export function TicketForm({ ticketId, mode = 'create' }: TicketFormProps) {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Payment Mode</Label>
-              <Select value={formData.paymentMode || undefined} onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMode: value as 'Cash' | 'UPI' | 'Card' | 'Other' }))}>
-                <SelectTrigger><SelectValue placeholder="Select payment mode" /></SelectTrigger>
+              <Label>Payment Mode *</Label>
+              <Select value={formData.paymentMode || undefined} onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMode: value as 'Cash' | 'UPI' | 'Card' | 'Other' }))} required>
+                <SelectTrigger className={!formData.paymentMode ? 'border-destructive/50' : ''}>
+                  <SelectValue placeholder="Select payment mode" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Cash">Cash</SelectItem>
                   <SelectItem value="UPI">UPI</SelectItem>
