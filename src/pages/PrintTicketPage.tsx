@@ -228,16 +228,16 @@ export default function PrintTicketPage() {
             <div 
               className="mx-auto border-2 border-dashed border-gray-400 bg-amber-50" 
               style={{ 
-                width: '175mm', 
-                height: '105mm',
+                width: '105mm', 
+                height: '175mm',
                 position: 'relative',
               }}
             >
               {/* Guide text for pre-printed mode */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-center p-4">
-                <p className="text-sm text-gray-600">
-                  Pre-printed ticket form area (105mm x 175mm)<br/>
-                  Data will be printed at correct positions
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 text-center p-4">
+                <p className="text-xs text-gray-600">
+                  Pre-printed ticket<br/>
+                  105mm x 175mm
                 </p>
               </div>
               <PrintOnPrePrintedTicket ref={prePrintedRef} ticket={ticket} />
