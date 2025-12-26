@@ -142,7 +142,8 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Tip: Drag each box so its top-left matches where the printed text should start. Print with scale 100% and
+          Tip: Drag each label to the spot where the printed text should appear. Center-aligned fields will print centered
+          around the label position; left-aligned fields will start from the label position. Print with scale 100% and
           margins none. If a field is missing (e.g. amount), it may be outside the page—scroll inside the preview and
           drag it back.
         </div>
