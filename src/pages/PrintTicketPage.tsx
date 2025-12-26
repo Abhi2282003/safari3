@@ -214,7 +214,7 @@ export default function PrintTicketPage() {
             size="sm"
             onClick={() => setPrintMode('preprinted')}
           >
-            Pre-printed Ticket (105mm x 175mm)
+            Pre-printed Ticket (175mm x 105mm)
           </Button>
         </div>
 
@@ -228,16 +228,15 @@ export default function PrintTicketPage() {
             <div 
               className="mx-auto border-2 border-dashed border-gray-400 bg-amber-50" 
               style={{ 
-                width: '105mm', 
-                height: '175mm',
+                width: '175mm', 
+                height: '105mm',
                 position: 'relative',
               }}
             >
               {/* Guide text for pre-printed mode */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 text-center p-4">
                 <p className="text-xs text-gray-600">
-                  Pre-printed ticket<br/>
-                  105mm x 175mm
+                  175mm x 105mm
                 </p>
               </div>
               <PrintOnPrePrintedTicket ref={prePrintedRef} ticket={ticket} />
