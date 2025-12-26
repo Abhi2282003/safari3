@@ -604,7 +604,7 @@ export default function AgentCollections() {
                                     <TableCell className="text-xs sm:text-sm">
                                       <div className="flex items-center gap-1">
                                         <Bus className="h-3 w-3 text-muted-foreground" />
-                                        <span className="truncate max-w-[80px]">{booking.busName || '-'}</span>
+                                        <span className="truncate max-w-[140px] sm:max-w-[200px]">{booking.busName || '-'}</span>
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
@@ -752,7 +752,7 @@ export default function AgentCollections() {
                                       <TableCell className="text-xs sm:text-sm">
                                         <div className="flex items-center gap-1">
                                           <Bus className="h-3 w-3 text-muted-foreground" />
-                                          <span className="truncate max-w-[80px]">{booking.busName || '-'}</span>
+                                          <span className="truncate max-w-[140px] sm:max-w-[200px]">{booking.busName || '-'}</span>
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
