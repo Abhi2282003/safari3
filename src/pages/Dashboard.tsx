@@ -3,14 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
   Ticket, 
-  IndianRupee, 
-  AlertCircle,
   Plus,
-  CalendarIcon,
-  Users,
   Clock,
   ChevronRight
 } from 'lucide-react';
+import { BookedBySummary } from '@/components/dashboard/BookedBySummary';
 import { Layout } from '@/components/layout/Layout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Button } from '@/components/ui/button';
@@ -108,7 +105,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
           <StatCard
             title="Tickets Today"
             value={stats.totalTickets}
@@ -116,18 +113,16 @@ export default function Dashboard() {
             trend={`${stats.paidCount} paid, ${stats.unpaidCount} unpaid`}
           />
           <StatCard
-            title="Total Collection"
-            value={`₹${stats.totalCollection.toLocaleString()}`}
-            icon={<IndianRupee className="h-5 w-5 sm:h-6 sm:w-6" />}
-            variant="success"
-          />
-          <StatCard
-            title="Pending Amount"
-            value={`₹${stats.totalUnpaid.toLocaleString()}`}
-            icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+            title="Pending Agent Collection"
+            value={`₹${totalPendingFromAgents.toLocaleString()}`}
+            icon={<Clock className="h-5 w-5 sm:h-6 sm:w-6" />}
             variant="destructive"
+            trend={`From ${pendingAgentCollections.length} agent${pendingAgentCollections.length !== 1 ? 's' : ''}`}
           />
         </div>
+
+        {/* Booked By Summary */}
+        <BookedBySummary tickets={dateTickets} />
 
         {/* Pending Agent Collections */}
         {pendingAgentCollections.length > 0 && (
