@@ -1,17 +1,41 @@
 import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { useTickets } from '@/hooks/useTickets';
+import { useTickets, useTravels, useReceivers } from '@/hooks/useTickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { IndianRupee, CheckCircle, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function PayCollection() {
-  const { tickets, loading } = useTickets();
+  const { tickets, loading, savePayment, fetchTickets } = useTickets();
+  const { travels } = useTravels();
+  const { receivers } = useReceivers();
   const [activeTab, setActiveTab] = useState<'unpaid' | 'paid'>('unpaid');
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<typeof tickets[0] | null>(null);
+  const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Other'>('Cash');
+  const [receivedBy, setReceivedBy] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get commission for a travel
+  const getCommission = (travelsName: string | undefined) => {
+    if (!travelsName) return 10;
+    const travel = travels.find(t => t.name === travelsName);
+    return travel?.commissionPercent ?? 10;
+  };
+
+  // Calculate amount to pay after commission
+  const calculatePayableAmount = (baseFare: number, commissionPercent: number) => {
+    return baseFare - (baseFare * commissionPercent / 100);
+  };
 
   // Group tickets by travel name and collection status
   const groupedTickets = useMemo(() => {
@@ -47,14 +71,57 @@ export default function PayCollection() {
   const currentGroup = activeTab === 'paid' ? groupedTickets.paid : groupedTickets.unpaid;
   const travelNames = Object.keys(currentGroup).sort();
 
-  // Calculate totals
+  // Calculate totals (using payable amounts)
   const totals = useMemo(() => {
-    const paidTotal = Object.values(groupedTickets.paid).flat().reduce((sum, t) => sum + (t.amount || 0), 0);
-    const unpaidTotal = Object.values(groupedTickets.unpaid).flat().reduce((sum, t) => sum + (t.amount || 0), 0);
+    const calculateGroupTotal = (group: Record<string, typeof tickets>) => {
+      return Object.entries(group).reduce((sum, [travelsName, ticketList]) => {
+        const commission = getCommission(travelsName === 'No Travel Name' ? undefined : travelsName);
+        return sum + ticketList.reduce((s, t) => s + calculatePayableAmount(t.amount || 0, commission), 0);
+      }, 0);
+    };
+
+    const paidTotal = calculateGroupTotal(groupedTickets.paid);
+    const unpaidTotal = calculateGroupTotal(groupedTickets.unpaid);
     const paidCount = Object.values(groupedTickets.paid).flat().length;
     const unpaidCount = Object.values(groupedTickets.unpaid).flat().length;
     return { paidTotal, unpaidTotal, paidCount, unpaidCount };
-  }, [groupedTickets]);
+  }, [groupedTickets, travels]);
+
+  const handlePayClick = (ticket: typeof tickets[0]) => {
+    setSelectedTicket(ticket);
+    setPaymentMode('Cash');
+    setReceivedBy(receivers[0]?.name || '');
+    setPayDialogOpen(true);
+  };
+
+  const handlePaySubmit = async () => {
+    if (!selectedTicket || !receivedBy) {
+      toast.error('Please select who received the payment');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const commission = getCommission(selectedTicket.travelsName);
+      const payableAmount = calculatePayableAmount(selectedTicket.amount || 0, commission);
+
+      await savePayment({
+        ticketId: selectedTicket.id,
+        receivedByName: receivedBy,
+        paymentMode,
+        paidAmount: payableAmount,
+        paidAt: new Date().toISOString(),
+      });
+
+      toast.success('Payment recorded successfully');
+      setPayDialogOpen(false);
+      fetchTickets();
+    } catch (error) {
+      toast.error('Failed to record payment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -133,7 +200,8 @@ export default function PayCollection() {
               <Accordion type="multiple" className="space-y-2">
                 {travelNames.map((travelsName) => {
                   const ticketList = currentGroup[travelsName];
-                  const groupTotal = ticketList.reduce((sum, t) => sum + (t.amount || 0), 0);
+                  const commission = getCommission(travelsName === 'No Travel Name' ? undefined : travelsName);
+                  const groupTotal = ticketList.reduce((sum, t) => sum + calculatePayableAmount(t.amount || 0, commission), 0);
 
                   return (
                     <AccordionItem key={travelsName} value={travelsName} className="border rounded-lg px-4">
@@ -155,24 +223,54 @@ export default function PayCollection() {
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Ticket No</TableHead>
-                                <TableHead>Passenger</TableHead>
                                 <TableHead>Journey Date</TableHead>
-                                <TableHead>Destination</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-right">Base Fare</TableHead>
+                                <TableHead className="text-right">To Pay</TableHead>
+                                {activeTab === 'paid' ? (
+                                  <>
+                                    <TableHead>Paid At</TableHead>
+                                    <TableHead>Received By</TableHead>
+                                  </>
+                                ) : (
+                                  <TableHead className="text-right">Action</TableHead>
+                                )}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {ticketList.map((ticket) => (
-                                <TableRow key={ticket.id}>
-                                  <TableCell className="font-mono text-xs">{ticket.ticketNo}</TableCell>
-                                  <TableCell>{ticket.passengerName}</TableCell>
-                                  <TableCell>{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</TableCell>
-                                  <TableCell>{ticket.toursTo}</TableCell>
-                                  <TableCell className="text-right font-medium">
-                                    ₹{(ticket.amount || 0).toLocaleString('en-IN')}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                              {ticketList.map((ticket) => {
+                                const payableAmount = calculatePayableAmount(ticket.amount || 0, commission);
+                                return (
+                                  <TableRow key={ticket.id}>
+                                    <TableCell className="font-mono text-xs">{ticket.ticketNo}</TableCell>
+                                    <TableCell>{format(new Date(ticket.journeyDate), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell className="text-right">
+                                      ₹{(ticket.amount || 0).toLocaleString('en-IN')}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      ₹{payableAmount.toLocaleString('en-IN')}
+                                    </TableCell>
+                                    {activeTab === 'paid' ? (
+                                      <>
+                                        <TableCell className="text-xs">
+                                          {ticket.payment?.paidAt 
+                                            ? format(new Date(ticket.payment.paidAt), 'dd/MM/yyyy hh:mm a')
+                                            : '-'}
+                                        </TableCell>
+                                        <TableCell>{ticket.payment?.receivedByName || '-'}</TableCell>
+                                      </>
+                                    ) : (
+                                      <TableCell className="text-right">
+                                        <Button 
+                                          size="sm" 
+                                          onClick={() => handlePayClick(ticket)}
+                                        >
+                                          Pay
+                                        </Button>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         </div>
@@ -185,6 +283,79 @@ export default function PayCollection() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Pay Dialog */}
+      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Ticket:</span>
+                  <p className="font-mono">{selectedTicket.ticketNo}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Travel:</span>
+                  <p>{selectedTicket.travelsName || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Base Fare:</span>
+                  <p>₹{(selectedTicket.amount || 0).toLocaleString('en-IN')}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Amount to Pay:</span>
+                  <p className="font-bold text-lg">
+                    ₹{calculatePayableAmount(
+                      selectedTicket.amount || 0, 
+                      getCommission(selectedTicket.travelsName)
+                    ).toLocaleString('en-IN')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payment Mode</Label>
+                <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as typeof paymentMode)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Received By</Label>
+                <Select value={receivedBy} onValueChange={setReceivedBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select receiver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {receivers.filter(r => r.active).map((receiver) => (
+                      <SelectItem key={receiver.id} value={receiver.name}>
+                        {receiver.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handlePaySubmit} disabled={isSubmitting}>
+              {isSubmitting ? 'Processing...' : 'Confirm Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
