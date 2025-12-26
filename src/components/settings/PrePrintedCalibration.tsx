@@ -149,28 +149,18 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
             />
           )}
 
+          {/* Single horizontal cut/fold line at center */}
+          <div
+            className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-10 pointer-events-none"
+            style={{ top: "87.5mm" }}
+          />
+
           {/* Draggable handles */}
           <div className="absolute inset-0 z-20">
             {orderedKeys.map((key) => {
               const p = layout[key];
               return (
                 <div key={key}>
-                  {/* Cross marker at exact position */}
-                  <div
-                    aria-hidden
-                    className="absolute pointer-events-none z-10"
-                    style={{
-                      left: `${p.x}mm`,
-                      top: `${p.y}mm`,
-                      width: "6mm",
-                      height: "6mm",
-                      transform: "translate(-3mm, -3mm)",
-                    }}
-                  >
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-primary/60 -translate-x-1/2" />
-                    <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/60 -translate-y-1/2" />
-                  </div>
-
                   {/* Label (drag this) */}
                   <div
                     onPointerDown={(e) => startDrag(key, e)}
