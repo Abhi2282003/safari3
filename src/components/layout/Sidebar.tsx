@@ -11,7 +11,8 @@ import {
   X,
   Armchair,
   Users,
-  TrendingUp
+  TrendingUp,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/new-ticket', label: 'New Ticket', icon: Plus },
   { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
+  { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
   { href: '/agent-collections', label: 'Agent Collections', icon: Users },
   { href: '/admin', label: 'Admin', icon: TrendingUp },
   { href: '/settings', label: 'Settings', icon: Settings },

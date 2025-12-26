@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import SeatBookings from "./pages/SeatBookings";
 import Profit from "./pages/Profit";
 import AgentCollections from "./pages/AgentCollections";
+import PayCollection from "./pages/PayCollection";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/seat-bookings" element={<ProtectedRoute><SeatBookings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Profit /></ProtectedRoute>} />
             <Route path="/agent-collections" element={<ProtectedRoute><AgentCollections /></ProtectedRoute>} />
+            <Route path="/pay-collection" element={<ProtectedRoute><PayCollection /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
