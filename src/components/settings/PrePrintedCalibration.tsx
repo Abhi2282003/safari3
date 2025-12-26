@@ -119,12 +119,13 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Tip: Print with scale 100% and margins none.
+          Tip: Print with scale 100% and margins none. If a field is missing (e.g. amount), it may be
+          outside the page—scroll inside the preview and drag it back.
         </div>
 
         {/* Preview area (105mm x 175mm ticket) */}
         <div
-          className="relative overflow-hidden rounded-md border border-border bg-background mx-auto"
+          className="relative overflow-auto rounded-md border border-border bg-background mx-auto"
           style={{ width: "105mm", height: "175mm" }}
         >
           {/* Background photo template */}
@@ -153,17 +154,35 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
             {orderedKeys.map((key) => {
               const p = layout[key];
               return (
-                <div
-                  key={key}
-                  onPointerDown={(e) => startDrag(key, e)}
-                  className="absolute cursor-move select-none rounded border border-primary bg-background/90 px-1 py-0.5 text-[10px] font-medium text-foreground shadow-sm hover:bg-primary/10"
-                  style={{
-                    left: `${p.x}mm`,
-                    top: `${p.y}mm`,
-                    transform: "translate(-2mm, -2mm)",
-                  }}
-                >
-                  {key}
+                <div key={key}>
+                  {/* Cross marker at exact position */}
+                  <div
+                    aria-hidden
+                    className="absolute pointer-events-none z-10"
+                    style={{
+                      left: `${p.x}mm`,
+                      top: `${p.y}mm`,
+                      width: "6mm",
+                      height: "6mm",
+                      transform: "translate(-3mm, -3mm)",
+                    }}
+                  >
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-primary/60 -translate-x-1/2" />
+                    <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/60 -translate-y-1/2" />
+                  </div>
+
+                  {/* Label (drag this) */}
+                  <div
+                    onPointerDown={(e) => startDrag(key, e)}
+                    className="absolute z-20 cursor-move select-none rounded border border-primary bg-background/90 px-1 py-0.5 text-[10px] font-medium text-foreground shadow-sm hover:bg-primary/10"
+                    style={{
+                      left: `${p.x}mm`,
+                      top: `${p.y}mm`,
+                      transform: "translate(-2mm, -8mm)",
+                    }}
+                  >
+                    {key}
+                  </div>
                 </div>
               );
             })}
