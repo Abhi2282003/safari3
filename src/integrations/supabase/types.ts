@@ -178,6 +178,7 @@ export type Database = {
           logo_url: string | null
           name: string
           phone: string | null
+          preprinted_layout: Json | null
           ticket_height: number | null
           ticket_width: number | null
           updated_at: string
@@ -191,6 +192,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           phone?: string | null
+          preprinted_layout?: Json | null
           ticket_height?: number | null
           ticket_width?: number | null
           updated_at?: string
@@ -204,6 +206,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           phone?: string | null
+          preprinted_layout?: Json | null
           ticket_height?: number | null
           ticket_width?: number | null
           updated_at?: string
