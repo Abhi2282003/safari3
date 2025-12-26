@@ -124,10 +124,10 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
           drag it back.
         </div>
 
-        {/* Preview area (175mm x 105mm ticket) */}
+        {/* Preview area (105mm x 175mm ticket - portrait) */}
         <div
           className="relative overflow-auto rounded-md border border-border bg-background mx-auto"
-          style={{ width: "175mm", height: "105mm" }}
+          style={{ width: "105mm", height: "175mm" }}
         >
           {/* Background photo template */}
           {showTemplate && (
@@ -153,7 +153,7 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
           {/* Single horizontal cut/fold line at center */}
           <div
             className="absolute left-0 right-0 border-t-2 border-dashed border-primary z-10 pointer-events-none"
-            style={{ top: "52.5mm" }}
+            style={{ top: "87.5mm" }}
           />
 
           {/* Draggable handles */}
