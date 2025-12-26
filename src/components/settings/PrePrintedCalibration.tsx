@@ -119,8 +119,9 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Tip: Print with scale 100% and margins none. If a field is missing (e.g. amount), it may be
-          outside the page—scroll inside the preview and drag it back.
+          Tip: Drag each box so its top-left matches where the printed text should start. Print with scale 100% and
+          margins none. If a field is missing (e.g. amount), it may be outside the page—scroll inside the preview and
+          drag it back.
         </div>
 
         {/* Preview area (175mm x 105mm ticket) */}
@@ -160,19 +161,21 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
             {orderedKeys.map((key) => {
               const p = layout[key];
               return (
-                <div key={key}>
-                  {/* Label (drag this) */}
-                  <div
-                    onPointerDown={(e) => startDrag(key, e)}
-                    className="absolute z-20 cursor-move select-none rounded border border-primary bg-background/90 px-1 py-0.5 text-[10px] font-medium text-foreground shadow-sm hover:bg-primary/10"
-                    style={{
-                      left: `${p.x}mm`,
-                      top: `${p.y}mm`,
-                      transform: "translate(-2mm, -8mm)",
-                    }}
-                  >
-                    {key}
-                  </div>
+                <div
+                  key={key}
+                  onPointerDown={(e) => startDrag(key, e)}
+                  title="Drag to move (top-left position)"
+                  className="absolute z-20 cursor-move select-none rounded border border-primary/60 bg-background/85 px-1 py-0.5 text-[10px] font-semibold text-foreground shadow-sm"
+                  style={{
+                    left: `${p.x}mm`,
+                    top: `${p.y}mm`,
+                    width: `${p.w}mm`,
+                    fontSize: `${p.fontPt}pt`,
+                    lineHeight: 1.1,
+                    textAlign: p.align ?? "left",
+                  }}
+                >
+                  {key}
                 </div>
               );
             })}
