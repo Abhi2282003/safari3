@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { PrePrintedCalibration } from '@/components/settings/PrePrintedCalibration';
+import { DEFAULT_PREPRINTED_LAYOUT, type PrePrintedLayout } from '@/components/ticket/PrintOnPrePrintedTicket';
 import {
   Table,
   TableBody,
@@ -49,6 +51,8 @@ export default function Settings() {
     ticketWidth: 280,
     ticketHeight: 140,
   });
+  const [prePrintedLayout, setPrePrintedLayout] = useState<PrePrintedLayout>(DEFAULT_PREPRINTED_LAYOUT);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
   const [receivers, setReceivers] = useState<ReceiverName[]>([]);
   const [travels, setTravels] = useState<TravelsConfig[]>([]);
   const [pickups, setPickups] = useState<PickupLocation[]>([]);
@@ -99,6 +103,15 @@ export default function Settings() {
           ticketWidth: settingsData.ticket_width || 280,
           ticketHeight: settingsData.ticket_height || 140,
         });
+        // Load pre-printed layout from database
+        if (settingsData.preprinted_layout) {
+          try {
+            const savedLayout = settingsData.preprinted_layout as PrePrintedLayout;
+            setPrePrintedLayout({ ...DEFAULT_PREPRINTED_LAYOUT, ...savedLayout });
+          } catch {
+            // Keep default if parsing fails
+          }
+        }
       }
 
       // Fetch receivers from Supabase
@@ -249,6 +262,42 @@ export default function Settings() {
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSavePrePrintedLayout = async () => {
+    if (!user) return;
+    setIsSavingLayout(true);
+    try {
+      // Check if settings exist
+      const { data: existing } = await supabase
+        .from('company_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('company_settings')
+          .update({ preprinted_layout: JSON.parse(JSON.stringify(prePrintedLayout)) })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('company_settings')
+          .insert([{
+            user_id: user.id,
+            preprinted_layout: JSON.parse(JSON.stringify(prePrintedLayout)),
+          }]);
+        if (error) throw error;
+      }
+
+      toast.success('Pre-printed layout saved successfully');
+    } catch (error) {
+      console.error('Error saving pre-printed layout:', error);
+      toast.error('Failed to save layout');
+    } finally {
+      setIsSavingLayout(false);
     }
   };
 
@@ -843,6 +892,14 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Pre-Printed Ticket Calibration */}
+          <PrePrintedCalibration
+            layout={prePrintedLayout}
+            onLayoutChange={setPrePrintedLayout}
+            onSave={handleSavePrePrintedLayout}
+            isSaving={isSavingLayout}
+          />
 
           {/* Agents Management */}
           <Card>

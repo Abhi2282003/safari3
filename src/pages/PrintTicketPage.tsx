@@ -205,7 +205,7 @@ export default function PrintTicketPage() {
         </div>
 
         {/* Print Mode Toggle */}
-        <div className="mb-4 no-print flex gap-2">
+        <div className="mb-4 no-print flex items-center gap-2">
           <Button
             variant={printMode === 'normal' ? 'default' : 'outline'}
             size="sm"
@@ -220,6 +220,11 @@ export default function PrintTicketPage() {
           >
             Pre-printed Ticket (175mm x 105mm)
           </Button>
+          {printMode === 'preprinted' && (
+            <span className="text-xs text-muted-foreground ml-2">
+              Adjust positions in <Link to="/settings" className="text-primary underline">Settings</Link>
+            </span>
+          )}
         </div>
 
         {/* Print Preview */}
