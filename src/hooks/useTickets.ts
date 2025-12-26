@@ -82,11 +82,12 @@ export async function generateTicketNo(): Promise<string> {
 export async function getNextTicketNumber(userId: string): Promise<string> {
   const today = format(new Date(), 'yyyyMMdd');
   
+  // Use the global counter date (1970-01-01) as set in the database function
   const { data: existing } = await supabase
     .from('ticket_counters')
     .select('counter_value')
     .eq('user_id', userId)
-    .eq('counter_date', format(new Date(), 'yyyy-MM-dd'))
+    .eq('counter_date', '1970-01-01')
     .maybeSingle();
 
   const counter = (existing?.counter_value ?? 0) + 1;
