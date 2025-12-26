@@ -128,6 +128,58 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Booked By Summary */}
+        <BookedBySummary tickets={dateTickets} />
+
+        {/* Pending Agent Collections */}
+        {pendingAgentCollections.length > 0 && (
+          <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Pending Agent Collections
+                </CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/agent-collections')}
+                  className="text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
+                >
+                  View All
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                Total: ₹{totalPendingFromAgents.toLocaleString()} from {pendingAgentCollections.length} agent{pendingAgentCollections.length > 1 ? 's' : ''}
+              </p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {pendingAgentCollections.slice(0, 8).map((agent) => (
+                  <div 
+                    key={agent.id} 
+                    className="flex items-center justify-between p-3 rounded-md bg-white/50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{agent.name}</p>
+                      <p className="text-xs text-muted-foreground">{agent.bookingsCount} booking{agent.bookingsCount > 1 ? 's' : ''}</p>
+                    </div>
+                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-600 shrink-0">
+                      ₹{agent.pending.toLocaleString()}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {pendingAgentCollections.length > 8 && (
+                <p className="text-sm text-center text-muted-foreground mt-3">
+                  +{pendingAgentCollections.length - 8} more agents
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Daily Tickets Table */}
         {dateTickets.length > 0 && (
           <Card>
@@ -198,58 +250,6 @@ export default function Dashboard() {
               {dateTickets.length > 10 && (
                 <p className="text-sm text-center text-muted-foreground mt-3">
                   +{dateTickets.length - 10} more tickets
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Booked By Summary */}
-        <BookedBySummary tickets={dateTickets} />
-
-        {/* Pending Agent Collections */}
-        {pendingAgentCollections.length > 0 && (
-          <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Pending Agent Collections
-                </CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/agent-collections')}
-                  className="text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
-                >
-                  View All
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                Total: ₹{totalPendingFromAgents.toLocaleString()} from {pendingAgentCollections.length} agent{pendingAgentCollections.length > 1 ? 's' : ''}
-              </p>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {pendingAgentCollections.slice(0, 8).map((agent) => (
-                  <div 
-                    key={agent.id} 
-                    className="flex items-center justify-between p-3 rounded-md bg-white/50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground truncate">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground">{agent.bookingsCount} booking{agent.bookingsCount > 1 ? 's' : ''}</p>
-                    </div>
-                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-600 shrink-0">
-                      ₹{agent.pending.toLocaleString()}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-              {pendingAgentCollections.length > 8 && (
-                <p className="text-sm text-center text-muted-foreground mt-3">
-                  +{pendingAgentCollections.length - 8} more agents
                 </p>
               )}
             </CardContent>
