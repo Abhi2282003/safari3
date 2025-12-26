@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { IndianRupee, CheckCircle, Clock } from 'lucide-react';
+import { IndianRupee, CheckCircle, Clock, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -28,6 +28,7 @@ export default function PayCollection() {
   const [receiverMobile, setReceiverMobile] = useState('');
   const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Other'>('Cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Get commission for a travel
   const getCommission = (travelsName: string | undefined) => {
@@ -45,10 +46,21 @@ export default function PayCollection() {
   const groupedTickets = useMemo(() => {
     if (!tickets) return { paid: {}, unpaid: {} };
 
+    // Filter tickets by search query first
+    const query = searchQuery.toLowerCase().trim();
+    const filteredTickets = query
+      ? tickets.filter(
+          (t) =>
+            t.ticketNo.toLowerCase().includes(query) ||
+            t.passengerName.toLowerCase().includes(query) ||
+            t.passengerPhone.includes(query)
+        )
+      : tickets;
+
     const paid: Record<string, typeof tickets> = {};
     const unpaid: Record<string, typeof tickets> = {};
 
-    tickets.forEach((ticket) => {
+    filteredTickets.forEach((ticket) => {
       const travelsName = ticket.travelsName || 'No Travel Name';
       const isPaid = ticket.collectionStatus === 'Paid';
 
@@ -70,7 +82,7 @@ export default function PayCollection() {
     ));
 
     return { paid, unpaid };
-  }, [tickets]);
+  }, [tickets, searchQuery]);
 
   const currentGroup = activeTab === 'paid' ? groupedTickets.paid : groupedTickets.unpaid;
   const travelNames = Object.keys(currentGroup).sort();
@@ -150,6 +162,17 @@ export default function PayCollection() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Pay Collection</h1>
           <p className="text-sm text-muted-foreground">Manage ticket payments grouped by travel name</p>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search ticket no, name, phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {/* Summary Cards */}
