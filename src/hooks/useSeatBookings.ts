@@ -239,6 +239,35 @@ export function useSeatBookings() {
 
     const amounts = calculateBookingAmounts(booking.bookingType, booking.bookingAmount);
 
+    // Check if agent has advance balance for new agent bookings
+    let finalAmountFromAgent = amounts.amountFromAgent;
+    let collectionStatus = booking.bookingType === 'agent' ? 'pending' : 'not_applicable';
+    let agentAdvanceToDeduct = 0;
+
+    if (booking.bookingType === 'agent' && booking.agentId && !booking.id) {
+      // Fetch agent's current advance balance
+      const { data: agentData } = await supabase
+        .from('agents')
+        .select('advance_balance')
+        .eq('id', booking.agentId)
+        .maybeSingle();
+      
+      if (agentData && agentData.advance_balance > 0) {
+        const advanceBalance = Number(agentData.advance_balance);
+        
+        if (advanceBalance >= amounts.amountFromAgent) {
+          // Advance covers entire booking
+          agentAdvanceToDeduct = amounts.amountFromAgent;
+          finalAmountFromAgent = 0;
+          collectionStatus = 'collected';
+        } else {
+          // Partial advance
+          agentAdvanceToDeduct = advanceBalance;
+          finalAmountFromAgent = amounts.amountFromAgent - advanceBalance;
+        }
+      }
+    }
+
     const dbBooking = {
       user_id: user.id,
       ticket_id: booking.ticketId || null,
@@ -250,9 +279,10 @@ export function useSeatBookings() {
       commission_percent: amounts.commissionPercent,
       our_earning: amounts.ourEarning,
       amount_to_owner: amounts.amountToOwner,
-      amount_from_agent: amounts.amountFromAgent,
+      amount_from_agent: finalAmountFromAgent,
       original_amount_from_agent: amounts.amountFromAgent,
-      agent_collection_status: booking.bookingType === 'agent' ? 'pending' : 'not_applicable',
+      agent_collection_status: collectionStatus,
+      collected_at: collectionStatus === 'collected' ? new Date().toISOString() : null,
       travels_name: booking.travelsName || null,
       destination: booking.destination || null,
       bus_name: booking.busName || null,
@@ -277,6 +307,24 @@ export function useSeatBookings() {
         .single();
       
       if (error) throw error;
+
+      // Deduct advance from agent if used
+      if (agentAdvanceToDeduct > 0 && booking.agentId) {
+        const { data: currentAgent } = await supabase
+          .from('agents')
+          .select('advance_balance')
+          .eq('id', booking.agentId)
+          .maybeSingle();
+        
+        if (currentAgent) {
+          const newAdvance = Math.max(0, Number(currentAgent.advance_balance) - agentAdvanceToDeduct);
+          await supabase
+            .from('agents')
+            .update({ advance_balance: newAdvance })
+            .eq('id', booking.agentId);
+        }
+      }
+
       await fetchSeatBookings();
       return data.id;
     }
