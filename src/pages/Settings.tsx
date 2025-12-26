@@ -106,8 +106,20 @@ export default function Settings() {
         // Load pre-printed layout from database
         if (settingsData.preprinted_layout) {
           try {
-            const savedLayout = settingsData.preprinted_layout as PrePrintedLayout;
-            setPrePrintedLayout({ ...DEFAULT_PREPRINTED_LAYOUT, ...savedLayout });
+            const savedLayout = settingsData.preprinted_layout as Partial<PrePrintedLayout>;
+            const merged = { ...DEFAULT_PREPRINTED_LAYOUT, ...savedLayout } as PrePrintedLayout;
+
+            const outOfBounds = (Object.keys(DEFAULT_PREPRINTED_LAYOUT) as (keyof PrePrintedLayout)[]).some((k) => {
+              const p = merged[k];
+              return typeof p?.x === 'number' && typeof p?.y === 'number' && (p.x > 175 || p.y > 105);
+            });
+
+            if (outOfBounds) {
+              setPrePrintedLayout(DEFAULT_PREPRINTED_LAYOUT);
+              toast('Old pre-printed layout detected. Please press Reset in Calibration and Save again.');
+            } else {
+              setPrePrintedLayout(merged);
+            }
           } catch {
             // Keep default if parsing fails
           }

@@ -123,10 +123,10 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
           outside the page—scroll inside the preview and drag it back.
         </div>
 
-        {/* Preview area (105mm x 175mm ticket) */}
+        {/* Preview area (175mm x 105mm ticket) */}
         <div
           className="relative overflow-auto rounded-md border border-border bg-background mx-auto"
-          style={{ width: "105mm", height: "175mm" }}
+          style={{ width: "175mm", height: "105mm" }}
         >
           {/* Background photo template */}
           {showTemplate && (
@@ -143,7 +143,7 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
               className="absolute inset-0"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, rgba(0,0,0,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.15) 1px, transparent 1px)",
+                  "linear-gradient(to right, hsl(var(--foreground) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--foreground) / 0.15) 1px, transparent 1px)",
                 backgroundSize: "5mm 5mm",
               }}
             />
@@ -151,8 +151,8 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
 
           {/* Single horizontal cut/fold line at center */}
           <div
-            className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-10 pointer-events-none"
-            style={{ top: "87.5mm" }}
+            className="absolute left-0 right-0 border-t-2 border-dashed border-primary z-10 pointer-events-none"
+            style={{ top: "52.5mm" }}
           />
 
           {/* Draggable handles */}

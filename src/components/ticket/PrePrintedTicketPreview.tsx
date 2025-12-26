@@ -33,8 +33,15 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
             .maybeSingle();
 
           if (data?.preprinted_layout) {
-            const savedLayout = data.preprinted_layout as PrePrintedLayout;
-            setLayout({ ...DEFAULT_PREPRINTED_LAYOUT, ...savedLayout });
+            const savedLayout = data.preprinted_layout as Partial<PrePrintedLayout>;
+            const merged = { ...DEFAULT_PREPRINTED_LAYOUT, ...savedLayout } as PrePrintedLayout;
+
+            const outOfBounds = (Object.keys(DEFAULT_PREPRINTED_LAYOUT) as (keyof PrePrintedLayout)[]).some((k) => {
+              const p = merged[k];
+              return typeof p?.x === "number" && typeof p?.y === "number" && (p.x > 175 || p.y > 105);
+            });
+
+            setLayout(outOfBounds ? DEFAULT_PREPRINTED_LAYOUT : merged);
           }
         } catch (error) {
           console.error("Error loading pre-printed layout:", error);
@@ -50,7 +57,7 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
       return (
         <div
           className="flex items-center justify-center bg-muted/50 rounded-md"
-          style={{ width: "105mm", height: "175mm" }}
+          style={{ width: "175mm", height: "105mm" }}
         >
           <span className="text-muted-foreground text-sm">Loading layout...</span>
         </div>
@@ -58,7 +65,7 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
     }
 
     return (
-      <div className="relative mx-auto" style={{ width: "105mm", height: "175mm" }}>
+      <div className="relative mx-auto" style={{ width: "175mm", height: "105mm" }}>
         {/* Background template for screen preview only */}
         <img
           src={prePrintedTemplate}

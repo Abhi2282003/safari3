@@ -132,7 +132,7 @@ export default function PrintTicketPage() {
     contentRef: prePrintedRef,
     documentTitle: `Ticket-${ticket?.ticketNo}-PrePrinted`,
     pageStyle: `
-      @page { size: 105mm 175mm; margin: 0mm; }
+      @page { size: 175mm 105mm; margin: 0mm; }
       html, body { margin: 0; padding: 0; }
     `,
   });
@@ -251,7 +251,7 @@ export default function PrintTicketPage() {
             size="sm"
             onClick={() => setPrintMode('preprinted')}
           >
-            Pre-printed Ticket (105mm x 175mm)
+            Pre-printed Ticket (175mm x 105mm)
           </Button>
           {printMode === 'preprinted' && (
             <span className="text-xs text-muted-foreground ml-2">
