@@ -111,7 +111,7 @@ export default function Settings() {
 
             const outOfBounds = (Object.keys(DEFAULT_PREPRINTED_LAYOUT) as (keyof PrePrintedLayout)[]).some((k) => {
               const p = merged[k];
-              return typeof p?.x === 'number' && typeof p?.y === 'number' && (p.x > 175 || p.y > 105);
+              return typeof p?.x === 'number' && typeof p?.y === 'number' && (p.x > 105 || p.y > 175);
             });
 
             if (outOfBounds) {

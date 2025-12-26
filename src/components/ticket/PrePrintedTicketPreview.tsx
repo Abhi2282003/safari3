@@ -38,7 +38,7 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
 
             const outOfBounds = (Object.keys(DEFAULT_PREPRINTED_LAYOUT) as (keyof PrePrintedLayout)[]).some((k) => {
               const p = merged[k];
-              return typeof p?.x === "number" && typeof p?.y === "number" && (p.x > 175 || p.y > 105);
+              return typeof p?.x === "number" && typeof p?.y === "number" && (p.x > 105 || p.y > 175);
             });
 
             setLayout(outOfBounds ? DEFAULT_PREPRINTED_LAYOUT : merged);
@@ -57,7 +57,7 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
       return (
         <div
           className="flex items-center justify-center bg-muted/50 rounded-md"
-          style={{ width: "175mm", height: "105mm" }}
+          style={{ width: "105mm", height: "175mm" }}
         >
           <span className="text-muted-foreground text-sm">Loading layout...</span>
         </div>
@@ -65,7 +65,7 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
     }
 
     return (
-      <div className="relative mx-auto" style={{ width: "175mm", height: "105mm" }}>
+      <div className="relative mx-auto" style={{ width: "105mm", height: "175mm" }}>
         {/* Background template for screen preview only */}
         <img
           src={prePrintedTemplate}
