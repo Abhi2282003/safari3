@@ -9,6 +9,7 @@ import { TicketWithPayment, CompanySettings, Ticket, Payment } from '@/types/tic
 import { useReactToPrint } from 'react-to-print';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function PrintTicketPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export default function PrintTicketPage() {
   const [loading, setLoading] = useState(true);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState<'normal' | 'preprinted'>('normal');
+  const [pendingPrePrintedPrint, setPendingPrePrintedPrint] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const prePrintedRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +194,20 @@ export default function PrintTicketPage() {
                 Print Ticket
               </Button>
               <Button 
-                onClick={() => handlePrePrintedPrint()} 
+                onClick={() => {
+                  if (printMode !== 'preprinted') {
+                    setPrintMode('preprinted');
+                    setPendingPrePrintedPrint(true);
+                    return;
+                  }
+
+                  if (!prePrintedRef.current) {
+                    toast.error('Pre-printed ticket is not ready yet');
+                    return;
+                  }
+
+                  handlePrePrintedPrint();
+                }}
                 size="lg" 
                 variant="secondary"
                 className="gap-2"
