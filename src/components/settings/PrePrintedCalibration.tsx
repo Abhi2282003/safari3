@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
-import { Save, RotateCcw, Grid3X3, Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
+import { Save, RotateCcw, Grid3X3, Image as ImageIcon, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import templateImage from "@/assets/royal-preprinted-template.png";
 import { DEFAULT_PREPRINTED_LAYOUT, type PrePrintedLayout } from "@/components/ticket/PrintOnPrePrintedTicket";
 
 type LayoutKey = keyof PrePrintedLayout;
 
-const PX_PER_MM = 96 / 25.4;
+// At scale 1, 1mm = 96/25.4 px
+const BASE_PX_PER_MM = 96 / 25.4;
 
 const orderedKeys: LayoutKey[] = [
   "name",
@@ -40,6 +39,9 @@ interface PrePrintedCalibrationProps {
 export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving }: PrePrintedCalibrationProps) {
   const [showTemplate, setShowTemplate] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
+  const [scale, setScale] = useState(1.5); // default 1.5x for better visibility
+
+  const pxPerMm = BASE_PX_PER_MM * scale;
 
   const startDrag = (key: LayoutKey, e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -51,8 +53,8 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
     const onMove = (ev: PointerEvent) => {
       const dxPx = ev.clientX - startX;
       const dyPx = ev.clientY - startY;
-      const dxMm = dxPx / PX_PER_MM;
-      const dyMm = dyPx / PX_PER_MM;
+      const dxMm = dxPx / pxPerMm;
+      const dyMm = dyPx / pxPerMm;
 
       onLayoutChange({
         ...layout,
@@ -116,6 +118,27 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
             <RotateCcw className="h-4 w-4 mr-1" />
             Reset
           </Button>
+          <div className="flex items-center gap-1 ml-2">
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-7 w-7"
+              onClick={() => setScale((s) => Math.max(1, s - 0.25))}
+              disabled={scale <= 1}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-xs font-medium w-10 text-center">{Math.round(scale * 100)}%</span>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-7 w-7"
+              onClick={() => setScale((s) => Math.min(2.5, s + 0.25))}
+              disabled={scale >= 2.5}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="text-xs text-muted-foreground">
@@ -124,10 +147,10 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
           drag it back.
         </div>
 
-        {/* Preview area (105mm x 175mm ticket - portrait) */}
+        {/* Preview area (105mm x 175mm ticket - portrait, scaled) */}
         <div
           className="relative overflow-auto rounded-md border border-border bg-background mx-auto"
-          style={{ width: "105mm", height: "175mm" }}
+          style={{ width: `${105 * scale}mm`, height: `${175 * scale}mm` }}
         >
           {/* Background photo template */}
           {showTemplate && (
@@ -145,7 +168,7 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
               style={{
                 backgroundImage:
                   "linear-gradient(to right, hsl(var(--foreground) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--foreground) / 0.15) 1px, transparent 1px)",
-                backgroundSize: "5mm 5mm",
+                backgroundSize: `${5 * scale}mm ${5 * scale}mm`,
               }}
             />
           )}
@@ -153,7 +176,7 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
           {/* Single horizontal cut/fold line at center */}
           <div
             className="absolute left-0 right-0 border-t-2 border-dashed border-primary z-10 pointer-events-none"
-            style={{ top: "87.5mm" }}
+            style={{ top: `${87.5 * scale}mm` }}
           />
 
           {/* Draggable handles */}
@@ -165,12 +188,12 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
                   key={key}
                   onPointerDown={(e) => startDrag(key, e)}
                   title="Drag to move (top-left position)"
-                  className="absolute z-20 cursor-move select-none rounded border border-primary/60 bg-background/85 px-1 py-0.5 text-[10px] font-semibold text-foreground shadow-sm"
+                  className="absolute z-20 cursor-move select-none rounded border border-primary/60 bg-background/85 px-1 py-0.5 font-semibold text-foreground shadow-sm"
                   style={{
-                    left: `${p.x}mm`,
-                    top: `${p.y}mm`,
-                    width: `${p.w}mm`,
-                    fontSize: `${p.fontPt}pt`,
+                    left: `${p.x * scale}mm`,
+                    top: `${p.y * scale}mm`,
+                    width: `${p.w * scale}mm`,
+                    fontSize: `${p.fontPt * scale}pt`,
                     lineHeight: 1.1,
                     textAlign: p.align ?? "left",
                   }}
