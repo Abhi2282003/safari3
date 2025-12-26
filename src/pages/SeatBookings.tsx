@@ -412,26 +412,26 @@ export default function SeatBookings() {
                     <span>Booked Seats</span>
                     <span className="font-medium">{busSummary.total} / {TOTAL_SEATS}</span>
                   </div>
-                  <div className="grid grid-cols-5 gap-2 text-center">
-                    <div className="p-2 bg-blue-500/10 rounded">
-                      <p className="text-lg font-semibold text-blue-600">{busSummary.online}</p>
-                      <p className="text-xs text-muted-foreground">Online</p>
+                  <div className="grid grid-cols-5 gap-1 sm:gap-2 text-center">
+                    <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded">
+                      <p className="text-base sm:text-lg font-semibold text-blue-600">{busSummary.online}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Online</p>
                     </div>
-                    <div className="p-2 bg-amber-500/10 rounded">
-                      <p className="text-lg font-semibold text-amber-600">{busSummary.agent}</p>
-                      <p className="text-xs text-muted-foreground">Agent</p>
+                    <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded">
+                      <p className="text-base sm:text-lg font-semibold text-amber-600">{busSummary.agent}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Agent</p>
                     </div>
-                    <div className="p-2 bg-green-500/10 rounded">
-                      <p className="text-lg font-semibold text-green-600">{busSummary.self}</p>
-                      <p className="text-xs text-muted-foreground">Self</p>
+                    <div className="p-1.5 sm:p-2 bg-green-500/10 rounded">
+                      <p className="text-base sm:text-lg font-semibold text-green-600">{busSummary.self}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Self</p>
                     </div>
-                    <div className="p-2 bg-pink-500/10 rounded">
-                      <p className="text-lg font-semibold text-pink-600">{busSummary.sonu}</p>
-                      <p className="text-xs text-muted-foreground">Sonu</p>
+                    <div className="p-1.5 sm:p-2 bg-pink-500/10 rounded">
+                      <p className="text-base sm:text-lg font-semibold text-pink-600">{busSummary.sonu}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Sonu</p>
                     </div>
-                    <div className="p-2 bg-purple-500/10 rounded">
-                      <p className="text-lg font-semibold text-purple-600">{busSummary.return}</p>
-                      <p className="text-xs text-muted-foreground">Return</p>
+                    <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded">
+                      <p className="text-base sm:text-lg font-semibold text-purple-600">{busSummary.return}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Return</p>
                     </div>
                   </div>
                   <div className="flex justify-between text-muted-foreground pt-2 border-t">
