@@ -1,6 +1,10 @@
 import { forwardRef, useEffect, useState } from "react";
 import { TicketWithPayment } from "@/types/ticket";
-import { PrintOnPrePrintedTicket, type PrePrintedLayout, DEFAULT_PREPRINTED_LAYOUT } from "@/components/ticket/PrintOnPrePrintedTicket";
+import {
+  PrintOnPrePrintedTicket,
+  type PrePrintedLayout,
+  DEFAULT_PREPRINTED_LAYOUT,
+} from "@/components/ticket/PrintOnPrePrintedTicket";
 import { supabase } from "@/integrations/supabase/client";
 import prePrintedTemplate from "@/assets/royal-preprinted-template.png";
 
@@ -46,7 +50,7 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
       return (
         <div
           className="flex items-center justify-center bg-muted/50 rounded-md"
-          style={{ width: "175mm", height: "105mm" }}
+          style={{ width: "105mm", height: "155mm" }}
         >
           <span className="text-muted-foreground text-sm">Loading layout...</span>
         </div>
@@ -54,11 +58,11 @@ export const PrePrintedTicketPreview = forwardRef<HTMLDivElement, PrePrintedTick
     }
 
     return (
-      <div className="relative mx-auto" style={{ width: "175mm", height: "105mm" }}>
+      <div className="relative mx-auto" style={{ width: "105mm", height: "155mm" }}>
         {/* Background template for screen preview only */}
         <img
           src={prePrintedTemplate}
-          alt="Pre-printed template"
+          alt="Pre-printed ticket template"
           className="absolute inset-0 w-full h-full object-contain print:hidden"
           style={{ pointerEvents: "none" }}
         />

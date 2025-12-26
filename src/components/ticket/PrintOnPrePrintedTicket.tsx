@@ -49,7 +49,7 @@ interface PrintOnPrePrintedTicketProps {
 
 /**
  * Prints only values (no borders/labels). Designed for pre-printed ticket form.
- * Page size should be set to 175mm x 105mm, margins 0, scale 100%.
+ * Page size should be set to 105mm x 155mm (portrait), margins 0, scale 100%.
  */
 export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrintedTicketProps>(
   ({ ticket, layout = DEFAULT_PREPRINTED_LAYOUT }, ref) => {
@@ -76,8 +76,8 @@ export const PrintOnPrePrintedTicket = forwardRef<HTMLDivElement, PrintOnPrePrin
         ref={ref}
         className="bg-transparent text-black print:p-0"
         style={{
-          width: "175mm",
-          height: "105mm",
+          width: "105mm",
+          height: "155mm",
           position: "relative",
           fontFamily: "Arial, sans-serif",
         }}

@@ -122,17 +122,17 @@ export function PrePrintedCalibration({ layout, onLayoutChange, onSave, isSaving
           Tip: Print with scale 100% and margins none.
         </div>
 
-        {/* Preview area (175mm x 105mm ticket) */}
+        {/* Preview area (105mm x 155mm ticket) */}
         <div
           className="relative overflow-hidden rounded-md border border-border bg-background mx-auto"
-          style={{ width: "175mm", height: "105mm" }}
+          style={{ width: "105mm", height: "155mm" }}
         >
           {/* Background photo template */}
           {showTemplate && (
             <img
               src={templateImage}
               alt="Pre-printed ticket template"
-              className="absolute inset-0 h-full w-full object-cover opacity-80"
+              className="absolute inset-0 h-full w-full object-contain opacity-80"
             />
           )}
 

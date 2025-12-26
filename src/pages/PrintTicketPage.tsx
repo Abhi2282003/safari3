@@ -132,10 +132,28 @@ export default function PrintTicketPage() {
     contentRef: prePrintedRef,
     documentTitle: `Ticket-${ticket?.ticketNo}-PrePrinted`,
     pageStyle: `
-      @page { size: 175mm 105mm; margin: 0mm; }
+      @page { size: 105mm 155mm; margin: 0mm; }
       html, body { margin: 0; padding: 0; }
     `,
   });
+
+  useEffect(() => {
+    if (!pendingPrePrintedPrint) return;
+    if (printMode !== 'preprinted') return;
+
+    const t = window.setTimeout(() => {
+      setPendingPrePrintedPrint(false);
+
+      if (!prePrintedRef.current) {
+        toast.error('Pre-printed ticket is not ready yet');
+        return;
+      }
+
+      handlePrePrintedPrint();
+    }, 200);
+
+    return () => window.clearTimeout(t);
+  }, [pendingPrePrintedPrint, printMode, handlePrePrintedPrint]);
 
   if (loading) {
     return (
@@ -233,7 +251,7 @@ export default function PrintTicketPage() {
             size="sm"
             onClick={() => setPrintMode('preprinted')}
           >
-            Pre-printed Ticket (175mm x 105mm)
+            Pre-printed Ticket (105mm x 155mm)
           </Button>
           {printMode === 'preprinted' && (
             <span className="text-xs text-muted-foreground ml-2">
