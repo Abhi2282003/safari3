@@ -5,15 +5,12 @@ import {
   Ticket, 
   Plus,
   Clock,
-  ChevronRight,
-  Printer,
-  Pencil
+  ChevronRight
 } from 'lucide-react';
 import { BookedBySummary } from '@/components/dashboard/BookedBySummary';
 import { Layout } from '@/components/layout/Layout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -156,7 +153,6 @@ export default function Dashboard() {
                       <TableHead className="text-xs">Ticket No</TableHead>
                       <TableHead className="text-xs">Passenger</TableHead>
                       <TableHead className="text-xs">Destination</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
                       <TableHead className="text-right text-xs">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -174,36 +170,23 @@ export default function Dashboard() {
                         <TableCell className="text-xs sm:text-sm text-muted-foreground">
                           {ticket.toursTo}
                         </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={ticket.collectionStatus === 'Paid' ? 'default' : 'outline'}
-                            className={ticket.collectionStatus === 'Paid' 
-                              ? 'bg-green-500 hover:bg-green-600 text-xs' 
-                              : 'text-amber-600 border-amber-600 text-xs'
-                            }
-                          >
-                            {ticket.collectionStatus}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-2">
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
                               onClick={() => navigate(`/ticket/${ticket.id}/print`)}
-                              title="Print Ticket"
                             >
-                              <Printer className="h-3.5 w-3.5" />
+                              Print
                             </Button>
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
                               onClick={() => navigate(`/edit-ticket/${ticket.id}`)}
-                              title="Edit Ticket"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              Edit
                             </Button>
                           </div>
                         </TableCell>
