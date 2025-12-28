@@ -670,7 +670,7 @@ export default function AgentCollections() {
                           )}
                         </div>
 
-                        {/* Bookings Table */}
+                        {/* Bookings Table - Grouped by Date + Bus */}
                         {agent.bookings.filter(b => b.agentCollectionStatus === 'pending').length > 0 && (
                           <div className="rounded-lg border overflow-x-auto">
                             <Table>
@@ -678,44 +678,102 @@ export default function AgentCollections() {
                                 <TableRow>
                                   <TableHead className="text-xs">Date</TableHead>
                                   <TableHead className="text-xs">Bus</TableHead>
-                                  <TableHead className="text-xs">Seat</TableHead>
-                                  <TableHead className="text-right text-xs">Amount</TableHead>
+                                  <TableHead className="text-xs">Seats</TableHead>
+                                  <TableHead className="text-right text-xs">Rate</TableHead>
                                   <TableHead className="text-right text-xs">To Collect</TableHead>
                                   <TableHead className="text-right text-xs">Action</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {agent.bookings
-                                  .filter(b => b.agentCollectionStatus === 'pending')
-                                  .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
-                                  .map((booking) => (
-                                  <TableRow key={booking.id}>
-                                    <TableCell className="text-xs sm:text-sm">
-                                      {format(new Date(booking.journeyDate), 'dd MMM')}
-                                    </TableCell>
-                                    <TableCell className="text-xs sm:text-sm">
-                                      <div className="flex items-center gap-1">
-                                        <Bus className="h-3 w-3 text-muted-foreground" />
-                                        <span className="truncate max-w-[140px] sm:max-w-[200px]">{booking.busName || '-'}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
-                                    <TableCell className="text-right text-xs sm:text-sm">₹{booking.bookingAmount.toFixed(0)}</TableCell>
-                                    <TableCell className="text-right text-xs sm:text-sm font-medium text-amber-600">
-                                      ₹{booking.amountFromAgent.toFixed(0)}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        onClick={() => handleOpenSeatPayment(agent, booking)}
-                                        className="h-7 px-2 text-xs"
-                                      >
-                                        Receive
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
+                                {(() => {
+                                  // Group bookings by date + bus + booking amount
+                                  const grouped = new Map<string, { bookings: SeatBooking[], totalCollect: number }>();
+                                  
+                                  agent.bookings
+                                    .filter(b => b.agentCollectionStatus === 'pending')
+                                    .forEach(booking => {
+                                      const key = `${booking.journeyDate}|${booking.busName || ''}|${booking.bookingAmount}`;
+                                      if (!grouped.has(key)) {
+                                        grouped.set(key, { bookings: [], totalCollect: 0 });
+                                      }
+                                      const group = grouped.get(key)!;
+                                      group.bookings.push(booking);
+                                      group.totalCollect += booking.amountFromAgent;
+                                    });
+                                  
+                                  // Sort by date descending
+                                  const sortedGroups = Array.from(grouped.entries())
+                                    .sort((a, b) => {
+                                      const dateA = a[1].bookings[0].journeyDate;
+                                      const dateB = b[1].bookings[0].journeyDate;
+                                      return new Date(dateB).getTime() - new Date(dateA).getTime();
+                                    });
+                                  
+                                  return sortedGroups.map(([key, group]) => {
+                                    const firstBooking = group.bookings[0];
+                                    const seatNumbers = group.bookings
+                                      .map(b => b.seatNumber)
+                                      .sort((a, b) => a - b);
+                                    const seatDisplay = seatNumbers.length > 3 
+                                      ? `${seatNumbers.length} seats` 
+                                      : seatNumbers.map(s => `#${s}`).join(', ');
+                                    
+                                    return (
+                                      <TableRow key={key}>
+                                        <TableCell className="text-xs sm:text-sm">
+                                          {format(new Date(firstBooking.journeyDate), 'dd MMM')}
+                                        </TableCell>
+                                        <TableCell className="text-xs sm:text-sm">
+                                          <div className="flex items-center gap-1">
+                                            <Bus className="h-3 w-3 text-muted-foreground" />
+                                            <span className="truncate max-w-[100px] sm:max-w-[140px]">{firstBooking.busName || '-'}</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-xs sm:text-sm">
+                                          <span className="font-medium">{seatDisplay}</span>
+                                          {seatNumbers.length > 1 && (
+                                            <span className="text-muted-foreground ml-1">({seatNumbers.length})</span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-right text-xs sm:text-sm">
+                                          ₹{firstBooking.bookingAmount.toFixed(0)}/seat
+                                        </TableCell>
+                                        <TableCell className="text-right text-xs sm:text-sm font-medium text-amber-600">
+                                          ₹{group.totalCollect.toFixed(0)}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          {seatNumbers.length === 1 ? (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline"
+                                              onClick={() => handleOpenSeatPayment(agent, firstBooking)}
+                                              className="h-7 px-2 text-xs"
+                                            >
+                                              Receive
+                                            </Button>
+                                          ) : (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline"
+                                              onClick={() => {
+                                                setSelectedAgent(agent);
+                                                setSelectedBooking(null);
+                                                setPaymentAmount(group.totalCollect.toString());
+                                                setReceivedBy('');
+                                                setPaymentMode('Cash');
+                                                setPaymentNotes(`${seatNumbers.length} seats: ${seatNumbers.join(', ')}`);
+                                                setPaymentDialogOpen(true);
+                                              }}
+                                              className="h-7 px-2 text-xs"
+                                            >
+                                              Receive All
+                                            </Button>
+                                          )}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  });
+                                })()}
                               </TableBody>
                             </Table>
                           </div>
