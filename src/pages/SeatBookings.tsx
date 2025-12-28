@@ -48,7 +48,6 @@ export default function SeatBookings() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
-  const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [editingBooking, setEditingBooking] = useState<SeatBooking | null>(null);
   
   const [luggageDialogOpen, setLuggageDialogOpen] = useState(false);
@@ -125,17 +124,7 @@ export default function SeatBookings() {
   const handleSeatClick = (seatNumber: number) => {
     const existing = getBookingForSeat(seatNumber);
     
-    // If in multi-select mode and seat is empty, toggle selection
-    if (multiSelectMode && !existing) {
-      setSelectedSeats((prev) =>
-        prev.includes(seatNumber)
-          ? prev.filter((s) => s !== seatNumber)
-          : [...prev, seatNumber]
-      );
-      return;
-    }
-    
-    // If in multi-select mode but clicked on booked seat, open edit dialog
+    // If seat is booked, open edit dialog
     if (existing) {
       setEditingBooking(existing);
       setFormData({
@@ -148,23 +137,16 @@ export default function SeatBookings() {
       });
       setSelectedSeat(seatNumber);
       setSelectedSeats([]);
-      setMultiSelectMode(false);
       setDialogOpen(true);
       return;
     }
     
-    // Normal single-seat mode
-    setEditingBooking(null);
-    setFormData({
-      bookingType: 'self',
-      agentId: '',
-      bookingAmount: '',
-      destination: destinations[0]?.name || '',
-      passengerName: '',
-      notes: '',
-    });
-    setSelectedSeat(seatNumber);
-    setDialogOpen(true);
+    // Empty seat - toggle selection (auto multi-select)
+    setSelectedSeats((prev) =>
+      prev.includes(seatNumber)
+        ? prev.filter((s) => s !== seatNumber)
+        : [...prev, seatNumber]
+    );
   };
   
   const handleMultiSeatBooking = () => {
@@ -185,11 +167,8 @@ export default function SeatBookings() {
     setDialogOpen(true);
   };
   
-  const toggleMultiSelectMode = () => {
-    if (multiSelectMode) {
-      setSelectedSeats([]);
-    }
-    setMultiSelectMode(!multiSelectMode);
+  const clearSelection = () => {
+    setSelectedSeats([]);
   };
 
   const handleSave = async () => {
@@ -235,7 +214,6 @@ export default function SeatBookings() {
       toast.success(message);
       setDialogOpen(false);
       setSelectedSeats([]);
-      setMultiSelectMode(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to save booking');
     }
@@ -571,40 +549,15 @@ export default function SeatBookings() {
             {/* Right: Seat grid - shown first on mobile */}
             <Card className="order-1 lg:order-2">
               <CardHeader className="pb-2 sm:pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                      <Bus className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <span className="truncate">{busName}</span>
-                    </CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
-                      {multiSelectMode 
-                        ? `Select multiple seats (${selectedSeats.length} selected)` 
-                        : 'Tap a seat to book or edit'}
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    variant={multiSelectMode ? "default" : "outline"} 
-                    size="sm"
-                    onClick={toggleMultiSelectMode}
-                    className="shrink-0"
-                  >
-                    {multiSelectMode ? 'Cancel' : 'Multi-Select'}
-                  </Button>
-                </div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Bus className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="truncate">{busName}</span>
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Tap empty seats to select, tap booked seats to edit
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Multi-select action bar */}
-                {multiSelectMode && selectedSeats.length > 0 && (
-                  <div className="mb-4 p-3 bg-primary/10 rounded-lg flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {selectedSeats.length} seat{selectedSeats.length > 1 ? 's' : ''} selected: {selectedSeats.sort((a,b) => a-b).join(', ')}
-                    </span>
-                    <Button size="sm" onClick={handleMultiSeatBooking}>
-                      Book All
-                    </Button>
-                  </div>
-                )}
                 
                 <div className="grid grid-cols-6 gap-1.5 sm:gap-2 max-w-sm sm:max-w-lg mx-auto">
                   {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
@@ -641,12 +594,28 @@ export default function SeatBookings() {
           </div>
         )}
 
+        {/* Floating action bar for seat selection */}
+        {selectedSeats.length > 0 && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-full px-4 py-2 flex items-center gap-3">
+            <span className="text-sm font-medium">
+              {selectedSeats.length} seat{selectedSeats.length > 1 ? 's' : ''}: {selectedSeats.sort((a,b) => a-b).join(', ')}
+            </span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button size="sm" onClick={handleMultiSeatBooking}>
+                Book {selectedSeats.length > 1 ? 'All' : 'Seat'}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Seat Booking Dialog */}
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {
             setSelectedSeats([]);
-            setMultiSelectMode(false);
           }
         }}>
           <DialogContent className="max-w-md">
