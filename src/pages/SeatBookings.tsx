@@ -773,18 +773,41 @@ export default function SeatBookings() {
               {parseFloat(formData.bookingAmount) > 0 && (
                 <Card className="bg-muted/50">
                   <CardContent className="pt-4 text-sm space-y-2">
-                    <div className="flex justify-between">
-                      <span>Booking Amount</span>
-                      <span>₹{parseFloat(formData.bookingAmount).toFixed(0)}</span>
+                    {/* Per seat breakdown for multi-select */}
+                    {selectedSeats.length > 1 && (
+                      <>
+                        <div className="text-xs text-muted-foreground font-medium pb-1 border-b">
+                          Per Seat (×{selectedSeats.length} seats)
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Amount/seat</span>
+                          <span>₹{parseFloat(formData.bookingAmount).toFixed(0)}</span>
+                        </div>
+                        {formData.bookingType === 'agent' && (
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Collect/seat</span>
+                            <span>₹{amounts.amountFromAgent.toFixed(0)}</span>
+                          </div>
+                        )}
+                        <div className="border-t pt-2 mt-2">
+                          <div className="text-xs text-muted-foreground font-medium pb-1">
+                            Total ({selectedSeats.length} seats)
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between font-medium">
+                      <span>Total Booking Amount</span>
+                      <span>₹{(parseFloat(formData.bookingAmount) * Math.max(1, selectedSeats.length)).toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Pay to Owner</span>
-                      <span>₹{amounts.amountToOwner.toFixed(0)}</span>
+                      <span>Total Pay to Owner</span>
+                      <span>₹{(amounts.amountToOwner * Math.max(1, selectedSeats.length)).toFixed(0)}</span>
                     </div>
                     {formData.bookingType === 'agent' && (
-                      <div className="flex justify-between text-amber-600">
-                        <span>Collect from Agent</span>
-                        <span>₹{amounts.amountFromAgent.toFixed(0)}</span>
+                      <div className="flex justify-between text-amber-600 font-medium">
+                        <span>Total Collect from Agent</span>
+                        <span>₹{(amounts.amountFromAgent * Math.max(1, selectedSeats.length)).toFixed(0)}</span>
                       </div>
                     )}
                   </CardContent>
