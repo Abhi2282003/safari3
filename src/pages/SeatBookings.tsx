@@ -47,6 +47,8 @@ export default function SeatBookings() {
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [editingBooking, setEditingBooking] = useState<SeatBooking | null>(null);
   
   const [luggageDialogOpen, setLuggageDialogOpen] = useState(false);
@@ -122,6 +124,18 @@ export default function SeatBookings() {
 
   const handleSeatClick = (seatNumber: number) => {
     const existing = getBookingForSeat(seatNumber);
+    
+    // If in multi-select mode and seat is empty, toggle selection
+    if (multiSelectMode && !existing) {
+      setSelectedSeats((prev) =>
+        prev.includes(seatNumber)
+          ? prev.filter((s) => s !== seatNumber)
+          : [...prev, seatNumber]
+      );
+      return;
+    }
+    
+    // If in multi-select mode but clicked on booked seat, open edit dialog
     if (existing) {
       setEditingBooking(existing);
       setFormData({
@@ -132,23 +146,57 @@ export default function SeatBookings() {
         passengerName: existing.passengerName || '',
         notes: existing.notes || '',
       });
-    } else {
-      setEditingBooking(null);
-      setFormData({
-        bookingType: 'self',
-        agentId: '',
-        bookingAmount: '',
-        destination: destinations[0]?.name || '',
-        passengerName: '',
-        notes: '',
-      });
+      setSelectedSeat(seatNumber);
+      setSelectedSeats([]);
+      setMultiSelectMode(false);
+      setDialogOpen(true);
+      return;
     }
+    
+    // Normal single-seat mode
+    setEditingBooking(null);
+    setFormData({
+      bookingType: 'self',
+      agentId: '',
+      bookingAmount: '',
+      destination: destinations[0]?.name || '',
+      passengerName: '',
+      notes: '',
+    });
     setSelectedSeat(seatNumber);
     setDialogOpen(true);
   };
+  
+  const handleMultiSeatBooking = () => {
+    if (selectedSeats.length === 0) {
+      toast.error('Please select at least one seat');
+      return;
+    }
+    setEditingBooking(null);
+    setSelectedSeat(null);
+    setFormData({
+      bookingType: 'self',
+      agentId: '',
+      bookingAmount: '',
+      destination: destinations[0]?.name || '',
+      passengerName: '',
+      notes: '',
+    });
+    setDialogOpen(true);
+  };
+  
+  const toggleMultiSelectMode = () => {
+    if (multiSelectMode) {
+      setSelectedSeats([]);
+    }
+    setMultiSelectMode(!multiSelectMode);
+  };
 
   const handleSave = async () => {
-    if (!selectedSeat) return;
+    // Multi-seat booking
+    const seatsToBook = selectedSeats.length > 0 ? selectedSeats : (selectedSeat ? [selectedSeat] : []);
+    
+    if (seatsToBook.length === 0) return;
     if (!formData.bookingAmount || parseFloat(formData.bookingAmount) <= 0) {
       toast.error('Please enter a valid booking amount');
       return;
@@ -159,26 +207,35 @@ export default function SeatBookings() {
     }
 
     try {
-      await saveSeatBooking({
-        id: editingBooking?.id,
-        journeyDate: format(selectedDate, 'yyyy-MM-dd'),
-        seatNumber: selectedSeat,
-        bookingType: formData.bookingType,
-        agentId: formData.agentId || undefined,
-        bookingAmount: parseFloat(formData.bookingAmount),
-        commissionPercent: 0,
-        ourEarning: 0,
-        amountToOwner: 0,
-        amountFromAgent: 0,
-        originalAmountFromAgent: 0,
-        agentCollectionStatus: 'pending',
-        destination: formData.destination || undefined,
-        busName: busName.trim(),
-        passengerName: formData.passengerName || undefined,
-        notes: formData.notes || undefined,
-      });
-      toast.success(editingBooking ? 'Booking updated' : 'Seat booked successfully');
+      // Book all selected seats
+      for (const seatNum of seatsToBook) {
+        await saveSeatBooking({
+          id: editingBooking?.id,
+          journeyDate: format(selectedDate, 'yyyy-MM-dd'),
+          seatNumber: seatNum,
+          bookingType: formData.bookingType,
+          agentId: formData.agentId || undefined,
+          bookingAmount: parseFloat(formData.bookingAmount),
+          commissionPercent: 0,
+          ourEarning: 0,
+          amountToOwner: 0,
+          amountFromAgent: 0,
+          originalAmountFromAgent: 0,
+          agentCollectionStatus: 'pending',
+          destination: formData.destination || undefined,
+          busName: busName.trim(),
+          passengerName: formData.passengerName || undefined,
+          notes: formData.notes || undefined,
+        });
+      }
+      
+      const message = seatsToBook.length > 1 
+        ? `${seatsToBook.length} seats booked successfully` 
+        : (editingBooking ? 'Booking updated' : 'Seat booked successfully');
+      toast.success(message);
       setDialogOpen(false);
+      setSelectedSeats([]);
+      setMultiSelectMode(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to save booking');
     }
@@ -514,23 +571,53 @@ export default function SeatBookings() {
             {/* Right: Seat grid - shown first on mobile */}
             <Card className="order-1 lg:order-2">
               <CardHeader className="pb-2 sm:pb-4">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Bus className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="truncate">{busName}</span>
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Tap a seat to book or edit</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Bus className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="truncate">{busName}</span>
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      {multiSelectMode 
+                        ? `Select multiple seats (${selectedSeats.length} selected)` 
+                        : 'Tap a seat to book or edit'}
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    variant={multiSelectMode ? "default" : "outline"} 
+                    size="sm"
+                    onClick={toggleMultiSelectMode}
+                    className="shrink-0"
+                  >
+                    {multiSelectMode ? 'Cancel' : 'Multi-Select'}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
+                {/* Multi-select action bar */}
+                {multiSelectMode && selectedSeats.length > 0 && (
+                  <div className="mb-4 p-3 bg-primary/10 rounded-lg flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {selectedSeats.length} seat{selectedSeats.length > 1 ? 's' : ''} selected: {selectedSeats.sort((a,b) => a-b).join(', ')}
+                    </span>
+                    <Button size="sm" onClick={handleMultiSeatBooking}>
+                      Book All
+                    </Button>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-6 gap-1.5 sm:gap-2 max-w-sm sm:max-w-lg mx-auto">
                   {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
                     const booking = getBookingForSeat(seatNum);
+                    const isSelected = selectedSeats.includes(seatNum);
 
                     let bgClass = 'bg-muted hover:bg-muted/80 border';
-                    if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
-                    if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
-                    if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
-                    if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white';
-                    if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white';
+                    if (isSelected && !booking) bgClass = 'bg-primary hover:bg-primary/90 text-primary-foreground ring-2 ring-primary ring-offset-2';
+                    else if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
+                    else if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
+                    else if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
+                    else if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white';
+                    else if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white';
 
                     return (
                       <button
@@ -555,15 +642,30 @@ export default function SeatBookings() {
         )}
 
         {/* Seat Booking Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setSelectedSeats([]);
+            setMultiSelectMode(false);
+          }
+        }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Bus className="h-5 w-5" />
-                Seat {selectedSeat} - {busName}
+                {selectedSeats.length > 1 
+                  ? `Seats ${selectedSeats.sort((a,b) => a-b).join(', ')} - ${busName}`
+                  : selectedSeats.length === 1
+                    ? `Seat ${selectedSeats[0]} - ${busName}`
+                    : `Seat ${selectedSeat} - ${busName}`
+                }
               </DialogTitle>
               <DialogDescription>
-                {editingBooking ? 'Edit booking details' : 'Add new booking'}
+                {editingBooking 
+                  ? 'Edit booking details' 
+                  : selectedSeats.length > 1 
+                    ? `Book ${selectedSeats.length} seats with same details`
+                    : 'Add new booking'}
               </DialogDescription>
             </DialogHeader>
 
@@ -719,7 +821,11 @@ export default function SeatBookings() {
                 Cancel
               </Button>
               <Button onClick={handleSave}>
-                {editingBooking ? 'Update' : 'Book Seat'}
+                {editingBooking 
+                  ? 'Update' 
+                  : selectedSeats.length > 1 
+                    ? `Book ${selectedSeats.length} Seats` 
+                    : 'Book Seat'}
               </Button>
             </DialogFooter>
           </DialogContent>
