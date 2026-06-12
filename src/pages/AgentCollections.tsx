@@ -740,24 +740,26 @@ export default function AgentCollections() {
           <TabsContent value="pending">
             {pendingAgents.length > 0 ? (
               <>
-                {pendingAgents.some(a => a.phone && a.totalPending > 0) && (
+                {pendingAgents.some(a => a.totalPending > 0) && (
                   <div className="mb-3 flex justify-end">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2 text-green-700 border-green-600 hover:bg-green-50 hover:text-green-800 dark:hover:bg-green-950/20"
-                      onClick={() => {
-                        const list = pendingAgents.filter(a => a.phone && a.totalPending > 0);
+                      className="gap-2"
+                      onClick={async () => {
+                        const list = pendingAgents.filter(a => a.totalPending > 0);
                         if (list.length === 0) {
-                          toast.error('No agents with phone numbers found');
+                          toast.error('No pending collections found');
                           return;
                         }
-                        list.forEach((a, idx) => setTimeout(() => sendWhatsappToAgent(a), idx * 600));
-                        toast.success(`Opening WhatsApp for ${list.length} agent(s)`);
+                        for (const a of list) {
+                          await generateVoucherPdf(a);
+                        }
+                        toast.success(`Generated ${list.length} voucher(s)`);
                       }}
                     >
                       <Send className="h-4 w-4" />
-                      Send WhatsApp to All Pending
+                      Download All Vouchers
                     </Button>
                   </div>
                 )}
