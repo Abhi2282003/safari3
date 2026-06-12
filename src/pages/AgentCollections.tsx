@@ -87,23 +87,25 @@ export default function AgentCollections() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
-  const [whatsappTemplate, setWhatsappTemplate] = useState<string>('');
-  const [whatsappEnabled, setWhatsappEnabled] = useState<boolean>(false);
-  const [companyName, setCompanyName] = useState<string>('');
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
+    name: '', phone: '', address: ''
+  });
 
-  // Fetch company WhatsApp settings
+  // Fetch company info for voucher header
   useEffect(() => {
     const fetchSettings = async () => {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('*')
+        .select('name, phone, address')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
-        setWhatsappTemplate((data as any).whatsapp_template || '');
-        setWhatsappEnabled((data as any).whatsapp_reminder_enabled ?? false);
-        setCompanyName(data.name || '');
+        setCompanyInfo({
+          name: data.name || 'ROYAL TRAVELS',
+          phone: data.phone || '',
+          address: data.address || '',
+        });
       }
     };
     fetchSettings();
