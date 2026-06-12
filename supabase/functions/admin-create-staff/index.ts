@@ -43,15 +43,33 @@ Deno.serve(async (req: Request) => {
     const email = `${username.toLowerCase()}@tickets.local`;
     const password = `pin_${pin}_secure`;
 
+    let newUserId: string | null = null;
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name, username: username.toLowerCase() },
     });
-    if (createErr || !created.user) return json({ error: createErr?.message || "Failed to create user" }, 400);
 
-    const newUserId = created.user.id;
+    if (createErr) {
+      // If user already exists in auth, recover the existing user id and continue
+      const msg = (createErr.message || "").toLowerCase();
+      if (msg.includes("already been registered") || msg.includes("already registered") || msg.includes("already exists")) {
+        const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        if (listErr) return json({ error: `Lookup failed: ${listErr.message}` }, 500);
+        const existing = list.users.find((u) => (u.email || "").toLowerCase() === email);
+        if (!existing) return json({ error: "User exists but could not be located" }, 500);
+        newUserId = existing.id;
+        // Reset password so the provided PIN works
+        await admin.auth.admin.updateUserById(existing.id, { password, user_metadata: { full_name, username: username.toLowerCase() } });
+      } else {
+        return json({ error: createErr.message }, 400);
+      }
+    } else if (created?.user) {
+      newUserId = created.user.id;
+    }
+
+    if (!newUserId) return json({ error: "Failed to resolve user id" }, 500);
 
     // Assign staff role
     const { error: roleErr } = await admin.from("user_roles").insert({ user_id: newUserId, role: "staff" });
