@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   Search,
@@ -14,6 +14,8 @@ import { PaymentDialog } from '@/components/dashboard/PaymentDialog';
 import { BookedBySummary } from '@/components/dashboard/BookedBySummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -28,6 +30,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTickets, TicketWithPayment } from '@/hooks/useTickets';
+import { supabase } from '@/integrations/supabase/client';
+
+interface PayEntry {
+  id: string;
+  user_id: string;
+  ticket_no: string;
+  travels_name: string;
+  tours_to: string | null;
+  booked_by: string | null;
+  amount: number;
+  collection_status: 'Paid' | 'Unpaid';
+  paid_by: string | null;
+  receiver_name: string | null;
+  payment_mode: string | null;
+  entry_payment_mode: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
 
 export default function Tickets() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -35,6 +55,35 @@ export default function Tickets() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
+  const [entries, setEntries] = useState<PayEntry[]>([]);
+  const [staffMap, setStaffMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('staff_members').select('user_id, full_name, username');
+      if (data) {
+        const m: Record<string, string> = {};
+        (data as any[]).forEach(s => { m[s.user_id] = s.full_name || s.username; });
+        setStaffMap(m);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const start = new Date(dateStr + 'T00:00:00').toISOString();
+    const end = new Date(dateStr + 'T23:59:59.999').toISOString();
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('pay_collection_entries')
+        .select('*')
+        .gte('created_at', start)
+        .lte('created_at', end)
+        .order('created_at', { ascending: false });
+      setEntries((data || []) as PayEntry[]);
+    })();
+  }, [selectedDate]);
+
 
   // Filter tickets by selected date
   const dateTickets = useMemo(() => {
