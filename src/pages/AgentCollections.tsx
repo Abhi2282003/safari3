@@ -319,7 +319,7 @@ export default function AgentCollections() {
         format(new Date(first.journeyDate), 'dd MMM yyyy'),
         first.busName || first.travelsName || '-',
         first.destination || '-',
-        `${seatList}\n(${g.seats.length} seat${g.seats.length > 1 ? 's' : ''})`,
+        seatList,
         g.actualFare.toFixed(2),
         `- ${g.commission.toFixed(2)}`,
         g.toCollect.toFixed(2),
