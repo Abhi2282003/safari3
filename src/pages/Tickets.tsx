@@ -242,28 +242,20 @@ export default function Tickets() {
         </div>
 
         {/* Booked By Summary for selected date */}
-        <BookedBySummary 
-          tickets={dateTickets.map(t => ({
-            bookedBy: t.bookedBy,
-            amount: t.amount,
-            paymentMode: t.payment?.paymentMode || t.paymentMode,
-          }))} 
+        <BookedBySummary
+          tickets={filteredEntries.map(e => ({
+            bookedBy: e.booked_by || '',
+            amount: Number(e.amount || 0),
+            paymentMode: e.entry_payment_mode || e.payment_mode || '',
+          }))}
         />
 
-        {/* Ticket Table/Cards */}
-        <TicketTable 
-          tickets={filteredTickets} 
-          onRefresh={fetchTickets}
-          onMarkPaid={(ticket) => setPaymentTicket(ticket)}
-          onDeleteTicket={deleteTicket}
-        />
-
-        {/* Booked Entries (from Pay Collection) */}
+        {/* Tickets list (from Pay Collection entries) */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <CardTitle className="text-base sm:text-lg">
-                Booked Entries ({filteredEntries.length})
+                Tickets ({filteredEntries.length})
               </CardTitle>
               <div className="text-sm font-semibold text-primary">
                 Total: ₹{entriesTotal.toLocaleString('en-IN')}
