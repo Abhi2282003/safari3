@@ -43,27 +43,50 @@ Deno.serve(async (req: Request) => {
     const email = `${username.toLowerCase()}@tickets.local`;
     const password = `pin_${pin}_secure`;
 
+    let newUserId: string | null = null;
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name, username: username.toLowerCase() },
     });
-    if (createErr || !created.user) return json({ error: createErr?.message || "Failed to create user" }, 400);
 
-    const newUserId = created.user.id;
+    if (createErr) {
+      // If user already exists in auth, recover the existing user id and continue
+      const msg = (createErr.message || "").toLowerCase();
+      if (msg.includes("already been registered") || msg.includes("already registered") || msg.includes("already exists")) {
+        const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        if (listErr) return json({ error: `Lookup failed: ${listErr.message}` }, 500);
+        const existing = list.users.find((u) => (u.email || "").toLowerCase() === email);
+        if (!existing) return json({ error: "User exists but could not be located" }, 500);
+        newUserId = existing.id;
+        // Reset password so the provided PIN works
+        await admin.auth.admin.updateUserById(existing.id, { password, user_metadata: { full_name, username: username.toLowerCase() } });
+      } else {
+        return json({ error: createErr.message }, 400);
+      }
+    } else if (created?.user) {
+      newUserId = created.user.id;
+    }
 
-    // Assign staff role
-    const { error: roleErr } = await admin.from("user_roles").insert({ user_id: newUserId, role: "staff" });
+    if (!newUserId) return json({ error: "Failed to resolve user id" }, 500);
+
+    // Assign staff role (idempotent)
+    const { error: roleErr } = await admin
+      .from("user_roles")
+      .upsert({ user_id: newUserId, role: "staff" }, { onConflict: "user_id,role" });
     if (roleErr) return json({ error: `Role insert failed: ${roleErr.message}` }, 500);
 
-    // Create staff_members record
-    const { error: smErr } = await admin.from("staff_members").insert({
-      user_id: newUserId,
-      username: username.toLowerCase(),
-      full_name,
-      created_by: user.id,
-    });
+    // Create or update staff_members record
+    const { error: smErr } = await admin
+      .from("staff_members")
+      .upsert({
+        user_id: newUserId,
+        username: username.toLowerCase(),
+        full_name,
+        created_by: user.id,
+        active: true,
+      }, { onConflict: "user_id" });
     if (smErr) return json({ error: `Staff insert failed: ${smErr.message}` }, 500);
 
     return json({ ok: true, user_id: newUserId });
