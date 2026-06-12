@@ -864,63 +864,6 @@ export default function Settings() {
 
 
 
-          {/* Ticket Size Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ruler className="h-5 w-5" />
-                Ticket Size (mm)
-              </CardTitle>
-              <CardDescription>
-                Set the print dimensions for tickets
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="ticketWidth">Width (mm)</Label>
-                  <Input
-                    id="ticketWidth"
-                    type="number"
-                    value={companySettings.ticketWidth || 280}
-                    onChange={(e) => setCompanySettings(prev => ({ ...prev, ticketWidth: parseInt(e.target.value) || 280 }))}
-                    placeholder="280"
-                    min={150}
-                    max={400}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="ticketHeight">Height (mm)</Label>
-                  <Input
-                    id="ticketHeight"
-                    type="number"
-                    value={companySettings.ticketHeight || 140}
-                    onChange={(e) => setCompanySettings(prev => ({ ...prev, ticketHeight: parseInt(e.target.value) || 140 }))}
-                    placeholder="140"
-                    min={80}
-                    max={250}
-                  />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Default: 280mm × 140mm. Adjust based on your printer paper size.
-              </p>
-              <div className="pt-2">
-                <Button onClick={handleSaveCompany} disabled={isSaving} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {isSaving ? 'Saving...' : 'Save Ticket Size'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Pre-Printed Ticket Calibration */}
-          <PrePrintedCalibration
-            layout={prePrintedLayout}
-            onLayoutChange={setPrePrintedLayout}
-            onSave={handleSavePrePrintedLayout}
-            isSaving={isSavingLayout}
-          />
 
           {/* Agents Management */}
           <Card>
