@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   Search,
@@ -14,6 +14,8 @@ import { PaymentDialog } from '@/components/dashboard/PaymentDialog';
 import { BookedBySummary } from '@/components/dashboard/BookedBySummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -28,6 +30,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTickets, TicketWithPayment } from '@/hooks/useTickets';
+import { supabase } from '@/integrations/supabase/client';
+
+interface PayEntry {
+  id: string;
+  user_id: string;
+  ticket_no: string;
+  travels_name: string;
+  tours_to: string | null;
+  booked_by: string | null;
+  amount: number;
+  collection_status: 'Paid' | 'Unpaid';
+  paid_by: string | null;
+  receiver_name: string | null;
+  payment_mode: string | null;
+  entry_payment_mode: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
 
 export default function Tickets() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -35,6 +55,35 @@ export default function Tickets() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
+  const [entries, setEntries] = useState<PayEntry[]>([]);
+  const [staffMap, setStaffMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('staff_members').select('user_id, full_name, username');
+      if (data) {
+        const m: Record<string, string> = {};
+        (data as any[]).forEach(s => { m[s.user_id] = s.full_name || s.username; });
+        setStaffMap(m);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const start = new Date(dateStr + 'T00:00:00').toISOString();
+    const end = new Date(dateStr + 'T23:59:59.999').toISOString();
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('pay_collection_entries')
+        .select('*')
+        .gte('created_at', start)
+        .lte('created_at', end)
+        .order('created_at', { ascending: false });
+      setEntries((data || []) as PayEntry[]);
+    })();
+  }, [selectedDate]);
+
 
   // Filter tickets by selected date
   const dateTickets = useMemo(() => {
@@ -68,6 +117,24 @@ export default function Tickets() {
 
     return result;
   }, [dateTickets, searchQuery, statusFilter]);
+
+  const filteredEntries = useMemo(() => {
+    let result = [...entries];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(e =>
+        e.ticket_no.toLowerCase().includes(q) ||
+        (e.travels_name || '').toLowerCase().includes(q) ||
+        (e.booked_by || '').toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(e => e.collection_status === statusFilter);
+    }
+    return result;
+  }, [entries, searchQuery, statusFilter]);
+
+  const entriesTotal = filteredEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const handleExport = () => {
     const headers = ['Ticket No', 'Booking Time', 'Journey Date', 'Tours To', 'Passenger', 'Phone', 'Tourists', 'Amount', 'Status', 'Received By'];
@@ -190,6 +257,69 @@ export default function Tickets() {
           onMarkPaid={(ticket) => setPaymentTicket(ticket)}
           onDeleteTicket={deleteTicket}
         />
+
+        {/* Booked Entries (from Pay Collection) */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <CardTitle className="text-base sm:text-lg">
+                Booked Entries ({filteredEntries.length})
+              </CardTitle>
+              <div className="text-sm font-semibold text-primary">
+                Total: ₹{entriesTotal.toLocaleString('en-IN')}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {filteredEntries.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No booked entries for this date.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {filteredEntries.map((e) => (
+                  <div
+                    key={e.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border rounded-lg hover:bg-muted/40 transition"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-sm font-medium text-primary">
+                          {e.ticket_no}
+                        </span>
+                        <Badge
+                          variant={e.collection_status === 'Paid' ? 'default' : 'secondary'}
+                          className={e.collection_status === 'Paid' ? 'bg-green-600 hover:bg-green-700' : ''}
+                        >
+                          {e.collection_status}
+                        </Badge>
+                        {e.entry_payment_mode && (
+                          <Badge variant="outline">{e.entry_payment_mode}</Badge>
+                        )}
+                      </div>
+                      <div className="text-sm mt-1">
+                        <span className="font-medium">{e.travels_name}</span>
+                        {e.tours_to && <span className="text-muted-foreground"> · {e.tours_to}</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Booked by: {e.booked_by || '-'} · Staff: {staffMap[e.user_id] || '-'} · {format(new Date(e.created_at), 'hh:mm a')}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">₹{Number(e.amount).toLocaleString('en-IN')}</div>
+                      {e.collection_status === 'Paid' && e.receiver_name && (
+                        <div className="text-xs text-muted-foreground">
+                          Recv: {e.receiver_name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
 
         {/* Payment Dialog */}
         <PaymentDialog
