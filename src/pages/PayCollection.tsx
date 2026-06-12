@@ -676,6 +676,88 @@ export default function PayCollection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Search Ticket Dialog */}
+      <Dialog open={searchOpen} onOpenChange={(o) => { setSearchOpen(o); if (!o) { setSearchTicketNo(''); setSearchResult(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Search Ticket</DialogTitle>
+            <DialogDescription>Enter the ticket number to check its payment status</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ticket number"
+                value={searchTicketNo}
+                onChange={(e) => setSearchTicketNo(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchTicket(); }}
+                autoFocus
+              />
+              <Button onClick={handleSearchTicket} className="gap-1">
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+            </div>
+
+            {searchResult === 'notfound' && (
+              <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3">
+                No ticket found with that number.
+              </div>
+            )}
+
+            {searchResult && searchResult !== 'notfound' && (() => {
+              const entry = searchResult as PayEntry;
+              const commission = getCommission(entry.travels_name);
+              const payable = calculatePayableAmount(entry.amount || 0, commission);
+              const isPaid = entry.collection_status === 'Paid';
+              return (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm text-primary">{entry.ticket_no}</p>
+                      <p className="text-sm font-medium">{entry.travels_name}</p>
+                      {entry.tours_to && <p className="text-xs text-muted-foreground">{entry.tours_to}</p>}
+                      {entry.booked_by && <p className="text-xs text-muted-foreground">Booked by: {entry.booked_by}</p>}
+                    </div>
+                    <Badge
+                      variant={isPaid ? 'default' : 'secondary'}
+                      className={isPaid ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-500 hover:bg-amber-600 text-white'}
+                    >
+                      {isPaid ? 'Paid' : 'Unpaid'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm border-t pt-2">
+                    <div>
+                      <span className="text-muted-foreground">Amount: </span>
+                      <span>₹{(entry.amount || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="font-semibold">
+                      <span className="text-muted-foreground font-normal">To Pay: </span>
+                      ₹{payable.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  {isPaid ? (
+                    <div className="text-xs text-muted-foreground border-t pt-2">
+                      Paid {entry.paid_at && format(new Date(entry.paid_at), 'dd/MM/yy hh:mm a')}
+                      {entry.paid_by ? ` • By: ${entry.paid_by}` : ''}
+                      {entry.payment_mode ? ` • ${entry.payment_mode}` : ''}
+                    </div>
+                  ) : (
+                    <Button onClick={() => openPayFromSearch(entry)} className="w-full">
+                      Pay Now
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSearchOpen(false)} className="w-full sm:w-auto">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
