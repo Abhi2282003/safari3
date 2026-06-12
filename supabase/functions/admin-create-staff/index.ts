@@ -71,17 +71,22 @@ Deno.serve(async (req: Request) => {
 
     if (!newUserId) return json({ error: "Failed to resolve user id" }, 500);
 
-    // Assign staff role
-    const { error: roleErr } = await admin.from("user_roles").insert({ user_id: newUserId, role: "staff" });
+    // Assign staff role (idempotent)
+    const { error: roleErr } = await admin
+      .from("user_roles")
+      .upsert({ user_id: newUserId, role: "staff" }, { onConflict: "user_id,role" });
     if (roleErr) return json({ error: `Role insert failed: ${roleErr.message}` }, 500);
 
-    // Create staff_members record
-    const { error: smErr } = await admin.from("staff_members").insert({
-      user_id: newUserId,
-      username: username.toLowerCase(),
-      full_name,
-      created_by: user.id,
-    });
+    // Create or update staff_members record
+    const { error: smErr } = await admin
+      .from("staff_members")
+      .upsert({
+        user_id: newUserId,
+        username: username.toLowerCase(),
+        full_name,
+        created_by: user.id,
+        active: true,
+      }, { onConflict: "user_id" });
     if (smErr) return json({ error: `Staff insert failed: ${smErr.message}` }, 500);
 
     return json({ ok: true, user_id: newUserId });
