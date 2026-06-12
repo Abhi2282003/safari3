@@ -861,66 +861,8 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* WhatsApp Reminder Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                WhatsApp Reminders for Agent Collections
-              </CardTitle>
-              <CardDescription>
-                Configure the daily reminder message sent to agents with pending collections. 
-                When enabled, a daily prompt at 10 AM lets you send the message to all pending agents on WhatsApp.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="space-y-0.5">
-                  <Label htmlFor="wa-enabled" className="text-base">Enable Daily Reminder</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Show a prompt at 10 AM every day on the Agent Collections page.
-                  </p>
-                </div>
-                <Switch
-                  id="wa-enabled"
-                  checked={!!companySettings.whatsappReminderEnabled}
-                  onCheckedChange={(checked) =>
-                    setCompanySettings(prev => ({ ...prev, whatsappReminderEnabled: checked }))
-                  }
-                />
-              </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="wa-template">Message Template</Label>
-                <Textarea
-                  id="wa-template"
-                  value={companySettings.whatsappTemplate || ''}
-                  onChange={(e) => setCompanySettings(prev => ({ ...prev, whatsappTemplate: e.target.value }))}
-                  rows={10}
-                  placeholder="Hello {agent_name}, you have ₹{total_pending} pending..."
-                  className="font-mono text-sm"
-                />
-                <div className="rounded-md bg-muted/50 p-3 text-xs space-y-1">
-                  <p className="font-semibold">Available placeholders:</p>
-                  <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-muted-foreground">
-                    <li><code className="text-foreground">{'{agent_name}'}</code> – Agent's name</li>
-                    <li><code className="text-foreground">{'{company_name}'}</code> – Your company name</li>
-                    <li><code className="text-foreground">{'{total_pending}'}</code> – Total pending amount</li>
-                    <li><code className="text-foreground">{'{seat_count}'}</code> – Number of pending seats</li>
-                    <li><code className="text-foreground">{'{bookings}'}</code> – Itemized list of pending bookings</li>
-                    <li><code className="text-foreground">{'{date}'}</code> – Today's date</li>
-                  </ul>
-                </div>
-              </div>
 
-              <div className="pt-2">
-                <Button onClick={handleSaveCompany} disabled={isSaving} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {isSaving ? 'Saving...' : 'Save WhatsApp Settings'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Ticket Size Settings */}
           <Card>

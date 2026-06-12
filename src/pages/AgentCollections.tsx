@@ -87,23 +87,25 @@ export default function AgentCollections() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
-  const [whatsappTemplate, setWhatsappTemplate] = useState<string>('');
-  const [whatsappEnabled, setWhatsappEnabled] = useState<boolean>(false);
-  const [companyName, setCompanyName] = useState<string>('');
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
+    name: '', phone: '', address: ''
+  });
 
-  // Fetch company WhatsApp settings
+  // Fetch company info for voucher header
   useEffect(() => {
     const fetchSettings = async () => {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('*')
+        .select('name, phone, address')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
-        setWhatsappTemplate((data as any).whatsapp_template || '');
-        setWhatsappEnabled((data as any).whatsapp_reminder_enabled ?? false);
-        setCompanyName(data.name || '');
+        setCompanyInfo({
+          name: data.name || 'ROYAL TRAVELS',
+          phone: data.phone || '',
+          address: data.address || '',
+        });
       }
     };
     fetchSettings();
@@ -221,75 +223,119 @@ export default function AgentCollections() {
     return agentCollections.filter(a => a.totalCollected > 0);
   }, [agentCollections]);
 
-  // Build WhatsApp message for an agent
-  const buildWhatsappMessage = (agent: AgentWithCollections): string => {
-    const pendingBookings = agent.bookings.filter(b => b.agentCollectionStatus === 'pending');
-    const bookingsText = pendingBookings.map(b => {
-      const d = format(new Date(b.journeyDate), 'dd MMM yyyy');
-      const bus = b.busName || b.travelsName || 'Bus';
-      const dest = b.destination ? ` to ${b.destination}` : '';
-      return `• ${d} - Seat ${b.seatNumber} - ${bus}${dest} - ₹${b.amountFromAgent.toFixed(0)}`;
-    }).join('\n');
+  // Generate a Pending Collection Voucher PDF for an agent
+  const generateVoucherPdf = async (agent: AgentWithCollections) => {
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
 
-    const defaultTpl = `Hello {agent_name}, this is a reminder from {company_name}. You have pending collections of ₹{total_pending} for the following bookings:\n\n{bookings}\n\nTotal: ₹{total_pending}\n\nPlease arrange the payment at your earliest convenience. Thank you!`;
-    const tpl = whatsappTemplate?.trim() || defaultTpl;
+    const pendingBookings = agent.bookings
+      .filter(b => b.agentCollectionStatus === 'pending')
+      .sort((a, b) => a.journeyDate.localeCompare(b.journeyDate));
 
-    return tpl
-      .split('{agent_name}').join(agent.name)
-      .split('{company_name}').join(companyName || 'Our Travels')
-      .split('{total_pending}').join(agent.totalPending.toFixed(0))
-      .split('{seat_count}').join(pendingBookings.length.toString())
-      .split('{bookings}').join(bookingsText)
-      .split('{date}').join(format(new Date(), 'dd MMM yyyy'));
-  };
-
-  // Open WhatsApp with pre-filled message for an agent
-  const sendWhatsappToAgent = (agent: AgentWithCollections) => {
-    if (!agent.phone) {
-      toast.error(`No phone number saved for ${agent.name}`);
+    if (pendingBookings.length === 0) {
+      toast.error('No pending bookings for this agent');
       return;
     }
-    const phone = agent.phone.replace(/\D/g, '');
-    const finalPhone = phone.length === 10 ? `91${phone}` : phone;
-    const msg = buildWhatsappMessage(agent);
-    const url = `https://wa.me/${finalPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const today = format(new Date(), 'dd MMM yyyy');
+    const voucherNo = `V-${format(new Date(), 'yyyyMMdd')}-${agent.id.slice(0, 6).toUpperCase()}`;
+
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text(companyInfo.name || 'ROYAL TRAVELS', pageW / 2, 18, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    if (companyInfo.address) doc.text(companyInfo.address, pageW / 2, 24, { align: 'center' });
+    if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, pageW / 2, 29, { align: 'center' });
+
+    doc.setLineWidth(0.4);
+    doc.line(14, 33, pageW - 14, 33);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('PENDING COLLECTION VOUCHER', pageW / 2, 41, { align: 'center' });
+
+    // Voucher meta
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Voucher No: ${voucherNo}`, 14, 50);
+    doc.text(`Date: ${today}`, pageW - 14, 50, { align: 'right' });
+
+    // Agent details
+    doc.setFont('helvetica', 'bold');
+    doc.text('Agent Details', 14, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Name: ${agent.name}`, 14, 66);
+    if (agent.phone) doc.text(`Phone: ${agent.phone}`, 14, 72);
+
+    // Table
+    autoTable(doc, {
+      startY: agent.phone ? 78 : 72,
+      head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seat', 'Amount (Rs.)']],
+      body: pendingBookings.map((b, i) => [
+        String(i + 1),
+        format(new Date(b.journeyDate), 'dd MMM yyyy'),
+        b.busName || b.travelsName || '-',
+        b.destination || '-',
+        String(b.seatNumber),
+        b.amountFromAgent.toFixed(2),
+      ]),
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [40, 40, 40], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 5: { halign: 'right' } },
+      theme: 'grid',
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 90;
+
+    // Totals
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Total Seats: ${pendingBookings.length}`, 14, finalY + 10);
+    doc.text(
+      `Total Pending: Rs. ${agent.totalPending.toFixed(2)}`,
+      pageW - 14,
+      finalY + 10,
+      { align: 'right' }
+    );
+
+    if (agent.advanceBalance > 0) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(
+        `Advance Balance: Rs. ${agent.advanceBalance.toFixed(2)}`,
+        pageW - 14,
+        finalY + 17,
+        { align: 'right' }
+      );
+      doc.setFont('helvetica', 'bold');
+      doc.text(
+        `Net Payable: Rs. ${Math.max(0, agent.totalPending - agent.advanceBalance).toFixed(2)}`,
+        pageW - 14,
+        finalY + 24,
+        { align: 'right' }
+      );
+    }
+
+    // Footer / signatures
+    const sigY = Math.min(finalY + 60, doc.internal.pageSize.getHeight() - 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Please arrange the payment at your earliest convenience.', 14, sigY - 10);
+    doc.line(20, sigY, 80, sigY);
+    doc.text('Agent Signature', 50, sigY + 5, { align: 'center' });
+    doc.line(pageW - 80, sigY, pageW - 20, sigY);
+    doc.text('Authorized Signatory', pageW - 50, sigY + 5, { align: 'center' });
+
+    const safeName = agent.name.replace(/[^a-z0-9]+/gi, '_');
+    doc.save(`Voucher_${safeName}_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
 
-  // Daily 10 AM reminder prompt
-  useEffect(() => {
-    if (!whatsappEnabled || pendingAgents.length === 0) return;
-    const now = new Date();
-    if (now.getHours() < 10) return;
-    const todayKey = `wa_reminder_${format(now, 'yyyy-MM-dd')}`;
-    if (localStorage.getItem(todayKey)) return;
 
-    const agentsWithPhones = pendingAgents.filter(a => a.phone && a.totalPending > 0);
-    if (agentsWithPhones.length === 0) return;
-
-    const t = setTimeout(() => {
-      toast.info(
-        `Daily reminder: ${agentsWithPhones.length} agent(s) have pending collections. Send WhatsApp reminders?`,
-        {
-          duration: 15000,
-          action: {
-            label: 'Send All',
-            onClick: () => {
-              agentsWithPhones.forEach((a, idx) => {
-                setTimeout(() => sendWhatsappToAgent(a), idx * 600);
-              });
-              localStorage.setItem(todayKey, '1');
-            },
-          },
-          cancel: {
-            label: 'Dismiss',
-            onClick: () => localStorage.setItem(todayKey, '1'),
-          },
-        }
-      );
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [whatsappEnabled, pendingAgents, whatsappTemplate, companyName]);
 
 
   const summary = useMemo(() => {
@@ -694,24 +740,26 @@ export default function AgentCollections() {
           <TabsContent value="pending">
             {pendingAgents.length > 0 ? (
               <>
-                {pendingAgents.some(a => a.phone && a.totalPending > 0) && (
+                {pendingAgents.some(a => a.totalPending > 0) && (
                   <div className="mb-3 flex justify-end">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2 text-green-700 border-green-600 hover:bg-green-50 hover:text-green-800 dark:hover:bg-green-950/20"
-                      onClick={() => {
-                        const list = pendingAgents.filter(a => a.phone && a.totalPending > 0);
+                      className="gap-2"
+                      onClick={async () => {
+                        const list = pendingAgents.filter(a => a.totalPending > 0);
                         if (list.length === 0) {
-                          toast.error('No agents with phone numbers found');
+                          toast.error('No pending collections found');
                           return;
                         }
-                        list.forEach((a, idx) => setTimeout(() => sendWhatsappToAgent(a), idx * 600));
-                        toast.success(`Opening WhatsApp for ${list.length} agent(s)`);
+                        for (const a of list) {
+                          await generateVoucherPdf(a);
+                        }
+                        toast.success(`Generated ${list.length} voucher(s)`);
                       }}
                     >
                       <Send className="h-4 w-4" />
-                      Send WhatsApp to All Pending
+                      Download All Vouchers
                     </Button>
                   </div>
                 )}
@@ -782,15 +830,15 @@ export default function AgentCollections() {
                               Mark All Collected
                             </Button>
                           )}
-                          {agent.totalPending > 0 && agent.phone && (
+                          {agent.totalPending > 0 && (
                             <Button
                               variant="outline"
-                              onClick={() => sendWhatsappToAgent(agent)}
-                              className="gap-2 text-green-700 border-green-600 hover:bg-green-50 hover:text-green-800 dark:hover:bg-green-950/20"
+                              onClick={() => generateVoucherPdf(agent)}
+                              className="gap-2"
                               size="sm"
                             >
-                              <MessageCircle className="h-4 w-4" />
-                              Send WhatsApp Reminder
+                              <Send className="h-4 w-4" />
+                              Download Voucher PDF
                             </Button>
                           )}
                         </div>
