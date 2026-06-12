@@ -343,6 +343,25 @@ export default function AgentCollections() {
       doc.text(`Phone: ${agent.phone}`, 18, agentBoxY + 16.5);
     }
 
+    // Build table rows
+    const body: any[] = groups.map((g, idx) => {
+      const first = g.seats[0];
+      const seatList = g.seats.map(s => s.seatNumber).join(', ');
+      return [
+        String(idx + 1),
+        format(new Date(first.journeyDate), 'dd MMM yyyy'),
+        first.busName || first.travelsName || '-',
+        first.destination || '-',
+        seatList,
+        g.actualFare.toFixed(2),
+        `- ${g.commission.toFixed(2)}`,
+        g.toCollect.toFixed(2),
+      ];
+    });
+    const totalActual = groups.reduce((s, g) => s + g.actualFare, 0);
+    const totalCommission = groups.reduce((s, g) => s + g.commission, 0);
+    const totalCollect = groups.reduce((s, g) => s + g.toCollect, 0);
+
     autoTable(doc, {
       startY: agentBoxY + (agent.phone ? 22 : 17),
       head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Actual Fare', 'Commission', 'To Collect']],
