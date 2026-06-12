@@ -117,12 +117,6 @@ export default function Tickets() {
               {filteredTickets.length} tickets for {format(selectedDate, 'EEE, dd MMM yyyy')}
             </p>
           </div>
-          <Link to="/new-ticket" className="w-full sm:w-auto">
-            <Button className="gap-2 w-full sm:w-auto">
-              <Plus className="h-4 w-4" />
-              New Ticket
-            </Button>
-          </Link>
         </div>
 
         {/* Filters */}
