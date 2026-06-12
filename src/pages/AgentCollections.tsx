@@ -275,113 +275,146 @@ export default function AgentCollections() {
     const today = format(new Date(), 'dd MMM yyyy');
     const voucherNo = `V-${format(new Date(), 'yyyyMMdd')}-${agent.id.slice(0, 6).toUpperCase()}`;
 
+    // Brand colors (Royal Safari sunset orange)
+    const brand: [number, number, number] = [234, 88, 12];
+    const brandDark: [number, number, number] = [124, 45, 18];
+    const ink: [number, number, number] = [30, 30, 30];
+
+    // Top brand band
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, 0, pageW, 6, 'F');
+
     // Logo
     const logoData = await loadLogoDataUrl();
     if (logoData) {
-      try { doc.addImage(logoData, 'PNG', 14, 10, 24, 24); } catch (e) { /* ignore */ }
+      try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch (e) { /* ignore */ }
     }
 
-    // Header
+    // Company name & contact
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text(companyInfo.name || 'ROYAL SAFARI', pageW / 2, 18, { align: 'center' });
+    doc.setFontSize(22);
+    doc.text(companyInfo.name || 'ROYAL SAFARI', 44, 20);
 
+    doc.setTextColor(90);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    if (companyInfo.address) doc.text(companyInfo.address, pageW / 2, 24, { align: 'center' });
-    if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, pageW / 2, 29, { align: 'center' });
+    if (companyInfo.address) doc.text(companyInfo.address, 44, 26);
+    if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, 44, 31);
 
-    doc.setLineWidth(0.4);
-    doc.line(14, 36, pageW - 14, 36);
+    // Divider
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.6);
+    doc.line(14, 40, pageW - 14, 40);
 
+    // Title pill
+    const title = 'PENDING COLLECTION VOUCHER';
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
-    doc.text('PENDING COLLECTION VOUCHER', pageW / 2, 44, { align: 'center' });
+    const titleW = doc.getTextWidth(title) + 12;
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+    doc.setTextColor(255);
+    doc.text(title, pageW / 2, 50.3, { align: 'center' });
 
+    // Voucher meta
+    doc.setTextColor(ink[0], ink[1], ink[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Voucher No: ${voucherNo}`, 14, 53);
-    doc.text(`Date: ${today}`, pageW - 14, 53, { align: 'right' });
+    doc.text(`Voucher No: ${voucherNo}`, 14, 62);
+    doc.text(`Date: ${today}`, pageW - 14, 62, { align: 'right' });
 
+    // Agent details card
+    const agentBoxY = 67;
+    doc.setFillColor(250, 245, 235);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(14, agentBoxY, pageW - 28, agent.phone ? 18 : 13, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
-    doc.text('Agent Details', 14, 63);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Name: ${agent.name}`, 14, 69);
-    if (agent.phone) doc.text(`Phone: ${agent.phone}`, 14, 75);
-
-    // Build table rows: grouped seats together with computation columns
-    const body: any[] = [];
-    groups.forEach((g, idx) => {
-      const first = g.seats[0];
-      const seatList = g.seats.map(s => s.seatNumber).join(', ');
-      body.push([
-        String(idx + 1),
-        format(new Date(first.journeyDate), 'dd MMM yyyy'),
-        first.busName || first.travelsName || '-',
-        first.destination || '-',
-        seatList,
-        g.actualFare.toFixed(2),
-        `- ${g.commission.toFixed(2)}`,
-        g.toCollect.toFixed(2),
-      ]);
-    });
-
-    const totalActual = groups.reduce((s, g) => s + g.actualFare, 0);
-    const totalCommission = groups.reduce((s, g) => s + g.commission, 0);
-    const totalCollect = groups.reduce((s, g) => s + g.toCollect, 0);
+    doc.setFontSize(10);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('BILL TO', 18, agentBoxY + 6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFontSize(11);
+    doc.text(agent.name, 18, agentBoxY + 12);
+    if (agent.phone) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Phone: ${agent.phone}`, 18, agentBoxY + 16.5);
+    }
 
     autoTable(doc, {
-      startY: agent.phone ? 80 : 74,
+      startY: agentBoxY + (agent.phone ? 22 : 17),
       head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Actual Fare', 'Commission', 'To Collect']],
       body,
       foot: [[
-        { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
         { content: totalActual.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
-        { content: `- ${totalCommission.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: `- ${totalCommission.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: [180, 30, 30] } },
         { content: totalCollect.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
       ]],
-      styles: { fontSize: 9, cellPadding: 2, valign: 'middle' },
-      headStyles: { fillColor: [40, 40, 40], textColor: 255, fontStyle: 'bold' },
-      footStyles: { fillColor: [240, 240, 240], textColor: 20 },
+      styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+      headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
+      footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+      alternateRowStyles: { fillColor: [252, 250, 247] },
       columnStyles: {
+        0: { halign: 'center', cellWidth: 9 },
+        1: { halign: 'center' },
+        4: { halign: 'center', fontStyle: 'bold' },
         5: { halign: 'right' },
         6: { halign: 'right', textColor: [180, 30, 30] },
-        7: { halign: 'right', fontStyle: 'bold' },
+        7: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
       },
       theme: 'grid',
+      margin: { left: 14, right: 14 },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 90;
 
-    // Summary box
-    const boxY = finalY + 8;
-    doc.setDrawColor(40);
-    doc.setLineWidth(0.3);
-    doc.rect(pageW - 90, boxY, 76, agent.advanceBalance > 0 ? 28 : 14);
-
+    // Summary card (right)
+    const boxY = finalY + 10;
+    const boxH = agent.advanceBalance > 0 ? 34 : 18;
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect(pageW - 90, boxY, 76, boxH, 2, 2, 'F');
+    doc.setTextColor(255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('Net Amount to Collect:', pageW - 88, boxY + 9);
-    doc.text(`Rs. ${Math.max(0, totalCollect - agent.advanceBalance).toFixed(2)}`, pageW - 16, boxY + 9, { align: 'right' });
-
+    doc.setFontSize(10);
+    doc.text('NET AMOUNT TO COLLECT', pageW - 88, boxY + 7);
+    doc.setFontSize(16);
+    doc.text(
+      `Rs. ${Math.max(0, totalCollect - agent.advanceBalance).toFixed(2)}`,
+      pageW - 16,
+      boxY + 14,
+      { align: 'right' }
+    );
     if (agent.advanceBalance > 0) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Pending: Rs. ${totalCollect.toFixed(2)}`, pageW - 88, boxY + 17);
-      doc.text(`Less Advance: Rs. ${agent.advanceBalance.toFixed(2)}`, pageW - 88, boxY + 23);
+      doc.setFontSize(8.5);
+      doc.text(`Pending: Rs. ${totalCollect.toFixed(2)}`, pageW - 88, boxY + 22);
+      doc.text(`Less Advance: Rs. ${agent.advanceBalance.toFixed(2)}`, pageW - 88, boxY + 28);
     }
 
-    doc.setFont('helvetica', 'normal');
+    // Left meta
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text(`Total Seats: ${pendingBookings.length}`, 14, boxY + 9);
+    doc.text(`Total Seats: ${pendingBookings.length}`, 14, boxY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(110);
+    doc.text('Note: Commission already deducted from amount payable.', 14, boxY + 13);
 
-    // Footer note
+    // Footer band
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, pageH - 6, pageW, 6, 'F');
+    doc.setTextColor(110);
     doc.setFontSize(8);
-    doc.setTextColor(100);
     doc.text(
-      'Please arrange the payment at your earliest convenience.',
-      14,
-      doc.internal.pageSize.getHeight() - 12
+      'Please arrange the payment at your earliest convenience. Thank you for your business.',
+      pageW / 2,
+      pageH - 10,
+      { align: 'center' }
     );
 
     const safeName = agent.name.replace(/[^a-z0-9]+/gi, '_');
