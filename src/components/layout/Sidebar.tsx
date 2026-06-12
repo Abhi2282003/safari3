@@ -2,38 +2,45 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Plus, 
   Settings, 
   FileText,
   Bus,
   LogOut,
   Menu,
-  X,
   Armchair,
   Users,
   TrendingUp,
-  Wallet
+  Wallet,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-const navItems = [
+const adminItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/new-ticket', label: 'New Ticket', icon: Plus },
   { href: '/tickets', label: 'Tickets', icon: FileText },
   { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
   { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
+  { href: '/hisab', label: 'Daily Hisab', icon: ClipboardList },
   { href: '/agent-collections', label: 'Agent Collections', icon: Users },
   { href: '/admin', label: 'Admin', icon: TrendingUp },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
+const staffItems = [
+  { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
+  { href: '/hisab', label: 'Daily Hisab', icon: ClipboardList },
+];
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
+  const navItems = isAdmin ? adminItems : staffItems;
 
   const handleLogout = async () => {
     await signOut();
@@ -42,7 +49,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
           <Bus className="h-6 w-6 text-sidebar-primary-foreground" />
@@ -53,7 +59,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="mt-6 px-4 flex-1">
         <ul className="space-y-1">
           {navItems.map((item) => {
@@ -79,13 +84,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </nav>
 
-      {/* Footer with user and logout */}
       <div className="border-t border-sidebar-border p-4">
         {user && (
           <div className="mb-3 px-2">
-            <p className="text-xs text-sidebar-foreground/70 truncate">
-              {user.email}
-            </p>
+            <p className="text-xs text-sidebar-foreground/70 truncate">{user.email}</p>
           </div>
         )}
         <Button
@@ -97,9 +99,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <LogOut className="h-4 w-4" />
           Logout
         </Button>
-        <p className="text-xs text-sidebar-foreground/50 text-center mt-3">
-          Manual Booking v1.0
-        </p>
+        <p className="text-xs text-sidebar-foreground/50 text-center mt-3">Manual Booking v1.0</p>
       </div>
     </div>
   );
@@ -110,7 +110,6 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Header with Menu Button */}
       <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center gap-4 border-b bg-sidebar px-4 lg:hidden">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -131,7 +130,6 @@ export function Sidebar() {
         </div>
       </header>
 
-      {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground hidden lg:block">
         <SidebarContent />
       </aside>

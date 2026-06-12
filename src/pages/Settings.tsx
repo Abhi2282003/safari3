@@ -1447,7 +1447,10 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          <StaffManagement />
         </div>
+
 
         {/* Delete Receiver Dialog */}
         <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
