@@ -1,0 +1,1 @@
+ALTER TABLE public.pay_collection_entries ADD COLUMN IF NOT EXISTS entry_payment_mode text;

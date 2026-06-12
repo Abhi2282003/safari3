@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { useTravels, useReceivers } from '@/hooks/useTickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,8 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useStaffMember } from '@/hooks/useStaffMember';
 
 interface PayEntry {
   id: string;
@@ -29,6 +32,7 @@ interface PayEntry {
   receiver_name: string | null;
   receiver_mobile: string | null;
   payment_mode: string | null;
+  entry_payment_mode: string | null;
   paid_at: string | null;
   created_at: string;
 }
@@ -37,7 +41,10 @@ export default function PayCollection() {
   const { user } = useAuth();
   const { travels } = useTravels();
   const { receivers } = useReceivers();
+  const { isStaff } = useUserRole();
+  const { staff } = useStaffMember();
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [entries, setEntries] = useState<PayEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +58,13 @@ export default function PayCollection() {
   const [eToursTo, setEToursTo] = useState('');
   const [eBookedBy, setEBookedBy] = useState('');
   const [eAmount, setEAmount] = useState('');
+  const [eEntryMode, setEEntryMode] = useState<'Cash' | 'Online'>('Cash');
   const [savingEntry, setSavingEntry] = useState(false);
+
+  // Search ticket dialog
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTicketNo, setSearchTicketNo] = useState('');
+  const [searchResult, setSearchResult] = useState<PayEntry | null | 'notfound'>(null);
 
   // Pay dialog
   const [payDialogOpen, setPayDialogOpen] = useState(false);
@@ -79,6 +92,26 @@ export default function PayCollection() {
   useEffect(() => {
     fetchEntries();
   }, [fetchEntries]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  // Auto-fill Booked By with staff full name when staff
+  useEffect(() => {
+    if (isStaff && staff?.full_name) {
+      setEBookedBy(staff.full_name);
+    }
+  }, [isStaff, staff]);
+
+  // Auto-open ticket entry dialog if ?entry=1
+  useEffect(() => {
+    if (searchParams.get('entry') === '1') {
+      setEntryOpen(true);
+      searchParams.delete('entry');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const getCommission = (travelsName: string | undefined) => {
     if (!travelsName) return 10;
@@ -132,8 +165,9 @@ export default function PayCollection() {
     setETicketNo('');
     setETravels('');
     setEToursTo('');
-    setEBookedBy('');
+    setEBookedBy(isStaff && staff?.full_name ? staff.full_name : '');
     setEAmount('');
+    setEEntryMode('Cash');
   };
 
   const handleSaveEntry = async () => {
@@ -154,6 +188,7 @@ export default function PayCollection() {
       booked_by: eBookedBy.trim() || null,
       amount: Number(eAmount) || 0,
       collection_status: 'Unpaid',
+      entry_payment_mode: eEntryMode,
     });
     setSavingEntry(false);
     if (error) {
@@ -164,6 +199,36 @@ export default function PayCollection() {
     setEntryOpen(false);
     resetEntry();
     fetchEntries();
+  };
+
+  const handleSearchTicket = async () => {
+    const q = searchTicketNo.trim();
+    if (!q) {
+      toast.error('Enter ticket number');
+      return;
+    }
+    const { data, error } = await (supabase as any)
+      .from('pay_collection_entries')
+      .select('*')
+      .eq('ticket_no', q)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) {
+      toast.error('Search failed');
+      return;
+    }
+    if (!data || data.length === 0) {
+      setSearchResult('notfound');
+    } else {
+      setSearchResult(data[0] as PayEntry);
+    }
+  };
+
+  const openPayFromSearch = (entry: PayEntry) => {
+    setSearchOpen(false);
+    setSearchTicketNo('');
+    setSearchResult(null);
+    handlePayClick(entry);
   };
 
   const handlePayClick = (entry: PayEntry) => {
@@ -220,10 +285,16 @@ export default function PayCollection() {
             <h1 className="text-xl sm:text-2xl font-bold">Pay Collection</h1>
             <p className="text-sm text-muted-foreground">Manage ticket payments grouped by travels</p>
           </div>
-          <Button onClick={() => setEntryOpen(true)} className="gap-2 w-full sm:w-auto">
-            <Plus className="h-4 w-4" />
-            Ticket Entry
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={() => { setSearchResult(null); setSearchTicketNo(''); setSearchOpen(true); }} variant="outline" className="gap-2 flex-1 sm:flex-none">
+              <Search className="h-4 w-4" />
+              Search Ticket
+            </Button>
+            <Button onClick={() => setEntryOpen(true)} className="gap-2 flex-1 sm:flex-none">
+              <Plus className="h-4 w-4" />
+              Ticket Entry
+            </Button>
+          </div>
         </div>
 
         <div className="relative">
@@ -466,16 +537,20 @@ export default function PayCollection() {
             </div>
             <div className="space-y-2">
               <Label>Booked By</Label>
-              <Select value={eBookedBy} onValueChange={setEBookedBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select receiver" />
-                </SelectTrigger>
-                <SelectContent>
-                  {receivers.filter((r) => r.active).map((r) => (
-                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isStaff ? (
+                <Input value={eBookedBy} readOnly className="bg-muted" />
+              ) : (
+                <Select value={eBookedBy} onValueChange={setEBookedBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select receiver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {receivers.filter((r) => r.active).map((r) => (
+                      <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Amount <span className="text-destructive">*</span></Label>
@@ -486,6 +561,18 @@ export default function PayCollection() {
                 onChange={(e) => setEAmount(e.target.value)}
                 placeholder="0"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Payment Mode <span className="text-destructive">*</span></Label>
+              <Select value={eEntryMode} onValueChange={(v) => setEEntryMode(v as 'Cash' | 'Online')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Online">Online</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row">
@@ -585,6 +672,88 @@ export default function PayCollection() {
               className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
             >
               {isSubmitting ? 'Processing...' : 'Confirm Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Search Ticket Dialog */}
+      <Dialog open={searchOpen} onOpenChange={(o) => { setSearchOpen(o); if (!o) { setSearchTicketNo(''); setSearchResult(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Search Ticket</DialogTitle>
+            <DialogDescription>Enter the ticket number to check its payment status</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ticket number"
+                value={searchTicketNo}
+                onChange={(e) => setSearchTicketNo(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchTicket(); }}
+                autoFocus
+              />
+              <Button onClick={handleSearchTicket} className="gap-1">
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+            </div>
+
+            {searchResult === 'notfound' && (
+              <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3">
+                No ticket found with that number.
+              </div>
+            )}
+
+            {searchResult && searchResult !== 'notfound' && (() => {
+              const entry = searchResult as PayEntry;
+              const commission = getCommission(entry.travels_name);
+              const payable = calculatePayableAmount(entry.amount || 0, commission);
+              const isPaid = entry.collection_status === 'Paid';
+              return (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm text-primary">{entry.ticket_no}</p>
+                      <p className="text-sm font-medium">{entry.travels_name}</p>
+                      {entry.tours_to && <p className="text-xs text-muted-foreground">{entry.tours_to}</p>}
+                      {entry.booked_by && <p className="text-xs text-muted-foreground">Booked by: {entry.booked_by}</p>}
+                    </div>
+                    <Badge
+                      variant={isPaid ? 'default' : 'secondary'}
+                      className={isPaid ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-500 hover:bg-amber-600 text-white'}
+                    >
+                      {isPaid ? 'Paid' : 'Unpaid'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm border-t pt-2">
+                    <div>
+                      <span className="text-muted-foreground">Amount: </span>
+                      <span>₹{(entry.amount || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="font-semibold">
+                      <span className="text-muted-foreground font-normal">To Pay: </span>
+                      ₹{payable.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  {isPaid ? (
+                    <div className="text-xs text-muted-foreground border-t pt-2">
+                      Paid {entry.paid_at && format(new Date(entry.paid_at), 'dd/MM/yy hh:mm a')}
+                      {entry.paid_by ? ` • By: ${entry.paid_by}` : ''}
+                      {entry.payment_mode ? ` • ${entry.payment_mode}` : ''}
+                    </div>
+                  ) : (
+                    <Button onClick={() => openPayFromSearch(entry)} className="w-full">
+                      Pay Now
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSearchOpen(false)} className="w-full sm:w-auto">
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -295,6 +295,7 @@ export type Database = {
           booked_by: string | null
           collection_status: string
           created_at: string
+          entry_payment_mode: string | null
           id: string
           paid_at: string | null
           paid_by: string | null
@@ -312,6 +313,7 @@ export type Database = {
           booked_by?: string | null
           collection_status?: string
           created_at?: string
+          entry_payment_mode?: string | null
           id?: string
           paid_at?: string | null
           paid_by?: string | null
@@ -329,6 +331,7 @@ export type Database = {
           booked_by?: string | null
           collection_status?: string
           created_at?: string
+          entry_payment_mode?: string | null
           id?: string
           paid_at?: string | null
           paid_by?: string | null
