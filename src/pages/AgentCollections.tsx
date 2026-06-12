@@ -920,6 +920,7 @@ export default function AgentCollections() {
                   </AccordionItem>
                 ))}
               </Accordion>
+              </>
             ) : (
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
