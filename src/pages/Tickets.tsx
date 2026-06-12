@@ -118,6 +118,24 @@ export default function Tickets() {
     return result;
   }, [dateTickets, searchQuery, statusFilter]);
 
+  const filteredEntries = useMemo(() => {
+    let result = [...entries];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(e =>
+        e.ticket_no.toLowerCase().includes(q) ||
+        (e.travels_name || '').toLowerCase().includes(q) ||
+        (e.booked_by || '').toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(e => e.collection_status === statusFilter);
+    }
+    return result;
+  }, [entries, searchQuery, statusFilter]);
+
+  const entriesTotal = filteredEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+
   const handleExport = () => {
     const headers = ['Ticket No', 'Booking Time', 'Journey Date', 'Tours To', 'Passenger', 'Phone', 'Tourists', 'Amount', 'Status', 'Received By'];
     const rows = filteredTickets.map(t => [
