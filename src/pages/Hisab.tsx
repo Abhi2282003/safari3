@@ -236,20 +236,123 @@ export default function Hisab() {
     );
   }
 
+  // Admin drill-in view: wide desktop layout with summary grid + tables
+  if (isAdmin) {
+    return (
+      <Layout>
+        <div className="max-w-6xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={() => setSelectedStaff(null)} className="gap-1">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">{currentStaffName}</h1>
+                <p className="text-sm text-muted-foreground">{format(start, 'dd MMM yyyy')}</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex items-center gap-2">
+                <CalIcon className="h-4 w-4 text-muted-foreground" />
+                <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
+              </div>
+              <Button onClick={downloadPDF} className="gap-2"><Download className="h-4 w-4" />Download PDF</Button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Receipt className="h-4 w-4" />Tickets Booked</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{bookedToday.length}</div>
+                <div className="text-sm text-muted-foreground mt-1 flex items-center"><IndianRupee className="h-3 w-3" />{collectionTotal.toLocaleString('en-IN')}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Wallet className="h-4 w-4" />Paid Out to Travels</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold flex items-center"><IndianRupee className="h-6 w-6" />{paidOutTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                <div className="text-sm text-muted-foreground mt-1">{paidToday.length} ticket(s) settled</div>
+              </CardContent>
+            </Card>
+            <Card className="border-primary/40">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Cash In Hand</CardTitle></CardHeader>
+              <CardContent>
+                <div className={`text-3xl font-bold flex items-center ${cashInHand >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                  <IndianRupee className="h-6 w-6" />{cashInHand.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">Collection - Paid out</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Tickets booked</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              {loading ? <div className="text-sm text-muted-foreground">Loading...</div> : bookedToday.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No tickets booked.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="text-left text-muted-foreground border-b">
+                    <tr><th className="py-2">Ticket No</th><th>Travels</th><th>Booked By</th><th>Mode</th><th className="text-right">Amount</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    {bookedToday.map(e => (
+                      <tr key={e.id} className="border-b">
+                        <td className="py-2 font-mono text-xs">{e.ticket_no}</td>
+                        <td>{e.travels_name}</td>
+                        <td>{e.booked_by || '-'}</td>
+                        <td>{e.entry_payment_mode || '-'}</td>
+                        <td className="text-right">₹{Number(e.amount).toLocaleString('en-IN')}</td>
+                        <td><span className={e.collection_status === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}>{e.collection_status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
+
+          {paidToday.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Paid out to travels</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-muted-foreground border-b">
+                    <tr><th className="py-2">Ticket No</th><th>Travels</th><th>Mode</th><th>Receiver</th><th className="text-right">Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    {paidToday.map(e => {
+                      const cp = travelsCommission[e.travels_name] ?? 0;
+                      const payable = Number(e.amount || 0) - (Number(e.amount || 0) * cp) / 100;
+                      return (
+                        <tr key={e.id} className="border-b">
+                          <td className="py-2 font-mono text-xs">{e.ticket_no}</td>
+                          <td>{e.travels_name}</td>
+                          <td>{e.payment_mode || '-'}</td>
+                          <td>{e.receiver_name || '-'}</td>
+                          <td className="text-right">₹{payable.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </Layout>
+    );
+  }
+
+  // Staff drill-in view: mobile-first stacked cards
   return (
     <Layout>
       <div className="max-w-md mx-auto space-y-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => setSelectedStaff(null)} className="h-9 w-9 shrink-0">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold truncate">{currentStaffName}</h1>
-              <p className="text-xs text-muted-foreground">{format(start, 'dd MMM yyyy')}</p>
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold truncate">{currentStaffName}</h1>
+            <p className="text-xs text-muted-foreground">{format(start, 'dd MMM yyyy')}</p>
           </div>
           <Button onClick={downloadPDF} size="sm" className="gap-1.5 shrink-0">
             <Download className="h-4 w-4" /> PDF
@@ -261,7 +364,6 @@ export default function Hisab() {
           <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-10" />
         </div>
 
-        {/* Summary stack */}
         <div className="space-y-3">
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
@@ -311,7 +413,6 @@ export default function Hisab() {
           </Card>
         </div>
 
-        {/* Tickets list */}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm">Tickets booked ({bookedToday.length})</CardTitle></CardHeader>
           <CardContent className="space-y-2">
@@ -341,7 +442,6 @@ export default function Hisab() {
           </CardContent>
         </Card>
 
-        {/* Paid out list */}
         {paidToday.length > 0 && (
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Paid out ({paidToday.length})</CardTitle></CardHeader>
