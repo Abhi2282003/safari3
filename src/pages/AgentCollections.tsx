@@ -272,7 +272,7 @@ export default function AgentCollections() {
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
-    const today = format(new Date(), 'dd-MM-yyyy');
+    const today = format(new Date(), 'dd MMM yyyy');
     const voucherNo = `V-${format(new Date(), 'yyyyMMdd')}-${agent.id.slice(0, 6).toUpperCase()}`;
 
     // Brand colors (Royal Safari sunset orange)
@@ -317,23 +317,12 @@ export default function AgentCollections() {
     doc.setTextColor(255);
     doc.text(title, pageW / 2, 50.3, { align: 'center' });
 
-    // Voucher meta row - clean single line layout
+    // Voucher meta
     doc.setTextColor(ink[0], ink[1], ink[2]);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
-    doc.text(`Voucher No: ${voucherNo}`, 14, 59);
-
-    // Date badge on the right
-    const dateLabel = `Date: ${today}`;
-    doc.setFillColor(250, 245, 235);
-    doc.setDrawColor(brand[0], brand[1], brand[2]);
-    doc.setLineWidth(0.25);
-    const dateW = doc.getTextWidth(dateLabel) + 8;
-    doc.roundedRect(pageW - 14 - dateW, 55.5, dateW, 6, 1.5, 1.5, 'FD');
-    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text(dateLabel, pageW - 18, 59.5, { align: 'right' });
+    doc.setFontSize(10);
+    doc.text(`Voucher No: ${voucherNo}`, 14, 62);
+    doc.text(`Date: ${today}`, pageW - 14, 62, { align: 'right' });
 
     // Agent details card
     const agentBoxY = 67;
