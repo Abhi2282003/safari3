@@ -378,16 +378,16 @@ export function useTravels() {
 
   const fetchTravels = useCallback(async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('travels')
-      .select('*')
-      .eq('user_id', user.id);
+      .select('*');
 
     if (error) {
       console.error('Error fetching travels:', error);
       return;
     }
+
 
     setTravels(data.map((t) => ({
       id: t.id,
