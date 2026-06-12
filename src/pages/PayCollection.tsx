@@ -93,6 +93,26 @@ export default function PayCollection() {
     fetchEntries();
   }, [fetchEntries]);
 
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  // Auto-fill Booked By with staff full name when staff
+  useEffect(() => {
+    if (isStaff && staff?.full_name) {
+      setEBookedBy(staff.full_name);
+    }
+  }, [isStaff, staff]);
+
+  // Auto-open ticket entry dialog if ?entry=1
+  useEffect(() => {
+    if (searchParams.get('entry') === '1') {
+      setEntryOpen(true);
+      searchParams.delete('entry');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const getCommission = (travelsName: string | undefined) => {
     if (!travelsName) return 10;
     const travel = travels.find((t) => t.name === travelsName);
