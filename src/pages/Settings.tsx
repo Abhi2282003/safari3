@@ -248,7 +248,7 @@ export default function Settings() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      const settingsPayload = {
+      const settingsPayload: any = {
         user_id: user.id,
         name: companySettings.name,
         address: companySettings.address,
@@ -257,6 +257,8 @@ export default function Settings() {
         footer_note: companySettings.footerNote,
         ticket_width: companySettings.ticketWidth,
         ticket_height: companySettings.ticketHeight,
+        whatsapp_template: companySettings.whatsappTemplate,
+        whatsapp_reminder_enabled: companySettings.whatsappReminderEnabled,
       };
 
       if (existing) {
