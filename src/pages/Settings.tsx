@@ -104,6 +104,8 @@ export default function Settings() {
           footerNote: settingsData.footer_note || 'Wish you a Happy Journey!',
           ticketWidth: settingsData.ticket_width || 280,
           ticketHeight: settingsData.ticket_height || 140,
+          whatsappTemplate: (settingsData as any).whatsapp_template || '',
+          whatsappReminderEnabled: (settingsData as any).whatsapp_reminder_enabled ?? false,
         });
         // Load pre-printed layout from database
         if (settingsData.preprinted_layout) {
