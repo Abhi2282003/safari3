@@ -40,6 +40,41 @@ export default function Hisab() {
   const [travelsCommission, setTravelsCommission] = useState<Record<string, number>>({});
   const [staffTotals, setStaffTotals] = useState<Record<string, { count: number; amount: number }>>({});
   const [loading, setLoading] = useState(true);
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
+    name: '', phone: '', address: ''
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('company_settings')
+        .select('name, phone, address')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) setCompanyInfo({
+        name: data.name || 'ROYAL SAFARI',
+        phone: data.phone || '',
+        address: data.address || '',
+      });
+    })();
+  }, [user]);
+
+  const loadLogoDataUrl = async (): Promise<string | null> => {
+    try {
+      const mod = await import('@/assets/royal-safari-logo.png.asset.json');
+      const url = (mod as any).default?.url || (mod as any).url;
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     (async () => {
