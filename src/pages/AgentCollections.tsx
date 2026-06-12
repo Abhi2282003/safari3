@@ -693,7 +693,29 @@ export default function AgentCollections() {
           {/* Pending Tab */}
           <TabsContent value="pending">
             {pendingAgents.length > 0 ? (
-              <Accordion type="multiple" className="space-y-3">
+              <>
+                {pendingAgents.some(a => a.phone && a.totalPending > 0) && (
+                  <div className="mb-3 flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-green-700 border-green-600 hover:bg-green-50 hover:text-green-800 dark:hover:bg-green-950/20"
+                      onClick={() => {
+                        const list = pendingAgents.filter(a => a.phone && a.totalPending > 0);
+                        if (list.length === 0) {
+                          toast.error('No agents with phone numbers found');
+                          return;
+                        }
+                        list.forEach((a, idx) => setTimeout(() => sendWhatsappToAgent(a), idx * 600));
+                        toast.success(`Opening WhatsApp for ${list.length} agent(s)`);
+                      }}
+                    >
+                      <Send className="h-4 w-4" />
+                      Send WhatsApp to All Pending
+                    </Button>
+                  </div>
+                )}
+                <Accordion type="multiple" className="space-y-3">
                 {pendingAgents.map((agent) => (
                   <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
                     <AccordionTrigger className="hover:no-underline py-3">
