@@ -265,7 +265,7 @@ export default function Tickets() {
           <CardContent>
             {filteredEntries.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">
-                No booked entries for this date.
+                No tickets for this date.
               </p>
             ) : (
               <div className="space-y-2">
