@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 const Index = () => {
   const { isStaff, loading } = useUserRole();
   if (loading) return null;
-  if (isStaff) return <Navigate to="/pay-collection?entry=1" replace />;
+  if (isStaff) return <Navigate to="/ticket-entry" replace />;
   return <Dashboard />;
 };
 
