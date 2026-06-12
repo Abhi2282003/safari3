@@ -221,6 +221,77 @@ export default function AgentCollections() {
     return agentCollections.filter(a => a.totalCollected > 0);
   }, [agentCollections]);
 
+  // Build WhatsApp message for an agent
+  const buildWhatsappMessage = (agent: AgentWithCollections): string => {
+    const pendingBookings = agent.bookings.filter(b => b.agentCollectionStatus === 'pending');
+    const bookingsText = pendingBookings.map(b => {
+      const d = format(new Date(b.journeyDate), 'dd MMM yyyy');
+      const bus = b.busName || b.travelsName || 'Bus';
+      const dest = b.destination ? ` to ${b.destination}` : '';
+      return `• ${d} - Seat ${b.seatNumber} - ${bus}${dest} - ₹${b.amountFromAgent.toFixed(0)}`;
+    }).join('\n');
+
+    const defaultTpl = `Hello {agent_name}, this is a reminder from {company_name}. You have pending collections of ₹{total_pending} for the following bookings:\n\n{bookings}\n\nTotal: ₹{total_pending}\n\nPlease arrange the payment at your earliest convenience. Thank you!`;
+    const tpl = whatsappTemplate?.trim() || defaultTpl;
+
+    return tpl
+      .replaceAll('{agent_name}', agent.name)
+      .replaceAll('{company_name}', companyName || 'Our Travels')
+      .replaceAll('{total_pending}', agent.totalPending.toFixed(0))
+      .replaceAll('{seat_count}', pendingBookings.length.toString())
+      .replaceAll('{bookings}', bookingsText)
+      .replaceAll('{date}', format(new Date(), 'dd MMM yyyy'));
+  };
+
+  // Open WhatsApp with pre-filled message for an agent
+  const sendWhatsappToAgent = (agent: AgentWithCollections) => {
+    if (!agent.phone) {
+      toast.error(`No phone number saved for ${agent.name}`);
+      return;
+    }
+    const phone = agent.phone.replace(/\D/g, '');
+    const finalPhone = phone.length === 10 ? `91${phone}` : phone;
+    const msg = buildWhatsappMessage(agent);
+    const url = `https://wa.me/${finalPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  };
+
+  // Daily 10 AM reminder prompt
+  useEffect(() => {
+    if (!whatsappEnabled || pendingAgents.length === 0) return;
+    const now = new Date();
+    if (now.getHours() < 10) return;
+    const todayKey = `wa_reminder_${format(now, 'yyyy-MM-dd')}`;
+    if (localStorage.getItem(todayKey)) return;
+
+    const agentsWithPhones = pendingAgents.filter(a => a.phone && a.totalPending > 0);
+    if (agentsWithPhones.length === 0) return;
+
+    const t = setTimeout(() => {
+      toast.info(
+        `Daily reminder: ${agentsWithPhones.length} agent(s) have pending collections. Send WhatsApp reminders?`,
+        {
+          duration: 15000,
+          action: {
+            label: 'Send All',
+            onClick: () => {
+              agentsWithPhones.forEach((a, idx) => {
+                setTimeout(() => sendWhatsappToAgent(a), idx * 600);
+              });
+              localStorage.setItem(todayKey, '1');
+            },
+          },
+          cancel: {
+            label: 'Dismiss',
+            onClick: () => localStorage.setItem(todayKey, '1'),
+          },
+        }
+      );
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [whatsappEnabled, pendingAgents, whatsappTemplate, companyName]);
+
+
   const summary = useMemo(() => {
     let totalPending = 0;
     let totalCollected = 0;
