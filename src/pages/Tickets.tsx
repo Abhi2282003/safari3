@@ -181,7 +181,7 @@ export default function Tickets() {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Tickets</h1>
             <p className="text-sm text-muted-foreground">
-              {filteredTickets.length} tickets for {format(selectedDate, 'EEE, dd MMM yyyy')}
+              {filteredEntries.length} tickets for {format(selectedDate, 'EEE, dd MMM yyyy')}
             </p>
           </div>
         </div>
