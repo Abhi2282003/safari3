@@ -50,6 +50,8 @@ export default function Settings() {
     footerNote: '',
     ticketWidth: 280,
     ticketHeight: 140,
+    whatsappTemplate: '',
+    whatsappReminderEnabled: false,
   });
   const [prePrintedLayout, setPrePrintedLayout] = useState<PrePrintedLayout>(DEFAULT_PREPRINTED_LAYOUT);
   const [isSavingLayout, setIsSavingLayout] = useState(false);
