@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { PrePrintedCalibration } from '@/components/settings/PrePrintedCalibration';
+import { StaffManagement } from '@/components/settings/StaffManagement';
 import { DEFAULT_PREPRINTED_LAYOUT, type PrePrintedLayout } from '@/components/ticket/PrintOnPrePrintedTicket';
 import {
   Table,
@@ -1447,7 +1448,10 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          <StaffManagement />
         </div>
+
 
         {/* Delete Receiver Dialog */}
         <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

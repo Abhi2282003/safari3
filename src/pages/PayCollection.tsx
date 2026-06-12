@@ -466,7 +466,16 @@ export default function PayCollection() {
             </div>
             <div className="space-y-2">
               <Label>Booked By</Label>
-              <Input value={eBookedBy} onChange={(e) => setEBookedBy(e.target.value)} placeholder="Who booked" />
+              <Select value={eBookedBy} onValueChange={setEBookedBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select receiver" />
+                </SelectTrigger>
+                <SelectContent>
+                  {receivers.filter((r) => r.active).map((r) => (
+                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Amount <span className="text-destructive">*</span></Label>
