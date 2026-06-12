@@ -390,16 +390,19 @@ export default function AgentCollections() {
 
     const finalY = (doc as any).lastAutoTable.finalY || 90;
 
-    // Summary card (right)
+    // Summary card (right) - styled like Bill To card
     const boxY = finalY + 10;
-    const boxH = agent.advanceBalance > 0 ? 34 : 18;
-    doc.setFillColor(brand[0], brand[1], brand[2]);
-    doc.roundedRect(pageW - 90, boxY, 76, boxH, 2, 2, 'F');
-    doc.setTextColor(255);
+    const boxH = agent.advanceBalance > 0 ? 34 : 20;
+    doc.setFillColor(250, 245, 235);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(pageW - 90, boxY, 76, boxH, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('NET AMOUNT TO COLLECT', pageW - 88, boxY + 7);
-    doc.setFontSize(16);
+    doc.setFontSize(9);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('NET AMOUNT TO COLLECT', pageW - 88, boxY + 6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFontSize(15);
     doc.text(
       `Rs. ${Math.max(0, totalCollect - agent.advanceBalance).toFixed(2)}`,
       pageW - 16,
@@ -409,9 +412,11 @@ export default function AgentCollections() {
     if (agent.advanceBalance > 0) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
+      doc.setTextColor(90);
       doc.text(`Pending: Rs. ${totalCollect.toFixed(2)}`, pageW - 88, boxY + 22);
       doc.text(`Less Advance: Rs. ${agent.advanceBalance.toFixed(2)}`, pageW - 88, boxY + 28);
     }
+
 
     // Left meta
     doc.setTextColor(ink[0], ink[1], ink[2]);
