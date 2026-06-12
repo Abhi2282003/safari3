@@ -734,6 +734,112 @@ export default function Settings() {
     }
   };
 
+  const handleDownloadAgentsPdf = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('agents')
+        .select('name, phone, active')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      const list = data || [];
+      if (list.length === 0) {
+        toast.error('No agents to export');
+        return;
+      }
+
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      const logoMod: any = await import('@/assets/royal-safari-logo.png.asset.json');
+      const logoUrl = logoMod.default?.url || logoMod.url;
+
+      let logoData: string | null = null;
+      try {
+        const res = await fetch(logoUrl);
+        const blob = await res.blob();
+        logoData = await new Promise<string>((resolve) => {
+          const fr = new FileReader();
+          fr.onloadend = () => resolve(fr.result as string);
+          fr.readAsDataURL(blob);
+        });
+      } catch (e) { /* ignore */ }
+
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const brand: [number, number, number] = [234, 88, 12];
+      const brandDark: [number, number, number] = [124, 45, 18];
+
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.rect(0, 0, pageW, 6, 'F');
+
+      if (logoData) {
+        try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch {}
+      }
+
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text(companySettings.name || 'ROYAL SAFARI', 44, 20);
+
+      doc.setTextColor(90);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (companySettings.address) doc.text(companySettings.address, 44, 26);
+      if (companySettings.phone) doc.text(`Phone: ${companySettings.phone}`, 44, 31);
+
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.6);
+      doc.line(14, 40, pageW - 14, 40);
+
+      const title = 'AGENT CONTACT DIRECTORY';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      const titleW = doc.getTextWidth(title) + 12;
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+      doc.setTextColor(255);
+      doc.text(title, pageW / 2, 50.3, { align: 'center' });
+
+      doc.setTextColor(30);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Total Agents: ${list.length}`, 14, 62);
+      doc.text(`Date: ${format(new Date(), 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
+
+      autoTable(doc, {
+        startY: 68,
+        head: [['#', 'Agent Name', 'Phone', 'Status']],
+        body: list.map((a, i) => [
+          String(i + 1),
+          a.name,
+          a.phone || '-',
+          a.active ? 'Active' : 'Inactive',
+        ]),
+        styles: { fontSize: 10, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center' },
+        alternateRowStyles: { fillColor: [252, 250, 247] },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          2: { halign: 'left' },
+          3: { halign: 'center', cellWidth: 25 },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14 },
+      });
+
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.rect(0, pageH - 6, pageW, 6, 'F');
+
+      doc.save(`Agents_Directory_${format(new Date(), 'yyyyMMdd')}.pdf`);
+      toast.success('Agent directory downloaded');
+    } catch (error) {
+      console.error('Error generating agents PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   const handleDeleteAgent = async () => {
     if (!deleteAgentId || !user) return;
     try {
