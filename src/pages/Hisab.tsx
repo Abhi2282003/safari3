@@ -159,19 +159,79 @@ export default function Hisab() {
     ? (staffMap[selectedStaff]?.full_name || (selectedStaff === user?.id ? 'My Hisab' : 'Staff'))
     : '';
 
-  const downloadPDF = () => {
-    const doc = new jsPDF();
+  const downloadPDF = async () => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const dateLabel = format(start, 'dd MMM yyyy');
-    doc.setFontSize(16);
-    doc.text('Daily Hisab Report', 14, 18);
-    doc.setFontSize(11);
-    doc.text(`Staff: ${currentStaffName}`, 14, 26);
-    doc.text(`Date: ${dateLabel}`, 14, 32);
+    const hisabNo = `H-${format(start, 'yyyyMMdd')}-${(selectedStaff || '').slice(0, 6).toUpperCase()}`;
 
+    // Brand colors (Royal Safari sunset orange)
+    const brand: [number, number, number] = [234, 88, 12];
+    const brandDark: [number, number, number] = [124, 45, 18];
+    const ink: [number, number, number] = [30, 30, 30];
+
+    // Top brand band
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, 0, pageW, 6, 'F');
+
+    // Logo
+    const logoData = await loadLogoDataUrl();
+    if (logoData) {
+      try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch { /* ignore */ }
+    }
+
+    // Company name & contact
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text(companyInfo.name || 'ROYAL SAFARI', 44, 20);
+
+    doc.setTextColor(90);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    if (companyInfo.address) doc.text(companyInfo.address, 44, 26);
+    if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, 44, 31);
+
+    // Divider
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.6);
+    doc.line(14, 40, pageW - 14, 40);
+
+    // Title pill
+    const title = 'DAILY HISAB REPORT';
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    const titleW = doc.getTextWidth(title) + 12;
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+    doc.setTextColor(255);
+    doc.text(title, pageW / 2, 50.3, { align: 'center' });
+
+    // Meta
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Hisab No: ${hisabNo}`, 14, 62);
+    doc.text(`Date: ${dateLabel}`, pageW - 14, 62, { align: 'right' });
+
+    // Staff card
+    const staffBoxY = 67;
+    doc.setFillColor(250, 245, 235);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(14, staffBoxY, pageW - 28, 13, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('STAFF', 18, staffBoxY + 6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
     doc.setFontSize(11);
-    doc.text('Summary', 14, 44);
+    doc.text(currentStaffName || '-', 18, staffBoxY + 12);
+
+    // Summary table
     autoTable(doc, {
-      startY: 47,
+      startY: staffBoxY + 17,
       head: [['Metric', 'Value']],
       body: [
         ['Tickets Booked', String(bookedToday.length)],
@@ -179,17 +239,26 @@ export default function Hisab() {
         ['Paid Out to Travels', `Rs. ${paidOutTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`],
         ['Cash In Hand', `Rs. ${cashInHand.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`],
       ],
+      styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+      headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
+      alternateRowStyles: { fillColor: [252, 250, 247] },
+      columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
       theme: 'grid',
-      headStyles: { fillColor: [30, 41, 59] },
+      margin: { left: 14, right: 14 },
     });
 
-    const afterSummaryY = (doc as any).lastAutoTable.finalY + 8;
-    doc.text(`Tickets Booked (${bookedToday.length})`, 14, afterSummaryY);
+    // Booked tickets table
+    let y = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text(`Tickets Booked (${bookedToday.length})`, 14, y);
+
     autoTable(doc, {
-      startY: afterSummaryY + 3,
+      startY: y + 3,
       head: [['#', 'Ticket No', 'Travels', 'Booked By', 'Mode', 'Amount', 'Status']],
       body: bookedToday.map((e, i) => [
-        i + 1,
+        String(i + 1),
         e.ticket_no,
         e.travels_name,
         e.booked_by || '-',
@@ -197,27 +266,103 @@ export default function Hisab() {
         `Rs. ${Number(e.amount).toLocaleString('en-IN')}`,
         e.collection_status,
       ]),
-      theme: 'striped',
-      headStyles: { fillColor: [30, 41, 59] },
-      styles: { fontSize: 9 },
+      foot: [[
+        { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: `Rs. ${collectionTotal.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: '', styles: {} },
+      ]],
+      styles: { fontSize: 9, cellPadding: 2.5, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+      headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9 },
+      footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+      alternateRowStyles: { fillColor: [252, 250, 247] },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 9 },
+        5: { halign: 'right' },
+        6: { halign: 'center', fontStyle: 'bold' },
+      },
+      theme: 'grid',
+      margin: { left: 14, right: 14 },
     });
 
     if (paidToday.length) {
-      const y = (doc as any).lastAutoTable.finalY + 8;
+      y = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
       doc.text(`Paid Out to Travels (${paidToday.length})`, 14, y);
+
       autoTable(doc, {
         startY: y + 3,
         head: [['#', 'Ticket No', 'Travels', 'Receiver', 'Mode', 'Amount']],
         body: paidToday.map((e, i) => {
           const cp = travelsCommission[e.travels_name] ?? 0;
           const payable = Number(e.amount || 0) - (Number(e.amount || 0) * cp) / 100;
-          return [i + 1, e.ticket_no, e.travels_name, e.receiver_name || '-', e.payment_mode || '-', `Rs. ${payable.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`];
+          return [
+            String(i + 1),
+            e.ticket_no,
+            e.travels_name,
+            e.receiver_name || '-',
+            e.payment_mode || '-',
+            `Rs. ${payable.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+          ];
         }),
-        theme: 'striped',
-        headStyles: { fillColor: [30, 41, 59] },
-        styles: { fontSize: 9 },
+        foot: [[
+          { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: `Rs. ${paidOutTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, styles: { halign: 'right', fontStyle: 'bold' } },
+        ]],
+        styles: { fontSize: 9, cellPadding: 2.5, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9 },
+        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+        alternateRowStyles: { fillColor: [252, 250, 247] },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 9 },
+          5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14 },
       });
     }
+
+    // Cash in Hand summary card
+    const boxY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFillColor(250, 245, 235);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(pageW - 90, boxY, 76, 20, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('CASH IN HAND', pageW - 88, boxY + 6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFontSize(15);
+    doc.text(
+      `Rs. ${cashInHand.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+      pageW - 16,
+      boxY + 14,
+      { align: 'right' }
+    );
+
+    // Left meta
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`Total Booked: ${bookedToday.length}  |  Paid Out: ${paidToday.length}`, 14, boxY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(110);
+    doc.text('Note: Paid Out amount is after deducting travels commission.', 14, boxY + 13);
+
+    // Footer band
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, pageH - 6, pageW, 6, 'F');
+    doc.setTextColor(110);
+    doc.setFontSize(8);
+    doc.text(
+      `Generated on ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`,
+      pageW / 2,
+      pageH - 10,
+      { align: 'center' }
+    );
 
     doc.save(`Hisab_${currentStaffName.replace(/\s+/g, '_')}_${format(start, 'yyyy-MM-dd')}.pdf`);
   };
