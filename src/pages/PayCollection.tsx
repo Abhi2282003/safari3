@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { useTravels, useReceivers } from '@/hooks/useTickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,8 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useStaffMember } from '@/hooks/useStaffMember';
 
 interface PayEntry {
   id: string;
@@ -29,6 +32,7 @@ interface PayEntry {
   receiver_name: string | null;
   receiver_mobile: string | null;
   payment_mode: string | null;
+  entry_payment_mode: string | null;
   paid_at: string | null;
   created_at: string;
 }
@@ -37,7 +41,10 @@ export default function PayCollection() {
   const { user } = useAuth();
   const { travels } = useTravels();
   const { receivers } = useReceivers();
+  const { isStaff } = useUserRole();
+  const { staff } = useStaffMember();
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [entries, setEntries] = useState<PayEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +58,13 @@ export default function PayCollection() {
   const [eToursTo, setEToursTo] = useState('');
   const [eBookedBy, setEBookedBy] = useState('');
   const [eAmount, setEAmount] = useState('');
+  const [eEntryMode, setEEntryMode] = useState<'Cash' | 'Online'>('Cash');
   const [savingEntry, setSavingEntry] = useState(false);
+
+  // Search ticket dialog
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTicketNo, setSearchTicketNo] = useState('');
+  const [searchResult, setSearchResult] = useState<PayEntry | null | 'notfound'>(null);
 
   // Pay dialog
   const [payDialogOpen, setPayDialogOpen] = useState(false);
