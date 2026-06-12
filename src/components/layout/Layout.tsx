@@ -24,7 +24,7 @@ function StaffTopNav() {
   };
 
   const openTicketEntry = () => {
-    navigate('/pay-collection?entry=1');
+    navigate('/ticket-entry');
   };
 
   const NavBtn = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
