@@ -285,10 +285,16 @@ export default function PayCollection() {
             <h1 className="text-xl sm:text-2xl font-bold">Pay Collection</h1>
             <p className="text-sm text-muted-foreground">Manage ticket payments grouped by travels</p>
           </div>
-          <Button onClick={() => setEntryOpen(true)} className="gap-2 w-full sm:w-auto">
-            <Plus className="h-4 w-4" />
-            Ticket Entry
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={() => { setSearchResult(null); setSearchTicketNo(''); setSearchOpen(true); }} variant="outline" className="gap-2 flex-1 sm:flex-none">
+              <Search className="h-4 w-4" />
+              Search Ticket
+            </Button>
+            <Button onClick={() => setEntryOpen(true)} className="gap-2 flex-1 sm:flex-none">
+              <Plus className="h-4 w-4" />
+              Ticket Entry
+            </Button>
+          </div>
         </div>
 
         <div className="relative">
