@@ -137,21 +137,21 @@ export default function Tickets() {
   const entriesTotal = filteredEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const handleExport = () => {
-    const headers = ['Ticket No', 'Booking Time', 'Journey Date', 'Tours To', 'Passenger', 'Phone', 'Tourists', 'Amount', 'Status', 'Received By'];
-    const rows = filteredTickets.map(t => [
-      t.ticketNo,
-      format(new Date(t.bookingDateTime), 'hh:mm a'),
-      format(new Date(t.journeyDate), 'dd/MM/yyyy'),
-      t.toursTo,
-      t.passengerName,
-      t.passengerPhone,
-      t.noOfTourist,
-      t.amount,
-      t.collectionStatus,
-      t.payment?.receivedByName || ''
+    const headers = ['Ticket No', 'Booking Time', 'Travels', 'Destination', 'Booked By', 'Staff', 'Mode', 'Amount', 'Status', 'Receiver'];
+    const rows = filteredEntries.map(e => [
+      e.ticket_no,
+      format(new Date(e.created_at), 'hh:mm a'),
+      e.travels_name,
+      e.tours_to || '',
+      e.booked_by || '',
+      staffMap[e.user_id] || '',
+      e.entry_payment_mode || e.payment_mode || '',
+      e.amount,
+      e.collection_status,
+      e.receiver_name || '',
     ]);
 
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
