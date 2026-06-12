@@ -537,16 +537,20 @@ export default function PayCollection() {
             </div>
             <div className="space-y-2">
               <Label>Booked By</Label>
-              <Select value={eBookedBy} onValueChange={setEBookedBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select receiver" />
-                </SelectTrigger>
-                <SelectContent>
-                  {receivers.filter((r) => r.active).map((r) => (
-                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isStaff ? (
+                <Input value={eBookedBy} readOnly className="bg-muted" />
+              ) : (
+                <Select value={eBookedBy} onValueChange={setEBookedBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select receiver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {receivers.filter((r) => r.active).map((r) => (
+                      <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Amount <span className="text-destructive">*</span></Label>
@@ -557,6 +561,18 @@ export default function PayCollection() {
                 onChange={(e) => setEAmount(e.target.value)}
                 placeholder="0"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Payment Mode <span className="text-destructive">*</span></Label>
+              <Select value={eEntryMode} onValueChange={(v) => setEEntryMode(v as 'Cash' | 'Online')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Online">Online</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0 flex-col-reverse sm:flex-row">
