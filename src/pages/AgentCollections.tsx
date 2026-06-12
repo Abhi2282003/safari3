@@ -223,6 +223,24 @@ export default function AgentCollections() {
     return agentCollections.filter(a => a.totalCollected > 0);
   }, [agentCollections]);
 
+  // Load logo as data URL (cached)
+  const loadLogoDataUrl = async (): Promise<string | null> => {
+    try {
+      const mod = await import('@/assets/royal-safari-logo.png.asset.json');
+      const url = (mod as any).default?.url || (mod as any).url;
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Logo load failed', e);
+      return null;
+    }
+  };
+
   // Generate a Pending Collection Voucher PDF for an agent
   const generateVoucherPdf = async (agent: AgentWithCollections) => {
     const { jsPDF } = await import('jspdf');
@@ -230,22 +248,43 @@ export default function AgentCollections() {
 
     const pendingBookings = agent.bookings
       .filter(b => b.agentCollectionStatus === 'pending')
-      .sort((a, b) => a.journeyDate.localeCompare(b.journeyDate));
+      .sort((a, b) => a.journeyDate.localeCompare(b.journeyDate) || a.seatNumber - b.seatNumber);
 
     if (pendingBookings.length === 0) {
       toast.error('No pending bookings for this agent');
       return;
     }
 
+    // Group bookings by journey date + bus + destination (seats booked together)
+    const groupsMap = new Map<string, SeatBooking[]>();
+    pendingBookings.forEach(b => {
+      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.destination || ''}`;
+      if (!groupsMap.has(key)) groupsMap.set(key, []);
+      groupsMap.get(key)!.push(b);
+    });
+    const groups = Array.from(groupsMap.values()).map(seats => {
+      seats.sort((a, b) => a.seatNumber - b.seatNumber);
+      const actualFare = seats.reduce((s, b) => s + b.bookingAmount, 0);
+      const toCollect = seats.reduce((s, b) => s + b.amountFromAgent, 0);
+      const commission = actualFare - toCollect;
+      return { seats, actualFare, commission, toCollect };
+    });
+
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const today = format(new Date(), 'dd MMM yyyy');
     const voucherNo = `V-${format(new Date(), 'yyyyMMdd')}-${agent.id.slice(0, 6).toUpperCase()}`;
 
+    // Logo
+    const logoData = await loadLogoDataUrl();
+    if (logoData) {
+      try { doc.addImage(logoData, 'PNG', 14, 10, 24, 24); } catch (e) { /* ignore */ }
+    }
+
     // Header
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text(companyInfo.name || 'ROYAL TRAVELS', pageW / 2, 18, { align: 'center' });
+    doc.text(companyInfo.name || 'ROYAL SAFARI', pageW / 2, 18, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -253,83 +292,97 @@ export default function AgentCollections() {
     if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, pageW / 2, 29, { align: 'center' });
 
     doc.setLineWidth(0.4);
-    doc.line(14, 33, pageW - 14, 33);
+    doc.line(14, 36, pageW - 14, 36);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
-    doc.text('PENDING COLLECTION VOUCHER', pageW / 2, 41, { align: 'center' });
+    doc.text('PENDING COLLECTION VOUCHER', pageW / 2, 44, { align: 'center' });
 
-    // Voucher meta
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Voucher No: ${voucherNo}`, 14, 50);
-    doc.text(`Date: ${today}`, pageW - 14, 50, { align: 'right' });
+    doc.text(`Voucher No: ${voucherNo}`, 14, 53);
+    doc.text(`Date: ${today}`, pageW - 14, 53, { align: 'right' });
 
-    // Agent details
     doc.setFont('helvetica', 'bold');
-    doc.text('Agent Details', 14, 60);
+    doc.text('Agent Details', 14, 63);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Name: ${agent.name}`, 14, 66);
-    if (agent.phone) doc.text(`Phone: ${agent.phone}`, 14, 72);
+    doc.text(`Name: ${agent.name}`, 14, 69);
+    if (agent.phone) doc.text(`Phone: ${agent.phone}`, 14, 75);
 
-    // Table
+    // Build table rows: grouped seats together with computation columns
+    const body: any[] = [];
+    groups.forEach((g, idx) => {
+      const first = g.seats[0];
+      const seatList = g.seats.map(s => s.seatNumber).join(', ');
+      body.push([
+        String(idx + 1),
+        format(new Date(first.journeyDate), 'dd MMM yyyy'),
+        first.busName || first.travelsName || '-',
+        first.destination || '-',
+        `${seatList}\n(${g.seats.length} seat${g.seats.length > 1 ? 's' : ''})`,
+        g.actualFare.toFixed(2),
+        `- ${g.commission.toFixed(2)}`,
+        g.toCollect.toFixed(2),
+      ]);
+    });
+
+    const totalActual = groups.reduce((s, g) => s + g.actualFare, 0);
+    const totalCommission = groups.reduce((s, g) => s + g.commission, 0);
+    const totalCollect = groups.reduce((s, g) => s + g.toCollect, 0);
+
     autoTable(doc, {
-      startY: agent.phone ? 78 : 72,
-      head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seat', 'Amount (Rs.)']],
-      body: pendingBookings.map((b, i) => [
-        String(i + 1),
-        format(new Date(b.journeyDate), 'dd MMM yyyy'),
-        b.busName || b.travelsName || '-',
-        b.destination || '-',
-        String(b.seatNumber),
-        b.amountFromAgent.toFixed(2),
-      ]),
-      styles: { fontSize: 9, cellPadding: 2 },
+      startY: agent.phone ? 80 : 74,
+      head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Actual Fare', 'Commission', 'To Collect']],
+      body,
+      foot: [[
+        { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: totalActual.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: `- ${totalCommission.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: totalCollect.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
+      ]],
+      styles: { fontSize: 9, cellPadding: 2, valign: 'middle' },
       headStyles: { fillColor: [40, 40, 40], textColor: 255, fontStyle: 'bold' },
-      columnStyles: { 5: { halign: 'right' } },
+      footStyles: { fillColor: [240, 240, 240], textColor: 20 },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right', textColor: [180, 30, 30] },
+        7: { halign: 'right', fontStyle: 'bold' },
+      },
       theme: 'grid',
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 90;
 
-    // Totals
+    // Summary box
+    const boxY = finalY + 8;
+    doc.setDrawColor(40);
+    doc.setLineWidth(0.3);
+    doc.rect(pageW - 90, boxY, 76, agent.advanceBalance > 0 ? 28 : 14);
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text(`Total Seats: ${pendingBookings.length}`, 14, finalY + 10);
-    doc.text(
-      `Total Pending: Rs. ${agent.totalPending.toFixed(2)}`,
-      pageW - 14,
-      finalY + 10,
-      { align: 'right' }
-    );
+    doc.text('Net Amount to Collect:', pageW - 88, boxY + 9);
+    doc.text(`Rs. ${Math.max(0, totalCollect - agent.advanceBalance).toFixed(2)}`, pageW - 16, boxY + 9, { align: 'right' });
 
     if (agent.advanceBalance > 0) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(
-        `Advance Balance: Rs. ${agent.advanceBalance.toFixed(2)}`,
-        pageW - 14,
-        finalY + 17,
-        { align: 'right' }
-      );
-      doc.setFont('helvetica', 'bold');
-      doc.text(
-        `Net Payable: Rs. ${Math.max(0, agent.totalPending - agent.advanceBalance).toFixed(2)}`,
-        pageW - 14,
-        finalY + 24,
-        { align: 'right' }
-      );
+      doc.setFontSize(9);
+      doc.text(`Pending: Rs. ${totalCollect.toFixed(2)}`, pageW - 88, boxY + 17);
+      doc.text(`Less Advance: Rs. ${agent.advanceBalance.toFixed(2)}`, pageW - 88, boxY + 23);
     }
 
-    // Footer / signatures
-    const sigY = Math.min(finalY + 60, doc.internal.pageSize.getHeight() - 30);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text('Please arrange the payment at your earliest convenience.', 14, sigY - 10);
-    doc.line(20, sigY, 80, sigY);
-    doc.text('Agent Signature', 50, sigY + 5, { align: 'center' });
-    doc.line(pageW - 80, sigY, pageW - 20, sigY);
-    doc.text('Authorized Signatory', pageW - 50, sigY + 5, { align: 'center' });
+    doc.text(`Total Seats: ${pendingBookings.length}`, 14, boxY + 9);
+
+    // Footer note
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(
+      'Please arrange the payment at your earliest convenience.',
+      14,
+      doc.internal.pageSize.getHeight() - 12
+    );
 
     const safeName = agent.name.replace(/[^a-z0-9]+/gi, '_');
     doc.save(`Voucher_${safeName}_${format(new Date(), 'yyyyMMdd')}.pdf`);
