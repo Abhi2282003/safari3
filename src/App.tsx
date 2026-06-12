@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import Index from "./pages/Index";
-import NewTicket from "./pages/NewTicket";
 import EditTicket from "./pages/EditTicket";
 import TicketDetails from "./pages/TicketDetails";
 import PrintTicketPage from "./pages/PrintTicketPage";
@@ -17,6 +16,7 @@ import Profit from "./pages/Profit";
 import AgentCollections from "./pages/AgentCollections";
 import PayCollection from "./pages/PayCollection";
 import Tickets from "./pages/Tickets";
+import Hisab from "./pages/Hisab";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -32,16 +32,16 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/new-ticket" element={<ProtectedRoute><NewTicket /></ProtectedRoute>} />
-            <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
-            <Route path="/edit-ticket/:id" element={<ProtectedRoute><EditTicket /></ProtectedRoute>} />
-            <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetails /></ProtectedRoute>} />
-            <Route path="/ticket/:id/print" element={<ProtectedRoute><PrintTicketPage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/seat-bookings" element={<ProtectedRoute><SeatBookings /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><Profit /></ProtectedRoute>} />
-            <Route path="/agent-collections" element={<ProtectedRoute><AgentCollections /></ProtectedRoute>} />
+            <Route path="/tickets" element={<ProtectedRoute adminOnly><Tickets /></ProtectedRoute>} />
+            <Route path="/edit-ticket/:id" element={<ProtectedRoute adminOnly><EditTicket /></ProtectedRoute>} />
+            <Route path="/ticket/:id" element={<ProtectedRoute adminOnly><TicketDetails /></ProtectedRoute>} />
+            <Route path="/ticket/:id/print" element={<ProtectedRoute adminOnly><PrintTicketPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute adminOnly><Settings /></ProtectedRoute>} />
+            <Route path="/seat-bookings" element={<ProtectedRoute adminOnly><SeatBookings /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute adminOnly><Profit /></ProtectedRoute>} />
+            <Route path="/agent-collections" element={<ProtectedRoute adminOnly><AgentCollections /></ProtectedRoute>} />
             <Route path="/pay-collection" element={<ProtectedRoute><PayCollection /></ProtectedRoute>} />
+            <Route path="/hisab" element={<ProtectedRoute><Hisab /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
