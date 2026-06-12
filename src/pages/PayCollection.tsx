@@ -165,8 +165,9 @@ export default function PayCollection() {
     setETicketNo('');
     setETravels('');
     setEToursTo('');
-    setEBookedBy('');
+    setEBookedBy(isStaff && staff?.full_name ? staff.full_name : '');
     setEAmount('');
+    setEEntryMode('Cash');
   };
 
   const handleSaveEntry = async () => {
@@ -187,6 +188,7 @@ export default function PayCollection() {
       booked_by: eBookedBy.trim() || null,
       amount: Number(eAmount) || 0,
       collection_status: 'Unpaid',
+      entry_payment_mode: eEntryMode,
     });
     setSavingEntry(false);
     if (error) {
@@ -197,6 +199,36 @@ export default function PayCollection() {
     setEntryOpen(false);
     resetEntry();
     fetchEntries();
+  };
+
+  const handleSearchTicket = async () => {
+    const q = searchTicketNo.trim();
+    if (!q) {
+      toast.error('Enter ticket number');
+      return;
+    }
+    const { data, error } = await (supabase as any)
+      .from('pay_collection_entries')
+      .select('*')
+      .eq('ticket_no', q)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) {
+      toast.error('Search failed');
+      return;
+    }
+    if (!data || data.length === 0) {
+      setSearchResult('notfound');
+    } else {
+      setSearchResult(data[0] as PayEntry);
+    }
+  };
+
+  const openPayFromSearch = (entry: PayEntry) => {
+    setSearchOpen(false);
+    setSearchTicketNo('');
+    setSearchResult(null);
+    handlePayClick(entry);
   };
 
   const handlePayClick = (entry: PayEntry) => {
