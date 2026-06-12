@@ -760,6 +760,17 @@ export default function AgentCollections() {
                               Mark All Collected
                             </Button>
                           )}
+                          {agent.totalPending > 0 && agent.phone && (
+                            <Button
+                              variant="outline"
+                              onClick={() => sendWhatsappToAgent(agent)}
+                              className="gap-2 text-green-700 border-green-600 hover:bg-green-50 hover:text-green-800 dark:hover:bg-green-950/20"
+                              size="sm"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              Send WhatsApp Reminder
+                            </Button>
+                          )}
                         </div>
 
                         {/* Bookings Table - Grouped by Date + Bus */}
