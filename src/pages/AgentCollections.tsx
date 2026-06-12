@@ -830,15 +830,15 @@ export default function AgentCollections() {
                               Mark All Collected
                             </Button>
                           )}
-                          {agent.totalPending > 0 && agent.phone && (
+                          {agent.totalPending > 0 && (
                             <Button
                               variant="outline"
-                              onClick={() => sendWhatsappToAgent(agent)}
-                              className="gap-2 text-green-700 border-green-600 hover:bg-green-50 hover:text-green-800 dark:hover:bg-green-950/20"
+                              onClick={() => generateVoucherPdf(agent)}
+                              className="gap-2"
                               size="sm"
                             >
-                              <MessageCircle className="h-4 w-4" />
-                              Send WhatsApp Reminder
+                              <Send className="h-4 w-4" />
+                              Download Voucher PDF
                             </Button>
                           )}
                         </div>
