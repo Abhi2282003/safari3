@@ -235,12 +235,12 @@ export default function AgentCollections() {
     const tpl = whatsappTemplate?.trim() || defaultTpl;
 
     return tpl
-      .replaceAll('{agent_name}', agent.name)
-      .replaceAll('{company_name}', companyName || 'Our Travels')
-      .replaceAll('{total_pending}', agent.totalPending.toFixed(0))
-      .replaceAll('{seat_count}', pendingBookings.length.toString())
-      .replaceAll('{bookings}', bookingsText)
-      .replaceAll('{date}', format(new Date(), 'dd MMM yyyy'));
+      .split('{agent_name}').join(agent.name)
+      .split('{company_name}').join(companyName || 'Our Travels')
+      .split('{total_pending}').join(agent.totalPending.toFixed(0))
+      .split('{seat_count}').join(pendingBookings.length.toString())
+      .split('{bookings}').join(bookingsText)
+      .split('{date}').join(format(new Date(), 'dd MMM yyyy'));
   };
 
   // Open WhatsApp with pre-filled message for an agent
