@@ -72,6 +72,8 @@ export interface CompanySettings {
   ticketWidth?: number;
   ticketHeight?: number;
   travels?: TravelsConfig[];
+  whatsappTemplate?: string;
+  whatsappReminderEnabled?: boolean;
 }
 
 export interface TicketWithPayment extends Ticket {
