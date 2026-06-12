@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wallet, ClipboardList, Save, Receipt } from 'lucide-react';
+import { Banknote, Smartphone, Check, IndianRupee } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useStaffMember } from '@/hooks/useStaffMember';
 import { useTravels } from '@/hooks/useTickets';
+import { cn } from '@/lib/utils';
 
 export default function TicketEntry() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { isStaff } = useUserRole();
   const { staff } = useStaffMember();
@@ -28,30 +27,33 @@ export default function TicketEntry() {
   const [amount, setAmount] = useState('');
   const [entryMode, setEntryMode] = useState<'Cash' | 'Online'>('Cash');
   const [saving, setSaving] = useState(false);
-  const [recent, setRecent] = useState<{ ticket_no: string; travels_name: string; amount: number }[]>([]);
+  const [todayStats, setTodayStats] = useState({ count: 0, total: 0 });
 
   useEffect(() => {
     if (isStaff && staff?.full_name) setBookedBy(staff.full_name);
   }, [isStaff, staff]);
 
-  const loadRecent = async () => {
+  const loadStats = async () => {
     if (!user) return;
+    const start = new Date(); start.setHours(0, 0, 0, 0);
     const { data } = await (supabase as any)
       .from('pay_collection_entries')
-      .select('ticket_no, travels_name, amount, created_at')
+      .select('amount')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    setRecent((data || []) as any);
+      .gte('created_at', start.toISOString());
+    const rows = (data || []) as { amount: number }[];
+    setTodayStats({
+      count: rows.length,
+      total: rows.reduce((s, r) => s + Number(r.amount || 0), 0),
+    });
   };
 
-  useEffect(() => { loadRecent(); }, [user]);
+  useEffect(() => { loadStats(); }, [user]);
 
   const reset = () => {
     setTicketNo('');
     setTravelsName('');
     setToursTo('');
-    setBookedBy(isStaff && staff?.full_name ? staff.full_name : '');
     setAmount('');
     setEntryMode('Cash');
   };
@@ -75,97 +77,142 @@ export default function TicketEntry() {
     });
     setSaving(false);
     if (error) { toast.error('Failed to save'); return; }
-    toast.success('Ticket entry saved');
+    toast.success('Ticket saved');
     reset();
-    loadRecent();
+    loadStats();
   };
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Ticket Entry</h1>
-            <p className="text-sm text-muted-foreground">Add a new ticket to collection</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/pay-collection')} className="gap-2">
-              <Wallet className="h-4 w-4" /> Pay Collection
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/hisab')} className="gap-2">
-              <ClipboardList className="h-4 w-4" /> Hisab
-            </Button>
-          </div>
+      <div className="max-w-md mx-auto space-y-4">
+        {/* Greeting + today stats */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">New Ticket</h1>
+          <p className="text-sm text-muted-foreground">Add a ticket to today's collection</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Receipt className="h-4 w-4" />New Entry</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Ticket No *</Label>
-                <Input value={ticketNo} onChange={e => setTicketNo(e.target.value)} placeholder="Enter ticket number" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Travels *</Label>
-                <Select value={travelsName} onValueChange={setTravelsName}>
-                  <SelectTrigger><SelectValue placeholder="Select travels" /></SelectTrigger>
-                  <SelectContent>
-                    {travels.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Destination</Label>
-                <Input value={toursTo} onChange={e => setToursTo(e.target.value)} placeholder="e.g. Mumbai" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Amount *</Label>
-                <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Booked By</Label>
-                <Input value={bookedBy} onChange={e => setBookedBy(e.target.value)} readOnly={isStaff} className={isStaff ? 'bg-muted' : ''} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Payment Mode *</Label>
-                <Select value={entryMode} onValueChange={v => setEntryMode(v as 'Cash' | 'Online')}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Online">Online</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Today</p>
+              <p className="text-2xl font-bold leading-tight">{todayStats.count} <span className="text-sm font-normal text-muted-foreground">tickets</span></p>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={reset}>Clear</Button>
-              <Button onClick={handleSave} disabled={saving} className="gap-2">
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Entry'}
-              </Button>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Collection</p>
+              <p className="text-2xl font-bold leading-tight flex items-center justify-end">
+                <IndianRupee className="h-5 w-5" />{todayStats.total.toLocaleString('en-IN')}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {recent.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Recent entries</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                {recent.map((r, i) => (
-                  <div key={i} className="flex justify-between border-b pb-1 last:border-0">
-                    <span className="font-mono text-xs">{r.ticket_no}</span>
-                    <span className="truncate px-2 text-muted-foreground">{r.travels_name}</span>
-                    <span>₹{Number(r.amount).toLocaleString('en-IN')}</span>
-                  </div>
-                ))}
+        {/* Form */}
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ticket No</Label>
+              <Input
+                value={ticketNo}
+                onChange={e => setTicketNo(e.target.value)}
+                placeholder="e.g. 12345"
+                className="h-12 text-base"
+                inputMode="text"
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Travels</Label>
+              <Select value={travelsName} onValueChange={setTravelsName}>
+                <SelectTrigger className="h-12 text-base"><SelectValue placeholder="Select travels" /></SelectTrigger>
+                <SelectContent>
+                  {travels.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Destination</Label>
+              <Input
+                value={toursTo}
+                onChange={e => setToursTo(e.target.value)}
+                placeholder="e.g. Mumbai"
+                className="h-12 text-base"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Amount</Label>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  placeholder="0"
+                  className="h-12 text-base pl-9 font-semibold"
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Payment Mode</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('Cash')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 h-12 rounded-md border-2 transition-all font-medium',
+                    entryMode === 'Cash'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground'
+                  )}
+                >
+                  <Banknote className="h-4 w-4" />
+                  Cash
+                  {entryMode === 'Cash' && <Check className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('Online')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 h-12 rounded-md border-2 transition-all font-medium',
+                    entryMode === 'Online'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground'
+                  )}
+                >
+                  <Smartphone className="h-4 w-4" />
+                  Online
+                  {entryMode === 'Online' && <Check className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {isStaff && (
+              <div className="text-xs text-muted-foreground pt-1">
+                Booked by <span className="font-medium text-foreground">{bookedBy || '—'}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sticky CTA above bottom nav */}
+        <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-3 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+          <div className="max-w-md mx-auto">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full h-12 text-base font-semibold shadow-lg"
+            >
+              {saving ? 'Saving…' : 'Save Ticket'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Spacer so content doesn't hide behind sticky CTA */}
+        <div className="h-20" />
       </div>
     </Layout>
   );

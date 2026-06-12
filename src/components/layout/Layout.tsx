@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStaffMember } from '@/hooks/useStaffMember';
 import { Button } from '@/components/ui/button';
 import { Bus, Wallet, ClipboardList, LogOut, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,8 +14,9 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-function StaffTopNav() {
+function StaffShell({ children }: { children: ReactNode }) {
   const { signOut } = useAuth();
+  const { staff } = useStaffMember();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,58 +25,74 @@ function StaffTopNav() {
     toast.success('Logged out');
   };
 
-  const openTicketEntry = () => {
-    navigate('/ticket-entry');
-  };
-
-  const NavBtn = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
-    const active = location.pathname === to;
-    return (
-      <Link to={to}>
-        <Button
-          variant={active ? 'secondary' : 'ghost'}
-          size="sm"
-          className="gap-1.5"
-        >
-          <Icon className="h-4 w-4" />
-          <span className="hidden sm:inline">{label}</span>
-        </Button>
-      </Link>
-    );
-  };
+  const tabs = [
+    { to: '/ticket-entry', icon: Plus, label: 'Entry' },
+    { to: '/pay-collection', icon: Wallet, label: 'Collection' },
+    { to: '/hisab', icon: ClipboardList, label: 'Hisab' },
+  ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
-      <div className="flex h-14 items-center justify-between px-3 sm:px-6 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary shrink-0">
-            <Bus className="h-5 w-5 text-sidebar-primary-foreground" />
+    <div className="min-h-screen flex flex-col">
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
+        <div className="flex h-14 items-center justify-between px-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary shrink-0">
+              <Bus className="h-5 w-5 text-sidebar-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold leading-tight truncate">
+                {staff?.full_name || 'Staff'}
+              </div>
+              <div className="text-[10px] text-sidebar-foreground/60 leading-tight truncate">
+                @{staff?.username || '...'}
+              </div>
+            </div>
           </div>
-          <span className="font-semibold truncate hidden sm:inline">Bus Tickets</span>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end">
-          <Button
-            size="sm"
-            onClick={openTicketEntry}
-            className="gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Ticket Entry</span>
-          </Button>
-          <NavBtn to="/pay-collection" icon={Wallet} label="Pay Collection" />
-          <NavBtn to="/hisab" icon={ClipboardList} label="Hisab" />
           <Button
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="gap-1.5"
+            className="gap-1.5 text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Content */}
+      <main className="flex-1 pb-24 px-4 pt-4 relative z-10">
+        {children}
+      </main>
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border safe-area-bottom">
+        <div className="grid grid-cols-3 max-w-md mx-auto">
+          {tabs.map(t => {
+            const active = location.pathname === t.to;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.to}
+                onClick={() => navigate(t.to)}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 py-3 transition-colors',
+                  active ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                <div className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
+                  active ? 'bg-primary/10' : 'bg-transparent'
+                )}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span className="text-[11px] font-medium">{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
   );
 }
 
@@ -93,12 +111,7 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {isStaff ? (
-        <>
-          <StaffTopNav />
-          <main className="pt-16 min-h-screen relative z-10 px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8">
-            {children}
-          </main>
-        </>
+        <StaffShell>{children}</StaffShell>
       ) : (
         <>
           <Sidebar />
