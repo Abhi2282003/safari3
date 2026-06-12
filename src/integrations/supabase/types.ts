@@ -183,6 +183,8 @@ export type Database = {
           ticket_width: number | null
           updated_at: string
           user_id: string
+          whatsapp_reminder_enabled: boolean | null
+          whatsapp_template: string | null
         }
         Insert: {
           address?: string | null
@@ -197,6 +199,8 @@ export type Database = {
           ticket_width?: number | null
           updated_at?: string
           user_id: string
+          whatsapp_reminder_enabled?: boolean | null
+          whatsapp_template?: string | null
         }
         Update: {
           address?: string | null
@@ -211,6 +215,8 @@ export type Database = {
           ticket_width?: number | null
           updated_at?: string
           user_id?: string
+          whatsapp_reminder_enabled?: boolean | null
+          whatsapp_template?: string | null
         }
         Relationships: []
       }
