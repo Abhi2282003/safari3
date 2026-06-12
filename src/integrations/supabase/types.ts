@@ -289,6 +289,60 @@ export type Database = {
         }
         Relationships: []
       }
+      pay_collection_entries: {
+        Row: {
+          amount: number
+          booked_by: string | null
+          collection_status: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          paid_by: string | null
+          payment_mode: string | null
+          receiver_mobile: string | null
+          receiver_name: string | null
+          ticket_no: string
+          tours_to: string | null
+          travels_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          booked_by?: string | null
+          collection_status?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_mode?: string | null
+          receiver_mobile?: string | null
+          receiver_name?: string | null
+          ticket_no: string
+          tours_to?: string | null
+          travels_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          booked_by?: string | null
+          collection_status?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_mode?: string | null
+          receiver_mobile?: string | null
+          receiver_name?: string | null
+          ticket_no?: string
+          tours_to?: string | null
+          travels_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           created_at: string
