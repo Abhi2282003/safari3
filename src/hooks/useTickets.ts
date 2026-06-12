@@ -316,11 +316,11 @@ export function useReceivers() {
 
   const fetchReceivers = useCallback(async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('receivers')
-      .select('*')
-      .eq('user_id', user.id);
+      .select('*');
+
 
     if (error) {
       console.error('Error fetching receivers:', error);
