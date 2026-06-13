@@ -5,7 +5,8 @@ import {
   Download,
   Filter,
   CalendarIcon,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -29,8 +30,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useTickets, TicketWithPayment } from '@/hooks/useTickets';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface PayEntry {
   id: string;
@@ -52,6 +66,20 @@ interface PayEntry {
 export default function Tickets() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { tickets, loading, fetchTickets, savePayment, deleteTicket } = useTickets();
+  const { isAdmin } = useUserRole();
+
+  const handleDeleteEntry = async (id: string) => {
+    const { error } = await (supabase as any)
+      .from('pay_collection_entries')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to delete ticket');
+      return;
+    }
+    toast.success('Ticket deleted');
+    setEntries(prev => prev.filter(e => e.id !== id));
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
@@ -297,12 +325,40 @@ export default function Tickets() {
                         Booked by: {e.booked_by || '-'} · Staff: {staffMap[e.user_id] || '-'} · {format(new Date(e.created_at), 'hh:mm a')}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">₹{Number(e.amount).toLocaleString('en-IN')}</div>
-                      {e.collection_status === 'Paid' && e.receiver_name && (
-                        <div className="text-xs text-muted-foreground">
-                          Recv: {e.receiver_name}
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <div className="text-right">
+                        <div className="font-semibold">₹{Number(e.amount).toLocaleString('en-IN')}</div>
+                        {e.collection_status === 'Paid' && e.receiver_name && (
+                          <div className="text-xs text-muted-foreground">
+                            Recv: {e.receiver_name}
+                          </div>
+                        )}
+                      </div>
+                      {isAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete ticket {e.ticket_no}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently remove this ticket entry. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteEntry(e.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </div>
