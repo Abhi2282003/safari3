@@ -41,7 +41,7 @@ export default function PayCollection() {
   const { user } = useAuth();
   const { travels } = useTravels();
   const { receivers } = useReceivers();
-  const { isStaff } = useUserRole();
+  const { isStaff, loading: roleLoading } = useUserRole();
   const { staff } = useStaffMember();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -76,7 +76,7 @@ export default function PayCollection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchEntries = useCallback(async () => {
-    setLoading(true);
+    if (!isStaff) setLoading(true);
     const { data, error } = await (supabase as any)
       .from('pay_collection_entries')
       .select('*')
@@ -87,11 +87,7 @@ export default function PayCollection() {
       setEntries((data as PayEntry[]) || []);
     }
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+  }, [isStaff]);
 
   useEffect(() => {
     fetchEntries();
@@ -267,7 +263,7 @@ export default function PayCollection() {
     fetchEntries();
   };
 
-  if (loading) {
+  if (roleLoading || loading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
