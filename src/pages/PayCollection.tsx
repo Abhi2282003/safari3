@@ -297,27 +297,24 @@ export default function PayCollection() {
 
     return (
       <Layout>
-        <div className="max-w-md mx-auto space-y-4">
+        <div className="max-w-md mx-auto space-y-2.5">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Pay Collection</h1>
-            <p className="text-sm text-muted-foreground">Search a ticket to check its status</p>
+            <h1 className="text-lg font-bold tracking-tight">Pay Collection</h1>
+            <p className="text-[11px] text-muted-foreground">Search any ticket to pay</p>
           </div>
 
           <Card>
-            <CardContent className="p-4 space-y-3">
-              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Ticket Number
-              </Label>
+            <CardContent className="p-2.5">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter ticket number"
+                  placeholder="Ticket number"
                   value={searchTicketNo}
                   onChange={(e) => setSearchTicketNo(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSearchTicket(); }}
-                  className="h-12 text-base"
+                  className="h-10 text-sm"
                   autoFocus
                 />
-                <Button onClick={handleSearchTicket} className="h-12 px-4 gap-1">
+                <Button onClick={handleSearchTicket} className="h-10 px-3">
                   <Search className="h-4 w-4" />
                 </Button>
               </div>
@@ -326,55 +323,54 @@ export default function PayCollection() {
 
           {searchResult === 'notfound' && (
             <Card className="border-destructive/30 bg-destructive/5">
-              <CardContent className="p-4 text-sm text-destructive">
-                No ticket found with that number.
+              <CardContent className="p-2.5 text-xs text-destructive">
+                No ticket found.
               </CardContent>
             </Card>
           )}
 
           {result && (
             <Card className={resultPaid ? 'border-green-500/40' : 'border-amber-500/40'}>
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-mono text-xs text-muted-foreground">{result.ticket_no}</p>
-                    <p className="font-semibold text-base truncate">{result.travels_name}</p>
+                    <p className="font-mono text-[10px] text-muted-foreground leading-tight">{result.ticket_no}</p>
+                    <p className="font-semibold text-sm truncate leading-tight">{result.travels_name}</p>
                     {result.tours_to && (
-                      <p className="text-xs text-muted-foreground truncate">{result.tours_to}</p>
+                      <p className="text-[11px] text-muted-foreground truncate leading-tight">{result.tours_to}</p>
+                    )}
+                    {result.booked_by && (
+                      <p className="text-[11px] text-muted-foreground leading-tight">By: <span className="text-foreground">{result.booked_by}</span></p>
                     )}
                   </div>
                   <Badge
-                    className={resultPaid ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-500 hover:bg-amber-600 text-white'}
+                    className={`${resultPaid ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-500 hover:bg-amber-600 text-white'} text-[10px] px-1.5 py-0`}
                   >
                     {resultPaid ? 'Paid' : 'Unpaid'}
                   </Badge>
                 </div>
 
-                {result.booked_by && (
-                  <p className="text-xs text-muted-foreground">Booked by: <span className="text-foreground">{result.booked_by}</span></p>
-                )}
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                <div className="grid grid-cols-2 gap-2 pt-1.5 border-t">
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Amount</p>
-                    <p className="text-base font-semibold flex items-center"><IndianRupee className="h-3.5 w-3.5" />{(result.amount || 0).toLocaleString('en-IN')}</p>
+                    <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Amount</p>
+                    <p className="text-sm font-semibold flex items-center"><IndianRupee className="h-3 w-3" />{(result.amount || 0).toLocaleString('en-IN')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">To Pay</p>
-                    <p className="text-base font-semibold flex items-center justify-end"><IndianRupee className="h-3.5 w-3.5" />{resultPayable.toLocaleString('en-IN')}</p>
+                    <p className="text-[9px] uppercase tracking-wide text-muted-foreground">To Pay</p>
+                    <p className="text-sm font-semibold flex items-center justify-end"><IndianRupee className="h-3 w-3" />{resultPayable.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
 
                 {resultPaid ? (
-                  <div className="text-xs text-muted-foreground bg-muted/40 rounded-md p-2 space-y-0.5">
-                    <p>Paid {result.paid_at && format(new Date(result.paid_at), 'dd MMM yyyy, hh:mm a')}</p>
-                    {result.paid_by && <p>By: {result.paid_by}{result.receiver_name ? ` • ${result.receiver_name}` : ''}</p>}
+                  <div className="text-[11px] text-muted-foreground bg-muted/40 rounded-md p-1.5 leading-snug">
+                    <p>Paid {result.paid_at && format(new Date(result.paid_at), 'dd MMM, hh:mm a')}</p>
+                    {result.paid_by && <p>{result.paid_by}{result.receiver_name ? ` • ${result.receiver_name}` : ''}</p>}
                     {result.payment_mode && <p>Mode: {result.payment_mode}</p>}
                   </div>
                 ) : (
                   <Button
                     onClick={() => handlePayClick(result)}
-                    className="w-full h-12 text-base font-semibold bg-green-600 hover:bg-green-700"
+                    className="w-full h-10 text-sm font-semibold bg-green-600 hover:bg-green-700"
                   >
                     Pay Now
                   </Button>
