@@ -97,7 +97,15 @@ function StaffShell({ children }: { children: ReactNode }) {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { isStaff } = useUserRole();
+  const { isStaff, loading } = useUserRole();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative">
