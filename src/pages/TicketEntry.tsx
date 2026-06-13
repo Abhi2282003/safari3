@@ -4,8 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Banknote, Smartphone, Check, IndianRupee, ChevronsUpDown, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Banknote, Smartphone, Check, IndianRupee, ChevronsUpDown, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,34 +90,35 @@ export default function TicketEntry() {
 
             <div className="space-y-1">
               <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Travels</Label>
-              <Popover open={travelsOpen} onOpenChange={(o) => { setTravelsOpen(o); if (!o) setTravelsSearch(''); }}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <span className={travelsName ? 'truncate' : 'text-muted-foreground'}>
-                      {travelsName || 'Select travels'}
-                    </span>
-                    <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <div className="p-2 border-b">
+              <button
+                type="button"
+                onClick={() => setTravelsOpen(true)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <span className={travelsName ? 'truncate' : 'text-muted-foreground'}>
+                  {travelsName || 'Select travels'}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+              </button>
+              <Dialog open={travelsOpen} onOpenChange={(o) => { setTravelsOpen(o); if (!o) setTravelsSearch(''); }}>
+                <DialogContent className="p-0 gap-0 max-w-md w-[95vw] max-h-[80vh] flex flex-col">
+                  <DialogHeader className="p-3 border-b">
+                    <DialogTitle className="text-base">Select Travels</DialogTitle>
+                  </DialogHeader>
+                  <div className="p-3 border-b">
                     <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        autoFocus
                         value={travelsSearch}
                         onChange={(e) => setTravelsSearch(e.target.value)}
                         placeholder="Search travels..."
-                        className="h-9 pl-7 text-sm"
+                        className="h-10 pl-8 text-sm"
                       />
                     </div>
                   </div>
-                  <div className="max-h-60 overflow-y-auto py-1">
+                  <div className="flex-1 overflow-y-auto">
                     {filteredTravels.length === 0 ? (
-                      <p className="px-3 py-4 text-xs text-center text-muted-foreground">No travels found</p>
+                      <p className="px-3 py-6 text-sm text-center text-muted-foreground">No travels found</p>
                     ) : (
                       filteredTravels.map(t => (
                         <button
@@ -129,19 +130,20 @@ export default function TicketEntry() {
                             setTravelsSearch('');
                           }}
                           className={cn(
-                            'flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-accent text-left',
+                            'flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent text-left border-b last:border-b-0',
                             travelsName === t.name && 'bg-accent font-medium'
                           )}
                         >
                           <span className="truncate">{t.name}</span>
-                          {travelsName === t.name && <Check className="h-4 w-4 shrink-0" />}
+                          {travelsName === t.name && <Check className="h-4 w-4 shrink-0 text-primary" />}
                         </button>
                       ))
                     )}
                   </div>
-                </PopoverContent>
-              </Popover>
+                </DialogContent>
+              </Dialog>
             </div>
+
 
             <div className="space-y-1">
               <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Destination</Label>
