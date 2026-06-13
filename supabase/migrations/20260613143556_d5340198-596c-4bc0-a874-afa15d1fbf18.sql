@@ -1,0 +1,2 @@
+CREATE POLICY "Authenticated can view all pay collection entries" ON public.pay_collection_entries FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated can update pay collection entries" ON public.pay_collection_entries FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
