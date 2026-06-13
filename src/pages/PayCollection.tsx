@@ -76,7 +76,11 @@ export default function PayCollection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchEntries = useCallback(async () => {
-    if (!isStaff) setLoading(true);
+    if (isStaff) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const { data, error } = await (supabase as any)
       .from('pay_collection_entries')
       .select('*')
@@ -90,8 +94,8 @@ export default function PayCollection() {
   }, [isStaff]);
 
   useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+    if (!roleLoading) fetchEntries();
+  }, [fetchEntries, roleLoading]);
 
   // Auto-fill Booked By with staff full name when staff
   useEffect(() => {
@@ -260,7 +264,18 @@ export default function PayCollection() {
     }
     toast.success('Payment recorded');
     setPayDialogOpen(false);
-    fetchEntries();
+    const updatedEntry = {
+      ...selectedEntry,
+      collection_status: 'Paid' as const,
+      paid_by: paidBy,
+      receiver_name: receiverName.trim(),
+      receiver_mobile: receiverMobile.trim() || null,
+      payment_mode: paymentMode,
+      paid_at: new Date().toISOString(),
+    };
+    setEntries((prev) => prev.map((entry) => entry.id === selectedEntry.id ? updatedEntry : entry));
+    setSearchResult((prev) => (prev && prev !== 'notfound' && prev.id === selectedEntry.id ? updatedEntry : prev));
+    if (!isStaff) fetchEntries();
   };
 
   if (roleLoading || loading) {

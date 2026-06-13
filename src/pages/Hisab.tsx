@@ -93,8 +93,13 @@ export default function Hisab() {
 
   // For staff: lock to themselves
   useEffect(() => {
-    if (!isAdmin && user) setSelectedStaff(user.id);
-  }, [isAdmin, user]);
+    if (roleLoading || !user) return;
+    if (!isAdmin) {
+      setSelectedStaff(user.id);
+    } else if (selectedStaff === user.id) {
+      setSelectedStaff(null);
+    }
+  }, [roleLoading, isAdmin, user, selectedStaff]);
 
   // Load totals per staff for the date (admin picker view)
   useEffect(() => {
