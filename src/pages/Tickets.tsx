@@ -66,6 +66,20 @@ interface PayEntry {
 export default function Tickets() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { tickets, loading, fetchTickets, savePayment, deleteTicket } = useTickets();
+  const { isAdmin } = useUserRole();
+
+  const handleDeleteEntry = async (id: string) => {
+    const { error } = await (supabase as any)
+      .from('pay_collection_entries')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to delete ticket');
+      return;
+    }
+    toast.success('Ticket deleted');
+    setEntries(prev => prev.filter(e => e.id !== id));
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Unpaid'>('all');
   const [paymentTicket, setPaymentTicket] = useState<TicketWithPayment | null>(null);
