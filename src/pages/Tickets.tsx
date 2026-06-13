@@ -325,12 +325,40 @@ export default function Tickets() {
                         Booked by: {e.booked_by || '-'} · Staff: {staffMap[e.user_id] || '-'} · {format(new Date(e.created_at), 'hh:mm a')}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">₹{Number(e.amount).toLocaleString('en-IN')}</div>
-                      {e.collection_status === 'Paid' && e.receiver_name && (
-                        <div className="text-xs text-muted-foreground">
-                          Recv: {e.receiver_name}
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <div className="text-right">
+                        <div className="font-semibold">₹{Number(e.amount).toLocaleString('en-IN')}</div>
+                        {e.collection_status === 'Paid' && e.receiver_name && (
+                          <div className="text-xs text-muted-foreground">
+                            Recv: {e.receiver_name}
+                          </div>
+                        )}
+                      </div>
+                      {isAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete ticket {e.ticket_no}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently remove this ticket entry. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteEntry(e.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </div>
