@@ -43,6 +43,7 @@ export default function Hisab() {
   const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
     name: '', phone: '', address: ''
   });
+  const activeStaffId = isAdmin ? selectedStaff : user?.id || null;
 
   useEffect(() => {
     if (!user) return;
@@ -91,16 +92,6 @@ export default function Hisab() {
     })();
   }, []);
 
-  // For staff: lock to themselves
-  useEffect(() => {
-    if (roleLoading || !user) return;
-    if (!isAdmin) {
-      setSelectedStaff(user.id);
-    } else if (selectedStaff === user.id) {
-      setSelectedStaff(null);
-    }
-  }, [roleLoading, isAdmin, user, selectedStaff]);
-
   // Load totals per staff for the date (admin picker view)
   useEffect(() => {
     if (!isAdmin || selectedStaff) return;
@@ -125,7 +116,7 @@ export default function Hisab() {
 
   // Load entries for selected staff
   useEffect(() => {
-    if (!selectedStaff) { setEntries([]); setLoading(false); return; }
+    if (!activeStaffId) { setEntries([]); setLoading(false); return; }
     (async () => {
       setLoading(true);
       const start = new Date(date + 'T00:00:00');
@@ -133,7 +124,7 @@ export default function Hisab() {
       const { data } = await (supabase as any)
         .from('pay_collection_entries')
         .select('*')
-        .eq('user_id', selectedStaff);
+        .eq('user_id', activeStaffId);
       const all = (data || []) as PayEntry[];
       const filtered = all.filter(e => {
         const created = new Date(e.created_at);
@@ -143,7 +134,7 @@ export default function Hisab() {
       setEntries(filtered);
       setLoading(false);
     })();
-  }, [selectedStaff, date]);
+  }, [activeStaffId, date]);
 
   if (roleLoading) return <Layout><div className="p-6">Loading...</div></Layout>;
 
@@ -160,8 +151,8 @@ export default function Hisab() {
   const cashInHand = collectionTotal - paidOutTotal;
 
   const staffMap = Object.fromEntries(staffList.map(s => [s.user_id, s]));
-  const currentStaffName = selectedStaff
-    ? (staffMap[selectedStaff]?.full_name || (selectedStaff === user?.id ? 'My Hisab' : 'Staff'))
+  const currentStaffName = activeStaffId
+    ? (staffMap[activeStaffId]?.full_name || (activeStaffId === user?.id ? 'My Hisab' : 'Staff'))
     : '';
 
   const downloadPDF = async () => {
@@ -169,7 +160,7 @@ export default function Hisab() {
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const dateLabel = format(start, 'dd MMM yyyy');
-    const hisabNo = `H-${format(start, 'yyyyMMdd')}-${(selectedStaff || '').slice(0, 6).toUpperCase()}`;
+    const hisabNo = `H-${format(start, 'yyyyMMdd')}-${(activeStaffId || '').slice(0, 6).toUpperCase()}`;
 
     // Brand colors (Royal Safari sunset orange)
     const brand: [number, number, number] = [234, 88, 12];
