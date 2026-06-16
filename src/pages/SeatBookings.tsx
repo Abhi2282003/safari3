@@ -282,6 +282,10 @@ export default function SeatBookings() {
   const handlePrint = useReactToPrint({
     contentRef: memoRef,
     documentTitle: `Bus-Memo-${busName}-${format(selectedDate, 'yyyy-MM-dd')}`,
+    pageStyle: `
+      @page { size: A4; margin: 0; }
+      html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    `,
   });
 
   const handleGenerateMemo = () => {
@@ -884,8 +888,8 @@ export default function SeatBookings() {
           </DialogContent>
         </Dialog>
 
-        {/* Hidden Memo for printing */}
-        <div className="hidden">
+        {/* Hidden Memo for printing (off-screen so layout is preserved) */}
+        <div style={{ position: 'fixed', left: '-10000px', top: 0, opacity: 0, pointerEvents: 'none' }} aria-hidden="true">
           <BusMemo
             ref={memoRef}
             date={selectedDate}
