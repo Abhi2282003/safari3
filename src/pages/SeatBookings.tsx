@@ -34,6 +34,7 @@ import { useBuses } from '@/hooks/useBuses';
 
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const TOTAL_SEATS = 36;
 
@@ -67,6 +68,55 @@ export default function SeatBookings() {
     notes: '',
   });
   const [agentSearchQuery, setAgentSearchQuery] = useState('');
+
+  // Driver name + timing per (date, bus)
+  const [driverName, setDriverName] = useState('');
+  const [departureTime, setDepartureTime] = useState('');
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+
+  useEffect(() => {
+    const loadSchedule = async () => {
+      if (!user || !busConfirmed || !busName.trim()) {
+        setDriverName('');
+        setDepartureTime('');
+        return;
+      }
+      const { data } = await supabase
+        .from('bus_schedules')
+        .select('driver_name, departure_time')
+        .eq('user_id', user.id)
+        .eq('journey_date', format(selectedDate, 'yyyy-MM-dd'))
+        .eq('bus_name', busName.trim())
+        .maybeSingle();
+      setDriverName(data?.driver_name || '');
+      setDepartureTime(data?.departure_time || '');
+    };
+    loadSchedule();
+  }, [user, selectedDate, busName, busConfirmed]);
+
+  const saveSchedule = async (nextDriver: string, nextTime: string) => {
+    if (!user || !busName.trim()) return;
+    setScheduleSaving(true);
+    try {
+      const { error } = await supabase
+        .from('bus_schedules')
+        .upsert(
+          {
+            user_id: user.id,
+            journey_date: format(selectedDate, 'yyyy-MM-dd'),
+            bus_name: busName.trim(),
+            driver_name: nextDriver || null,
+            departure_time: nextTime || null,
+          },
+          { onConflict: 'user_id,journey_date,bus_name' }
+        );
+      if (error) throw error;
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save driver/timing');
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
 
   // Get bookings for selected date AND bus
   const busBookings = useMemo(() => {
