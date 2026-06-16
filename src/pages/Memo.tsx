@@ -49,6 +49,8 @@ export default function Memo() {
   const [busName, setBusName] = useState('');
   const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
   const [memoPassword, setMemoPassword] = useState('');
+  const [memoTarget, setMemoTarget] = useState<'bus' | 'luggage'>('bus');
+
 
   const [companySettings, setCompanySettings] = useState({ name: 'ROYAL SAFARI', logoUrl: '', address: '', phone: '' });
 
@@ -265,36 +267,8 @@ export default function Memo() {
       currentY = (doc as any).lastAutoTable.finalY + 6;
     }
 
-    if (busLuggage.length > 0) {
-      autoTable(doc, {
-        startY: currentY,
-        head: [['Party', 'Destination', 'Item', 'Qty', 'Amount', 'To Owner']],
-        body: busLuggage.map((l) => [
-          l.partyName || '-',
-          l.destination,
-          l.itemName || '-',
-          String(l.quantity),
-          l.totalAmount.toFixed(0),
-          l.amountToOwner.toFixed(0),
-        ]),
-        foot: [[
-          { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-          { content: luggageToOwner.toFixed(0), styles: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any } },
-        ]],
-        styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
-        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
-        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
-        alternateRowStyles: { fillColor: [252, 250, 247] },
-        columnStyles: {
-          3: { halign: 'center' },
-          4: { halign: 'right' },
-          5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
-        },
-        theme: 'grid',
-        margin: { left: 14, right: 14 },
-      });
-      currentY = (doc as any).lastAutoTable.finalY + 6;
-    }
+    // Luggage breakdown intentionally omitted from bus memo — only total is shown in summary.
+
 
     const boxY = currentY + 4;
     const lines: Array<[string, string, [number, number, number]?]> = [];
@@ -344,11 +318,152 @@ export default function Memo() {
     doc.save(`Bus-Memo-${busName.replace(/[^A-Z0-9]/gi, '_')}-${format(selectedDate, 'yyyyMMdd')}.pdf`);
   };
 
-  const handleGenerateMemo = () => {
+  const generateLuggageMemoPdf = async () => {
+    if (!busLuggage.length) {
+      toast.error('No luggage entries for this bus/date');
+      return;
+    }
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-${busName.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
+
+    const brand: [number, number, number] = [13, 110, 80];
+    const brandDark: [number, number, number] = [6, 70, 50];
+    const ink: [number, number, number] = [30, 30, 30];
+
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, 0, pageW, 6, 'F');
+
+    const logoData = await loadLogoDataUrl();
+    if (logoData) {
+      try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch { /* ignore */ }
+    }
+
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text(companySettings.name || 'ROYAL SAFARI', 44, 20);
+    doc.setTextColor(90);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    if (companySettings.address) doc.text(companySettings.address, 44, 26);
+    if (companySettings.phone) doc.text(`Phone: ${companySettings.phone}`, 44, 31);
+
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.6);
+    doc.line(14, 40, pageW - 14, 40);
+
+    const title = 'LUGGAGE MEMO';
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    const titleW = doc.getTextWidth(title) + 12;
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+    doc.setTextColor(255);
+    doc.text(title, pageW / 2, 50.3, { align: 'center' });
+
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Memo No: ${memoNo}`, 14, 62);
+    doc.text(`Date: ${format(selectedDate, 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
+
+    const busBoxY = 67;
+    doc.setFillColor(240, 250, 245);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(14, busBoxY, pageW - 28, 13, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('BUS', 18, busBoxY + 6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFontSize(11);
+    doc.text(busName, 18, busBoxY + 11);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(90);
+    doc.text(`Luggage Items: ${busLuggage.length}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
+
+    const luggageTotal = busLuggage.reduce((s, l) => s + l.totalAmount, 0);
+    const ownerTotal = busLuggage.reduce((s, l) => s + l.amountToOwner, 0);
+
+    autoTable(doc, {
+      startY: busBoxY + 17,
+      head: [['#', 'Party', 'Destination', 'Qty', 'Amount', 'To Owner']],
+      body: busLuggage.map((l, i) => [
+        String(i + 1),
+        l.partyName || '-',
+        l.destination,
+        String(l.quantity),
+        l.totalAmount.toFixed(0),
+        l.amountToOwner.toFixed(0),
+      ]),
+      foot: [[
+        { content: 'TOTAL', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: luggageTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: ownerTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any } },
+      ]],
+      styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+      headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
+      footStyles: { fillColor: [220, 240, 230], textColor: brandDark as any },
+      alternateRowStyles: { fillColor: [247, 252, 250] },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 12 },
+        3: { halign: 'center' },
+        4: { halign: 'right' },
+        5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+      },
+      theme: 'grid',
+      margin: { left: 14, right: 14 },
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 6;
+    const boxY = finalY + 4;
+    const boxH = 26;
+    doc.setFillColor(240, 250, 245);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(pageW - 96, boxY, 82, boxH, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('LUGGAGE SUMMARY', pageW - 94, boxY + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.text('Total Collected', pageW - 94, boxY + 13);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.text(`Rs. ${luggageTotal.toFixed(0)}`, pageW - 18, boxY + 13, { align: 'right' });
+
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect(pageW - 96, boxY + boxH - 11, 82, 10, 1.5, 1.5, 'F');
+    doc.setTextColor(255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('PAYABLE TO OWNER', pageW - 94, boxY + boxH - 4);
+    doc.setFontSize(12);
+    doc.text(`Rs. ${ownerTotal.toFixed(0)}`, pageW - 18, boxY + boxH - 4, { align: 'right' });
+
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, pageH - 6, pageW, 6, 'F');
+    doc.setTextColor(110);
+    doc.setFontSize(8);
+    doc.text('Generated by Royal Safari Booking System', pageW / 2, pageH - 10, { align: 'center' });
+
+    doc.save(`Luggage-Memo-${busName.replace(/[^A-Z0-9]/gi, '_')}-${format(selectedDate, 'yyyyMMdd')}.pdf`);
+  };
+
+  const handleGenerateMemo = (target: 'bus' | 'luggage' = 'bus') => {
     if (!busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
+    setMemoTarget(target);
     setMemoPassword('');
     setMemoPasswordDialog(true);
   };
@@ -360,13 +475,15 @@ export default function Memo() {
     }
     setMemoPasswordDialog(false);
     try {
-      await generateMemoPdf();
+      if (memoTarget === 'luggage') await generateLuggageMemoPdf();
+      else await generateMemoPdf();
       toast.success('Memo generated');
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || 'Failed to generate memo');
     }
   };
+
 
   // ---- Luggage rates UI state ----
   const [newDest, setNewDest] = useState('');
@@ -503,10 +620,17 @@ export default function Memo() {
                     <span className="font-bold text-primary">₹{settlement.grand.toFixed(0)}</span>
                   </div>
 
-                  <Button className="w-full gap-2 mt-2" onClick={handleGenerateMemo}>
-                    <FileText className="h-4 w-4" />
-                    Generate Memo PDF
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    <Button className="w-full gap-2" onClick={() => handleGenerateMemo('bus')}>
+                      <FileText className="h-4 w-4" />
+                      Bus Memo PDF
+                    </Button>
+                    <Button variant="secondary" className="w-full gap-2" onClick={() => handleGenerateMemo('luggage')} disabled={busLuggage.length === 0}>
+                      <FileText className="h-4 w-4" />
+                      Luggage Memo PDF
+                    </Button>
+                  </div>
+
                 </CardContent>
               </Card>
             )}
