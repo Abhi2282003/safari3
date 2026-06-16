@@ -237,10 +237,11 @@ export default function Memo() {
     doc.text(`Date: ${format(selectedDate, 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
 
     const busBoxY = 67;
+    const busBoxH = (schedule.driverName || schedule.departureTime) ? 19 : 13;
     doc.setFillColor(250, 245, 235);
     doc.setDrawColor(brand[0], brand[1], brand[2]);
     doc.setLineWidth(0.3);
-    doc.roundedRect(14, busBoxY, pageW - 28, 13, 2, 2, 'FD');
+    doc.roundedRect(14, busBoxY, pageW - 28, busBoxH, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
@@ -253,8 +254,15 @@ export default function Memo() {
     doc.setTextColor(90);
     const totalLuggageQty = busLuggage.reduce((s, l) => s + (l.quantity || 0), 0);
     doc.text(`Total Seats: ${busBookings.length}   |   Luggage Qty: ${totalLuggageQty}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
+    if (schedule.driverName || schedule.departureTime) {
+      doc.setTextColor(60);
+      const parts: string[] = [];
+      if (schedule.driverName) parts.push(`Driver: ${schedule.driverName}`);
+      if (schedule.departureTime) parts.push(`Time: ${schedule.departureTime}`);
+      doc.text(parts.join('   |   '), 18, busBoxY + 17);
+    }
 
-    let currentY = busBoxY + 17;
+    let currentY = busBoxY + busBoxH + 4;
 
     if (mainGroups.length > 0) {
       autoTable(doc, {
@@ -396,10 +404,11 @@ export default function Memo() {
     doc.text(`Date: ${format(selectedDate, 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
 
     const busBoxY = 67;
+    const busBoxH = (schedule.driverName || schedule.departureTime) ? 19 : 13;
     doc.setFillColor(240, 250, 245);
     doc.setDrawColor(brand[0], brand[1], brand[2]);
     doc.setLineWidth(0.3);
-    doc.roundedRect(14, busBoxY, pageW - 28, 13, 2, 2, 'FD');
+    doc.roundedRect(14, busBoxY, pageW - 28, busBoxH, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
@@ -412,6 +421,13 @@ export default function Memo() {
     doc.setTextColor(90);
     const totalLuggageQty2 = busLuggage.reduce((s, l) => s + (l.quantity || 0), 0);
     doc.text(`Luggage Qty: ${totalLuggageQty2}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
+    if (schedule.driverName || schedule.departureTime) {
+      doc.setTextColor(60);
+      const parts: string[] = [];
+      if (schedule.driverName) parts.push(`Driver: ${schedule.driverName}`);
+      if (schedule.departureTime) parts.push(`Time: ${schedule.departureTime}`);
+      doc.text(parts.join('   |   '), 18, busBoxY + 17);
+    }
 
     const luggageTotal = busLuggage.reduce((s, l) => s + l.totalAmount, 0);
     const ownerTotal = busLuggage.reduce((s, l) => s + l.amountToOwner, 0);
