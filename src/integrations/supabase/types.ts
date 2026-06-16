@@ -145,6 +145,39 @@ export type Database = {
         }
         Relationships: []
       }
+      bus_schedules: {
+        Row: {
+          bus_name: string
+          created_at: string
+          departure_time: string | null
+          driver_name: string | null
+          id: string
+          journey_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bus_name: string
+          created_at?: string
+          departure_time?: string | null
+          driver_name?: string | null
+          id?: string
+          journey_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bus_name?: string
+          created_at?: string
+          departure_time?: string | null
+          driver_name?: string | null
+          id?: string
+          journey_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       buses: {
         Row: {
           active: boolean | null
