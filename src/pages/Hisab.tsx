@@ -8,9 +8,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { format } from 'date-fns';
-import { IndianRupee, Receipt, Wallet, TrendingUp, Calendar as CalIcon, Download, ArrowLeft, User } from 'lucide-react';
+import { IndianRupee, Receipt, Wallet, TrendingUp, Calendar as CalIcon, Download, ArrowLeft, User, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
 
 interface PayEntry {
   id: string;
@@ -373,10 +375,14 @@ export default function Hisab() {
               <h1 className="text-2xl font-bold">Daily Hisab</h1>
               <p className="text-sm text-muted-foreground">Select a staff member to view their hisab</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CalIcon className="h-4 w-4 text-muted-foreground" />
               <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/tickets"><FileText className="h-4 w-4" />View Tickets</Link>
+              </Button>
             </div>
+
           </div>
 
           {staffList.length === 0 ? (
@@ -432,8 +438,12 @@ export default function Hisab() {
                 <CalIcon className="h-4 w-4 text-muted-foreground" />
                 <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
               </div>
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/tickets"><FileText className="h-4 w-4" />View Tickets</Link>
+              </Button>
               <Button onClick={downloadPDF} className="gap-2"><Download className="h-4 w-4" />Download PDF</Button>
             </div>
+
           </div>
 
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
@@ -530,9 +540,15 @@ export default function Hisab() {
             <h1 className="text-xl font-bold truncate">{currentStaffName}</h1>
             <p className="text-xs text-muted-foreground">{format(start, 'dd MMM yyyy')}</p>
           </div>
-          <Button onClick={downloadPDF} size="sm" className="gap-1.5 shrink-0">
-            <Download className="h-4 w-4" /> PDF
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to="/tickets"><FileText className="h-4 w-4" />Tickets</Link>
+            </Button>
+            <Button onClick={downloadPDF} size="sm" className="gap-1.5">
+              <Download className="h-4 w-4" /> PDF
+            </Button>
+          </div>
+
         </div>
 
         <div className="flex items-center gap-2">
