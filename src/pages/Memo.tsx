@@ -80,6 +80,29 @@ export default function Memo() {
   const { destinations } = useDestinations();
   const { buses, loading: busesLoading } = useBuses();
 
+  const [schedule, setSchedule] = useState<{ driverName: string; departureTime: string }>({ driverName: '', departureTime: '' });
+
+  useEffect(() => {
+    const loadSchedule = async () => {
+      if (!user || !busName.trim()) {
+        setSchedule({ driverName: '', departureTime: '' });
+        return;
+      }
+      const { data } = await supabase
+        .from('bus_schedules')
+        .select('driver_name, departure_time')
+        .eq('user_id', user.id)
+        .eq('journey_date', format(selectedDate, 'yyyy-MM-dd'))
+        .eq('bus_name', busName.trim())
+        .maybeSingle();
+      setSchedule({
+        driverName: data?.driver_name || '',
+        departureTime: data?.departure_time || '',
+      });
+    };
+    loadSchedule();
+  }, [user, selectedDate, busName]);
+
   const busBookings = useMemo(() => {
     if (!busName.trim()) return [];
     return getSeatsByDate(selectedDate).filter((b) => b.busName === busName.trim());
