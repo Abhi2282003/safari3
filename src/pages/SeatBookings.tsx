@@ -56,10 +56,11 @@ export default function SeatBookings() {
   const [memoPassword, setMemoPassword] = useState('');
   const [memoPreviewOpen, setMemoPreviewOpen] = useState(false);
   
-  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string }>({
+  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string; phone: string }>({
     name: 'ROYAL SAFARI',
     logoUrl: '',
     address: '',
+    phone: '',
   });
 
   // Fetch company settings
