@@ -11,7 +11,8 @@ import {
   Users,
   TrendingUp,
   Wallet,
-  ClipboardList
+  ClipboardList,
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +25,7 @@ const adminItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tickets', label: 'Tickets', icon: FileText },
   { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
+  { href: '/memo', label: 'Memo', icon: Receipt },
   { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
   { href: '/hisab', label: 'Daily Hisab', icon: ClipboardList },
   { href: '/agent-collections', label: 'Agent Collections', icon: Users },
