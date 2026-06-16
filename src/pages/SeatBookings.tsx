@@ -282,6 +282,10 @@ export default function SeatBookings() {
   const handlePrint = useReactToPrint({
     contentRef: memoRef,
     documentTitle: `Bus-Memo-${busName}-${format(selectedDate, 'yyyy-MM-dd')}`,
+    pageStyle: `
+      @page { size: A4; margin: 0; }
+      html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    `,
   });
 
   const handleGenerateMemo = () => {
