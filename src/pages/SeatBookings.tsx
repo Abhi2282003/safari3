@@ -1118,44 +1118,6 @@ export default function SeatBookings() {
           </DialogContent>
         </Dialog>
 
-        {/* Memo Preview Dialog */}
-        <Dialog open={memoPreviewOpen} onOpenChange={setMemoPreviewOpen}>
-          <DialogContent className="max-w-4xl max-h-[95vh] overflow-auto p-0">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Memo Preview</DialogTitle>
-              <DialogDescription>Review the memo before printing</DialogDescription>
-            </DialogHeader>
-            <div className="overflow-auto p-4" style={{ maxHeight: 'calc(95vh - 120px)' }}>
-              <BusMemo
-                date={selectedDate}
-                busName={busName}
-                seatBookings={busBookings}
-                luggageBookings={busLuggage}
-                companyName={companySettings.name}
-                companyLogo={companySettings.logoUrl}
-                companyAddress={companySettings.address}
-              />
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setMemoPreviewOpen(false)}>Close</Button>
-              <Button onClick={handlePrintFromPreview}>Print</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Hidden Memo for printing (off-screen so layout is preserved) */}
-        <div style={{ position: 'fixed', left: '-10000px', top: 0, opacity: 0, pointerEvents: 'none' }} aria-hidden="true">
-          <BusMemo
-            ref={memoRef}
-            date={selectedDate}
-            busName={busName}
-            seatBookings={busBookings}
-            luggageBookings={busLuggage}
-            companyName={companySettings.name}
-            companyLogo={companySettings.logoUrl}
-            companyAddress={companySettings.address}
-          />
-        </div>
       </div>
     </Layout>
   );
