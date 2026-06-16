@@ -251,9 +251,11 @@ export type Database = {
           created_at: string
           destination: string
           id: string
+          item_name: string | null
           journey_date: string
           notes: string | null
           our_earning: number
+          party_name: string | null
           quantity: number
           total_amount: number
           updated_at: string
@@ -265,9 +267,11 @@ export type Database = {
           created_at?: string
           destination: string
           id?: string
+          item_name?: string | null
           journey_date: string
           notes?: string | null
           our_earning?: number
+          party_name?: string | null
           quantity?: number
           total_amount?: number
           updated_at?: string
@@ -279,9 +283,11 @@ export type Database = {
           created_at?: string
           destination?: string
           id?: string
+          item_name?: string | null
           journey_date?: string
           notes?: string | null
           our_earning?: number
+          party_name?: string | null
           quantity?: number
           total_amount?: number
           updated_at?: string
@@ -294,6 +300,7 @@ export type Database = {
           created_at: string
           destination: string
           id: string
+          item_name: string
           rate: number
           updated_at: string
           user_id: string
@@ -302,6 +309,7 @@ export type Database = {
           created_at?: string
           destination: string
           id?: string
+          item_name?: string
           rate?: number
           updated_at?: string
           user_id: string
@@ -310,6 +318,7 @@ export type Database = {
           created_at?: string
           destination?: string
           id?: string
+          item_name?: string
           rate?: number
           updated_at?: string
           user_id?: string
