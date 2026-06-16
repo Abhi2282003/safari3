@@ -8,6 +8,8 @@ export interface LuggageBooking {
   journeyDate: string;
   busName: string;
   destination: string;
+  itemName?: string;
+  partyName?: string;
   quantity: number;
   totalAmount: number;
   ourEarning: number;
@@ -46,6 +48,8 @@ export function useLuggageBookings() {
         journeyDate: row.journey_date,
         busName: row.bus_name,
         destination: row.destination,
+        itemName: row.item_name || undefined,
+        partyName: row.party_name || undefined,
         quantity: row.quantity,
         totalAmount: row.total_amount,
         ourEarning: row.our_earning,
@@ -71,11 +75,13 @@ export function useLuggageBookings() {
 
     const amounts = calculateLuggageAmounts(booking.totalAmount);
 
-    const payload = {
+    const payload: any = {
       user_id: user.id,
       journey_date: booking.journeyDate,
       bus_name: booking.busName,
       destination: booking.destination,
+      item_name: booking.itemName || null,
+      party_name: booking.partyName || null,
       quantity: booking.quantity,
       total_amount: booking.totalAmount,
       our_earning: amounts.ourEarning,

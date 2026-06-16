@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface LuggageRate {
   id: string;
   destination: string;
+  itemName: string;
   rate: number;
 }
 
@@ -22,7 +23,14 @@ export function useLuggageRates() {
         .eq('user_id', user.id)
         .order('destination', { ascending: true });
       if (error) throw error;
-      setRates((data || []).map((r: any) => ({ id: r.id, destination: r.destination, rate: Number(r.rate) })));
+      setRates(
+        (data || []).map((r: any) => ({
+          id: r.id,
+          destination: r.destination,
+          itemName: r.item_name || 'Default',
+          rate: Number(r.rate),
+        }))
+      );
     } catch (e) {
       console.error('Error fetching luggage rates', e);
     } finally {
@@ -30,15 +38,17 @@ export function useLuggageRates() {
     }
   }, [user]);
 
-  useEffect(() => { fetchRates(); }, [fetchRates]);
+  useEffect(() => {
+    fetchRates();
+  }, [fetchRates]);
 
-  const upsertRate = async (destination: string, rate: number) => {
+  const upsertRate = async (destination: string, itemName: string, rate: number) => {
     if (!user) throw new Error('Not authenticated');
     const { error } = await supabase
       .from('luggage_rates')
       .upsert(
-        { user_id: user.id, destination, rate },
-        { onConflict: 'user_id,destination' }
+        { user_id: user.id, destination, item_name: itemName, rate } as any,
+        { onConflict: 'user_id,destination,item_name' }
       );
     if (error) throw error;
     await fetchRates();
@@ -50,10 +60,18 @@ export function useLuggageRates() {
     await fetchRates();
   };
 
-  const getRateFor = (destination: string): number => {
+  const getRateFor = (destination: string, itemName?: string): number => {
+    if (itemName) {
+      const r = rates.find((x) => x.destination === destination && x.itemName === itemName);
+      if (r) return r.rate;
+    }
     const r = rates.find((x) => x.destination === destination);
     return r ? r.rate : 0;
   };
 
-  return { rates, loading, fetchRates, upsertRate, deleteRate, getRateFor };
+  const getItemsFor = (destination: string): LuggageRate[] => {
+    return rates.filter((x) => x.destination === destination);
+  };
+
+  return { rates, loading, fetchRates, upsertRate, deleteRate, getRateFor, getItemsFor };
 }
