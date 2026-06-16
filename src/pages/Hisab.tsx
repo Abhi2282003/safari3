@@ -536,9 +536,15 @@ export default function Hisab() {
             <h1 className="text-xl font-bold truncate">{currentStaffName}</h1>
             <p className="text-xs text-muted-foreground">{format(start, 'dd MMM yyyy')}</p>
           </div>
-          <Button onClick={downloadPDF} size="sm" className="gap-1.5 shrink-0">
-            <Download className="h-4 w-4" /> PDF
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to="/tickets"><FileText className="h-4 w-4" />Tickets</Link>
+            </Button>
+            <Button onClick={downloadPDF} size="sm" className="gap-1.5">
+              <Download className="h-4 w-4" /> PDF
+            </Button>
+          </div>
+
         </div>
 
         <div className="flex items-center gap-2">
