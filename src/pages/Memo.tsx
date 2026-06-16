@@ -434,7 +434,7 @@ export default function Memo() {
     const ourEarningTotal = luggageTotal - ownerTotal;
 
     autoTable(doc, {
-      startY: busBoxY + 17,
+      startY: busBoxY + busBoxH + 4,
       head: [['#', 'Party', 'Destination', 'Qty', 'Amount']],
       body: busLuggage.map((l, i) => [
         String(i + 1),
