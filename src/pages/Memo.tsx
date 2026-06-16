@@ -368,16 +368,19 @@ export default function Memo() {
 
   // ---- Luggage rates UI state ----
   const [newDest, setNewDest] = useState('');
+  const [newItem, setNewItem] = useState('');
   const [newRate, setNewRate] = useState('');
   const [editRates, setEditRates] = useState<Record<string, string>>({});
 
   const handleAddRate = async () => {
     if (!newDest) return toast.error('Select a destination');
+    if (!newItem.trim()) return toast.error('Enter an item name');
     const r = parseFloat(newRate);
     if (!r || r <= 0) return toast.error('Enter a valid rate');
     try {
-      await upsertRate(newDest, r);
+      await upsertRate(newDest, newItem.trim(), r);
       setNewDest('');
+      setNewItem('');
       setNewRate('');
       toast.success('Rate saved');
     } catch (e: any) {
@@ -385,12 +388,12 @@ export default function Memo() {
     }
   };
 
-  const handleUpdateRate = async (destination: string) => {
-    const val = parseFloat(editRates[destination]);
+  const handleUpdateRate = async (id: string, destination: string, itemName: string) => {
+    const val = parseFloat(editRates[id]);
     if (!val || val <= 0) return toast.error('Enter a valid rate');
     try {
-      await upsertRate(destination, val);
-      setEditRates((s) => ({ ...s, [destination]: '' }));
+      await upsertRate(destination, itemName, val);
+      setEditRates((s) => ({ ...s, [id]: '' }));
       toast.success('Rate updated');
     } catch (e: any) {
       toast.error(e.message || 'Failed to update rate');
@@ -511,7 +514,7 @@ export default function Memo() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Add / Update Luggage Rate</CardTitle>
-                <CardDescription>Rate is per item for the destination. Used automatically when adding luggage.</CardDescription>
+                <CardDescription>Configure rates per item per destination. Used automatically when adding luggage.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col sm:flex-row gap-3 items-end">
                 <div className="flex-1 w-full">
@@ -523,11 +526,15 @@ export default function Memo() {
                     <SelectContent>
                       {destinations.filter((d) => d.active).map((d) => (
                         <SelectItem key={d.id} value={d.name}>
-                          {d.name} {getRateFor(d.name) > 0 ? `(current: ₹${getRateFor(d.name)})` : ''}
+                          {d.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="flex-1 w-full">
+                  <Label>Item Name</Label>
+                  <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="e.g., Bag, Box" className="mt-1" />
                 </div>
                 <div className="w-full sm:w-40">
                   <Label>Rate per item (₹)</Label>
@@ -551,6 +558,7 @@ export default function Memo() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Destination</TableHead>
+                        <TableHead>Item</TableHead>
                         <TableHead className="text-right">Current Rate</TableHead>
                         <TableHead className="w-48">Update</TableHead>
                         <TableHead className="w-16"></TableHead>
@@ -560,17 +568,18 @@ export default function Memo() {
                       {rates.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell className="font-medium">{r.destination}</TableCell>
+                          <TableCell>{r.itemName}</TableCell>
                           <TableCell className="text-right">₹{r.rate.toFixed(0)}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Input
                                 type="number"
                                 min="0"
-                                value={editRates[r.destination] ?? ''}
-                                onChange={(e) => setEditRates((s) => ({ ...s, [r.destination]: e.target.value }))}
+                                value={editRates[r.id] ?? ''}
+                                onChange={(e) => setEditRates((s) => ({ ...s, [r.id]: e.target.value }))}
                                 placeholder="New rate"
                               />
-                              <Button size="sm" variant="outline" onClick={() => handleUpdateRate(r.destination)}>
+                              <Button size="sm" variant="outline" onClick={() => handleUpdateRate(r.id, r.destination, r.itemName)}>
                                 Save
                               </Button>
                             </div>
