@@ -390,22 +390,21 @@ export default function Memo() {
 
     const luggageTotal = busLuggage.reduce((s, l) => s + l.totalAmount, 0);
     const ownerTotal = busLuggage.reduce((s, l) => s + l.amountToOwner, 0);
+    const ourEarningTotal = luggageTotal - ownerTotal;
 
     autoTable(doc, {
       startY: busBoxY + 17,
-      head: [['#', 'Party', 'Destination', 'Qty', 'Amount', 'To Owner']],
+      head: [['#', 'Party', 'Destination', 'Qty', 'Amount']],
       body: busLuggage.map((l, i) => [
         String(i + 1),
         l.partyName || '-',
         l.destination,
         String(l.quantity),
         l.totalAmount.toFixed(0),
-        l.amountToOwner.toFixed(0),
       ]),
       foot: [[
         { content: 'TOTAL', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
         { content: luggageTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
-        { content: ownerTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any } },
       ]],
       styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
       headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
@@ -415,7 +414,6 @@ export default function Memo() {
         0: { halign: 'center', cellWidth: 12 },
         3: { halign: 'center' },
         4: { halign: 'right' },
-        5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
       },
       theme: 'grid',
       margin: { left: 14, right: 14 },
@@ -423,7 +421,7 @@ export default function Memo() {
 
     const finalY = (doc as any).lastAutoTable.finalY + 6;
     const boxY = finalY + 4;
-    const boxH = 26;
+    const boxH = 30;
     doc.setFillColor(240, 250, 245);
     doc.setDrawColor(brand[0], brand[1], brand[2]);
     doc.setLineWidth(0.3);
@@ -432,6 +430,7 @@ export default function Memo() {
     doc.setFontSize(9);
     doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
     doc.text('LUGGAGE SUMMARY', pageW - 94, boxY + 6);
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(80);
@@ -439,12 +438,16 @@ export default function Memo() {
     doc.setTextColor(ink[0], ink[1], ink[2]);
     doc.text(`Rs. ${luggageTotal.toFixed(0)}`, pageW - 18, boxY + 13, { align: 'right' });
 
+    doc.setTextColor(180, 30, 30);
+    doc.text('Less', pageW - 94, boxY + 20);
+    doc.text(`- Rs. ${ourEarningTotal.toFixed(0)}`, pageW - 18, boxY + 20, { align: 'right' });
+
     doc.setFillColor(brand[0], brand[1], brand[2]);
     doc.roundedRect(pageW - 96, boxY + boxH - 11, 82, 10, 1.5, 1.5, 'F');
     doc.setTextColor(255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('PAYABLE TO OWNER', pageW - 94, boxY + boxH - 4);
+    doc.text('NET PAYABLE', pageW - 94, boxY + boxH - 4);
     doc.setFontSize(12);
     doc.text(`Rs. ${ownerTotal.toFixed(0)}`, pageW - 18, boxY + boxH - 4, { align: 'right' });
 
