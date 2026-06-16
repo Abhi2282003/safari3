@@ -30,7 +30,7 @@ import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatB
 import { useLuggageBookings, LuggageBooking } from '@/hooks/useLuggageBookings';
 import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
-import { BusMemo } from '@/components/seatBookings/BusMemo';
+
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
