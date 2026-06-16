@@ -70,6 +70,21 @@ export function useLuggageBookings() {
     fetchLuggageBookings();
   }, [fetchLuggageBookings]);
 
+  const mapRow = (row: any): LuggageBooking => ({
+    id: row.id,
+    journeyDate: row.journey_date,
+    busName: row.bus_name,
+    destination: row.destination,
+    itemName: row.item_name || undefined,
+    partyName: row.party_name || undefined,
+    quantity: row.quantity,
+    totalAmount: row.total_amount,
+    ourEarning: row.our_earning,
+    amountToOwner: row.amount_to_owner,
+    notes: row.notes,
+    createdAt: row.created_at,
+  });
+
   const saveLuggageBooking = async (booking: Omit<LuggageBooking, 'id' | 'createdAt'> & { id?: string }) => {
     if (!user) throw new Error('Not authenticated');
 
@@ -90,31 +105,37 @@ export function useLuggageBookings() {
     };
 
     if (booking.id) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('luggage_bookings')
         .update(payload)
-        .eq('id', booking.id);
+        .eq('id', booking.id)
+        .select()
+        .single();
       if (error) throw error;
+      const updated = mapRow(data);
+      setLuggageBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
     } else {
-      console.log('Inserting luggage booking:', payload);
       const { data, error } = await supabase
         .from('luggage_bookings')
         .insert(payload)
-        .select();
-      console.log('Insert result:', { data, error });
+        .select()
+        .single();
       if (error) throw error;
+      const inserted = mapRow(data);
+      setLuggageBookings((prev) => [inserted, ...prev]);
     }
-
-    await fetchLuggageBookings();
   };
 
   const deleteLuggageBooking = async (id: string) => {
+    setLuggageBookings((prev) => prev.filter((b) => b.id !== id));
     const { error } = await supabase
       .from('luggage_bookings')
       .delete()
       .eq('id', id);
-    if (error) throw error;
-    await fetchLuggageBookings();
+    if (error) {
+      await fetchLuggageBookings();
+      throw error;
+    }
   };
 
   const getLuggageByDateAndBus = (date: Date, busName: string) => {
