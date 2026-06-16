@@ -770,31 +770,8 @@ export default function SeatBookings() {
           editingLuggage={editingLuggage}
         />
 
-        {/* Memo Password Dialog */}
-        <Dialog open={memoPasswordDialog} onOpenChange={setMemoPasswordDialog}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
-                Enter Password
-              </DialogTitle>
-              <DialogDescription>
-                Enter password to generate memo
-              </DialogDescription>
-            </DialogHeader>
-            <Input
-              type="password"
-              value={memoPassword}
-              onChange={(e) => setMemoPassword(e.target.value)}
-              placeholder="Password"
-              onKeyDown={(e) => e.key === 'Enter' && handleMemoPasswordSubmit()}
-            />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setMemoPasswordDialog(false)}>Cancel</Button>
-              <Button onClick={handleMemoPasswordSubmit}>Generate</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+
 
       </div>
     </Layout>
