@@ -387,7 +387,8 @@ export default function Memo() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(90);
-    doc.text(`Luggage Items: ${busLuggage.length}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
+    const totalLuggageQty2 = busLuggage.reduce((s, l) => s + (l.quantity || 0), 0);
+    doc.text(`Luggage Qty: ${totalLuggageQty2}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
 
     const luggageTotal = busLuggage.reduce((s, l) => s + l.totalAmount, 0);
     const ownerTotal = busLuggage.reduce((s, l) => s + l.amountToOwner, 0);
