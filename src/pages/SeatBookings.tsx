@@ -54,7 +54,7 @@ export default function SeatBookings() {
   
   const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
   const [memoPassword, setMemoPassword] = useState('');
-  const [memoPreviewOpen, setMemoPreviewOpen] = useState(false);
+  
   
   const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string; phone: string }>({
     name: 'ROYAL SAFARI',
