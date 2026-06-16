@@ -268,15 +268,17 @@ export default function Memo() {
     if (busLuggage.length > 0) {
       autoTable(doc, {
         startY: currentY,
-        head: [['Luggage Destination', 'Qty', 'Amount', 'To Owner']],
+        head: [['Party', 'Destination', 'Item', 'Qty', 'Amount', 'To Owner']],
         body: busLuggage.map((l) => [
+          l.partyName || '-',
           l.destination,
+          l.itemName || '-',
           String(l.quantity),
           l.totalAmount.toFixed(0),
           l.amountToOwner.toFixed(0),
         ]),
         foot: [[
-          { content: 'TOTAL', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
           { content: luggageToOwner.toFixed(0), styles: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any } },
         ]],
         styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
@@ -284,9 +286,9 @@ export default function Memo() {
         footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
         alternateRowStyles: { fillColor: [252, 250, 247] },
         columnStyles: {
-          1: { halign: 'center' },
-          2: { halign: 'right' },
-          3: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+          3: { halign: 'center' },
+          4: { halign: 'right' },
+          5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
         },
         theme: 'grid',
         margin: { left: 14, right: 14 },
