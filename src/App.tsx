@@ -18,6 +18,7 @@ import PayCollection from "./pages/PayCollection";
 import Tickets from "./pages/Tickets";
 import Hisab from "./pages/Hisab";
 import TicketEntry from "./pages/TicketEntry";
+import Memo from "./pages/Memo";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute adminOnly><Settings /></ProtectedRoute>} />
             <Route path="/seat-bookings" element={<ProtectedRoute adminOnly><SeatBookings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><Profit /></ProtectedRoute>} />
+            <Route path="/memo" element={<ProtectedRoute adminOnly><Memo /></ProtectedRoute>} />
             <Route path="/agent-collections" element={<ProtectedRoute adminOnly><AgentCollections /></ProtectedRoute>} />
             <Route path="/pay-collection" element={<ProtectedRoute><PayCollection /></ProtectedRoute>} />
             <Route path="/ticket-entry" element={<ProtectedRoute><TicketEntry /></ProtectedRoute>} />
