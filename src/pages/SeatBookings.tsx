@@ -1,6 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, addDays } from 'date-fns';
-import { useReactToPrint } from 'react-to-print';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +30,7 @@ import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatB
 import { useLuggageBookings, LuggageBooking } from '@/hooks/useLuggageBookings';
 import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
-import { BusMemo } from '@/components/seatBookings/BusMemo';
+
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,12 +54,13 @@ export default function SeatBookings() {
   
   const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
   const [memoPassword, setMemoPassword] = useState('');
-  const [memoPreviewOpen, setMemoPreviewOpen] = useState(false);
   
-  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string }>({
+  
+  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string; phone: string }>({
     name: 'ROYAL SAFARI',
     logoUrl: '',
     address: '',
+    phone: '',
   });
 
   // Fetch company settings
@@ -69,7 +69,7 @@ export default function SeatBookings() {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('name, logo_url, address')
+        .select('name, logo_url, address, phone')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
@@ -77,6 +77,7 @@ export default function SeatBookings() {
           name: data.name || 'ROYAL SAFARI',
           logoUrl: data.logo_url || '',
           address: data.address || '',
+          phone: (data as any).phone || '',
         });
       }
     };
@@ -88,8 +89,6 @@ export default function SeatBookings() {
   const { agents } = useAgents();
   const { destinations } = useDestinations();
   const { buses, loading: busesLoading } = useBuses();
-  
-  const memoRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     bookingType: 'self' as BookingType,
@@ -278,36 +277,292 @@ export default function SeatBookings() {
       toast.error('Failed to delete luggage');
     }
   };
+  // Load Royal Safari logo as data URL for the PDF header
+  const loadLogoDataUrl = async (): Promise<string | null> => {
+    try {
+      const mod = await import('@/assets/royal-safari-logo.png.asset.json');
+      const url = (mod as any).default?.url || (mod as any).url;
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Logo load failed', e);
+      return null;
+    }
+  };
 
-  const handlePrint = useReactToPrint({
-    contentRef: memoRef,
-    documentTitle: `Bus-Memo-${busName}-${format(selectedDate, 'yyyy-MM-dd')}`,
-    pageStyle: `
-      @page { size: A4; margin: 0; }
-      html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    `,
-  });
+  // Generate Bus Memo PDF in the same style as the Agent Collection voucher
+  const generateMemoPdf = async () => {
+    if (!busBookings.length && !busLuggage.length) {
+      toast.error('Nothing to generate memo for');
+      return;
+    }
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+
+    // Group seat bookings
+    const onlineBookings = busBookings.filter((b) => b.bookingType === 'online');
+    const agentBookings = busBookings.filter((b) => b.bookingType === 'agent');
+    const selfBookings = busBookings.filter((b) => b.bookingType === 'self');
+    const sonuBookings = busBookings.filter((b) => b.bookingType === 'sonu');
+    const returnBookings = busBookings.filter((b) => b.bookingType === 'return');
+    const mainBookings = [...agentBookings, ...selfBookings, ...sonuBookings];
+
+    type Grouped = { destination: string; rate: number; seats: number[]; totalAmount: number; deduction: number; netAmount: number };
+    const groupBookings = (bookings: typeof busBookings, commissionRate: number): Grouped[] => {
+      const groups: Record<string, Grouped> = {};
+      bookings.forEach((b) => {
+        const key = `${(b as any).destination || 'Unknown'}-${b.bookingAmount}`;
+        if (!groups[key]) {
+          groups[key] = {
+            destination: (b as any).destination || 'Unknown',
+            rate: b.bookingAmount,
+            seats: [],
+            totalAmount: 0,
+            deduction: 0,
+            netAmount: 0,
+          };
+        }
+        groups[key].seats.push(b.seatNumber);
+        groups[key].totalAmount += b.bookingAmount;
+        groups[key].deduction += (b.bookingAmount * commissionRate) / 100;
+      });
+      Object.values(groups).forEach((g) => { g.netAmount = g.totalAmount - g.deduction; });
+      return Object.values(groups).sort((a, b) => a.destination.localeCompare(b.destination));
+    };
+
+    const mainGroups = groupBookings(mainBookings, 15);
+    const mainTotal = mainBookings.reduce((s, b) => s + b.bookingAmount, 0);
+    const mainDeduction = mainBookings.reduce((s, b) => s + b.bookingAmount * 0.15, 0);
+    const mainNet = mainTotal - mainDeduction;
+    const onlineCommission = onlineBookings.reduce((s, b) => s + b.ourEarning, 0);
+    const returnCommission = returnBookings.reduce((s, b) => s + b.ourEarning, 0);
+    const otherCommission = onlineCommission + returnCommission;
+    const luggageToOwner = busLuggage.reduce((s, b) => s + b.amountToOwner, 0);
+    const grandTotalToOwner = mainNet - otherCommission + luggageToOwner;
+
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const memoNo = `M-${format(selectedDate, 'yyyyMMdd')}-${busName.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
+
+    const brand: [number, number, number] = [234, 88, 12];
+    const brandDark: [number, number, number] = [124, 45, 18];
+    const ink: [number, number, number] = [30, 30, 30];
+
+    // Top brand band
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, 0, pageW, 6, 'F');
+
+    // Logo
+    const logoData = await loadLogoDataUrl();
+    if (logoData) {
+      try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch (e) { /* ignore */ }
+    }
+
+    // Company name & contact
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text(companySettings.name || 'ROYAL SAFARI', 44, 20);
+    doc.setTextColor(90);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    if (companySettings.address) doc.text(companySettings.address, 44, 26);
+    if (companySettings.phone) doc.text(`Phone: ${companySettings.phone}`, 44, 31);
+
+    // Divider
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.6);
+    doc.line(14, 40, pageW - 14, 40);
+
+    // Title pill
+    const title = 'BUS SETTLEMENT MEMO';
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    const titleW = doc.getTextWidth(title) + 12;
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+    doc.setTextColor(255);
+    doc.text(title, pageW / 2, 50.3, { align: 'center' });
+
+    // Meta
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Memo No: ${memoNo}`, 14, 62);
+    doc.text(`Date: ${format(selectedDate, 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
+
+    // Bus card
+    const busBoxY = 67;
+    doc.setFillColor(250, 245, 235);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(14, busBoxY, pageW - 28, 13, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('BUS', 18, busBoxY + 6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFontSize(11);
+    doc.text(busName, 18, busBoxY + 11);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(90);
+    doc.text(`Total Seats: ${busBookings.length}   |   Luggage Items: ${busLuggage.length}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
+
+    let currentY = busBoxY + 17;
+
+    // Bookings table
+    if (mainGroups.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+        head: [['Destination', 'Rate', 'Seat No.', 'Amount', 'Less', 'Net']],
+        body: mainGroups.map((g) => [
+          g.destination,
+          g.rate.toFixed(0),
+          g.seats.sort((a, b) => a - b).join(', '),
+          g.totalAmount.toFixed(0),
+          `- ${g.deduction.toFixed(0)}`,
+          g.netAmount.toFixed(0),
+        ]),
+        foot: [[
+          { content: 'TOTAL', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: mainTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: `- ${mainDeduction.toFixed(0)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: [180, 30, 30] } },
+          { content: mainNet.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
+        ]],
+        styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
+        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+        alternateRowStyles: { fillColor: [252, 250, 247] },
+        columnStyles: {
+          1: { halign: 'right' },
+          2: { halign: 'center' },
+          3: { halign: 'right' },
+          4: { halign: 'right', textColor: [180, 30, 30] },
+          5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14 },
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 6;
+    }
+
+    // Luggage table
+    if (busLuggage.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+        head: [['Luggage Destination', 'Qty', 'Amount', 'To Owner']],
+        body: busLuggage.map((l) => [
+          l.destination,
+          String(l.quantity),
+          l.totalAmount.toFixed(0),
+          l.amountToOwner.toFixed(0),
+        ]),
+        foot: [[
+          { content: 'TOTAL', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: luggageToOwner.toFixed(0), styles: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any } },
+        ]],
+        styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
+        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+        alternateRowStyles: { fillColor: [252, 250, 247] },
+        columnStyles: {
+          1: { halign: 'center' },
+          2: { halign: 'right' },
+          3: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14 },
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 6;
+    }
+
+    // Summary card on right
+    const boxY = currentY + 4;
+    const lines: Array<[string, string, [number, number, number]?]> = [];
+    lines.push(['Seats Subtotal', mainNet.toFixed(0)]);
+    if (otherCommission > 0) lines.push(['Less (5%)', `- ${otherCommission.toFixed(0)}`, [180, 30, 30]]);
+    if (luggageToOwner > 0) lines.push(['+ Luggage', `+ ${luggageToOwner.toFixed(0)}`]);
+    const boxH = 14 + lines.length * 6 + 12;
+
+    doc.setFillColor(250, 245, 235);
+    doc.setDrawColor(brand[0], brand[1], brand[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(pageW - 96, boxY, 82, boxH, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+    doc.text('SETTLEMENT SUMMARY', pageW - 94, boxY + 6);
+
+    let ly = boxY + 13;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    lines.forEach(([label, val, color]) => {
+      doc.setTextColor(80);
+      doc.text(label, pageW - 94, ly);
+      if (color) doc.setTextColor(color[0], color[1], color[2]);
+      else doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.text(`Rs. ${val}`, pageW - 18, ly, { align: 'right' });
+      ly += 6;
+    });
+
+    // Final total band
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.roundedRect(pageW - 96, ly + 1, 82, 10, 1.5, 1.5, 'F');
+    doc.setTextColor(255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('TOTAL PAYABLE', pageW - 94, ly + 7.5);
+    doc.setFontSize(12);
+    doc.text(`Rs. ${grandTotalToOwner.toFixed(0)}`, pageW - 18, ly + 7.5, { align: 'right' });
+
+    // Left note
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`Online: ${onlineBookings.length}  Agent: ${agentBookings.length}  Self: ${selfBookings.length}  Sonu: ${sonuBookings.length}  Return: ${returnBookings.length}`, 14, boxY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(110);
+    doc.text('Note: 15% deducted on Agent/Self/Sonu bookings; 5% commission deducted on Online/Return.', 14, boxY + 13);
+
+    // Footer band
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(brand[0], brand[1], brand[2]);
+    doc.rect(0, pageH - 6, pageW, 6, 'F');
+    doc.setTextColor(110);
+    doc.setFontSize(8);
+    doc.text('Generated by Royal Safari Booking System', pageW / 2, pageH - 10, { align: 'center' });
+
+    doc.save(`Bus-Memo-${busName.replace(/[^A-Z0-9]/gi, '_')}-${format(selectedDate, 'yyyyMMdd')}.pdf`);
+  };
 
   const handleGenerateMemo = () => {
     setMemoPassword('');
     setMemoPasswordDialog(true);
   };
 
-  const handleMemoPasswordSubmit = () => {
-    if (memoPassword === MEMO_PASSWORD) {
-      setMemoPasswordDialog(false);
-      // Small delay to allow password dialog to close before opening preview
-      setTimeout(() => {
-        setMemoPreviewOpen(true);
-      }, 100);
-    } else {
+  const handleMemoPasswordSubmit = async () => {
+    if (memoPassword !== MEMO_PASSWORD) {
       toast.error('Incorrect password');
+      return;
+    }
+    setMemoPasswordDialog(false);
+    try {
+      await generateMemoPdf();
+      toast.success('Memo generated');
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to generate memo');
     }
   };
 
-  const handlePrintFromPreview = () => {
-    handlePrint();
-  };
 
   const amounts = useMemo(() => {
     const amount = parseFloat(formData.bookingAmount) || 0;
@@ -863,44 +1118,6 @@ export default function SeatBookings() {
           </DialogContent>
         </Dialog>
 
-        {/* Memo Preview Dialog */}
-        <Dialog open={memoPreviewOpen} onOpenChange={setMemoPreviewOpen}>
-          <DialogContent className="max-w-4xl max-h-[95vh] overflow-auto p-0">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Memo Preview</DialogTitle>
-              <DialogDescription>Review the memo before printing</DialogDescription>
-            </DialogHeader>
-            <div className="overflow-auto p-4" style={{ maxHeight: 'calc(95vh - 120px)' }}>
-              <BusMemo
-                date={selectedDate}
-                busName={busName}
-                seatBookings={busBookings}
-                luggageBookings={busLuggage}
-                companyName={companySettings.name}
-                companyLogo={companySettings.logoUrl}
-                companyAddress={companySettings.address}
-              />
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setMemoPreviewOpen(false)}>Close</Button>
-              <Button onClick={handlePrintFromPreview}>Print</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Hidden Memo for printing (off-screen so layout is preserved) */}
-        <div style={{ position: 'fixed', left: '-10000px', top: 0, opacity: 0, pointerEvents: 'none' }} aria-hidden="true">
-          <BusMemo
-            ref={memoRef}
-            date={selectedDate}
-            busName={busName}
-            seatBookings={busBookings}
-            luggageBookings={busLuggage}
-            companyName={companySettings.name}
-            companyLogo={companySettings.logoUrl}
-            companyAddress={companySettings.address}
-          />
-        </div>
       </div>
     </Layout>
   );
