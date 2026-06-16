@@ -375,10 +375,14 @@ export default function Hisab() {
               <h1 className="text-2xl font-bold">Daily Hisab</h1>
               <p className="text-sm text-muted-foreground">Select a staff member to view their hisab</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CalIcon className="h-4 w-4 text-muted-foreground" />
               <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/tickets"><FileText className="h-4 w-4" />View Tickets</Link>
+              </Button>
             </div>
+
           </div>
 
           {staffList.length === 0 ? (
