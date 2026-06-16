@@ -208,15 +208,17 @@ export default function SeatBookings() {
     }
   };
 
-  const handleLuggageSave = async (data: { destination: string; quantity: number }) => {
+  const handleLuggageSave = async (data: { destination: string; itemName: string; partyName: string; quantity: number }) => {
     try {
-      const rate = getRateFor(data.destination);
+      const rate = getRateFor(data.destination, data.itemName);
       const totalAmount = rate * data.quantity;
       await saveLuggageBooking({
         id: editingLuggage?.id,
         journeyDate: format(selectedDate, 'yyyy-MM-dd'),
         busName: busName.trim(),
         destination: data.destination,
+        itemName: data.itemName,
+        partyName: data.partyName,
         quantity: data.quantity,
         totalAmount,
         ourEarning: 0,
@@ -441,8 +443,11 @@ export default function SeatBookings() {
                           onClick={() => { setEditingLuggage(l); setLuggageDialogOpen(true); }}
                         >
                           <div>
-                            <p className="text-sm font-medium">{l.destination}</p>
-                            <p className="text-xs text-muted-foreground">Qty: {l.quantity}</p>
+                            <p className="text-sm font-medium">{l.partyName || l.destination}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {l.destination}
+                              {l.itemName ? ` · ${l.itemName}` : ''} · Qty: {l.quantity}
+                            </p>
                           </div>
                         </div>
 
