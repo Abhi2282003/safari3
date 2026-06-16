@@ -512,39 +512,51 @@ export default function SeatBookings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                
-                <div className="grid grid-cols-6 gap-1.5 sm:gap-2 max-w-sm sm:max-w-lg mx-auto">
-                  {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
-                    const booking = getBookingForSeat(seatNum);
-                    const isSelected = selectedSeats.includes(seatNum);
+                <div className="max-w-sm sm:max-w-lg mx-auto">
+                  <div className="flex items-center justify-between px-2 py-2 mb-3 rounded-lg bg-muted/60 border border-dashed">
+                    <span className="text-[10px] sm:text-xs uppercase tracking-wide text-muted-foreground">Front</span>
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <span className="inline-block w-6 h-3 rounded-sm bg-foreground/70" />
+                      Driver
+                    </div>
+                  </div>
 
-                    let bgClass = 'bg-muted hover:bg-muted/80 border';
-                    if (isSelected && !booking) bgClass = 'bg-primary hover:bg-primary/90 text-primary-foreground ring-2 ring-primary ring-offset-2';
-                    else if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
-                    else if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white';
-                    else if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white';
-                    else if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white';
-                    else if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white';
+                  <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
+                    {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
+                      const booking = getBookingForSeat(seatNum);
+                      const isSelected = selectedSeats.includes(seatNum);
 
-                    return (
-                      <button
-                        key={seatNum}
-                        onClick={() => handleSeatClick(seatNum)}
-                        className={cn(
-                          'aspect-square rounded-md sm:rounded-lg flex flex-col items-center justify-center text-xs sm:text-sm font-medium transition-colors relative',
-                          bgClass
-                        )}
-                      >
-                        <span>{seatNum}</span>
-                        {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
-                          <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full" />
-                        )}
-                      </button>
-                    );
-                  })}
+                      let bgClass = 'bg-muted hover:bg-muted/70 border text-foreground/70';
+                      if (isSelected && !booking) bgClass = 'bg-primary hover:bg-primary/90 text-primary-foreground ring-2 ring-primary ring-offset-2 scale-105';
+                      else if (booking?.bookingType === 'online') bgClass = 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm';
+                      else if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm';
+                      else if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white shadow-sm';
+                      else if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm';
+                      else if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white shadow-sm';
+
+                      return (
+                        <button
+                          key={seatNum}
+                          onClick={() => handleSeatClick(seatNum)}
+                          className={cn(
+                            'aspect-square rounded-md sm:rounded-lg flex flex-col items-center justify-center text-xs sm:text-sm font-semibold transition-all relative active:scale-95',
+                            bgClass
+                          )}
+                        >
+                          <span>{seatNum}</span>
+                          {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
+                            <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground text-center mt-3">Rear</p>
                 </div>
               </CardContent>
             </Card>
+
           </div>
         )}
 
