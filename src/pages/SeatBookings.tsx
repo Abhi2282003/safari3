@@ -69,7 +69,7 @@ export default function SeatBookings() {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('name, logo_url, address')
+        .select('name, logo_url, address, phone')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
@@ -77,6 +77,7 @@ export default function SeatBookings() {
           name: data.name || 'ROYAL SAFARI',
           logoUrl: data.logo_url || '',
           address: data.address || '',
+          phone: (data as any).phone || '',
         });
       }
     };
@@ -88,8 +89,6 @@ export default function SeatBookings() {
   const { agents } = useAgents();
   const { destinations } = useDestinations();
   const { buses, loading: busesLoading } = useBuses();
-  
-  const memoRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     bookingType: 'self' as BookingType,
