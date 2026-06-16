@@ -47,9 +47,9 @@ export default function Memo() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [busName, setBusName] = useState('');
-  const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
-  const [memoPassword, setMemoPassword] = useState('');
-  const [memoTarget, setMemoTarget] = useState<'bus' | 'luggage'>('bus');
+  const [unlocked, setUnlocked] = useState(false);
+  const [gatePassword, setGatePassword] = useState('');
+
 
 
   const [companySettings, setCompanySettings] = useState({ name: 'ROYAL SAFARI', logoUrl: '', address: '', phone: '' });
@@ -458,24 +458,13 @@ export default function Memo() {
     doc.save(`Luggage-Memo-${busName.replace(/[^A-Z0-9]/gi, '_')}-${format(selectedDate, 'yyyyMMdd')}.pdf`);
   };
 
-  const handleGenerateMemo = (target: 'bus' | 'luggage' = 'bus') => {
+  const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus') => {
     if (!busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
-    setMemoTarget(target);
-    setMemoPassword('');
-    setMemoPasswordDialog(true);
-  };
-
-  const handleMemoPasswordSubmit = async () => {
-    if (memoPassword !== MEMO_PASSWORD) {
-      toast.error('Incorrect password');
-      return;
-    }
-    setMemoPasswordDialog(false);
     try {
-      if (memoTarget === 'luggage') await generateLuggageMemoPdf();
+      if (target === 'luggage') await generateLuggageMemoPdf();
       else await generateMemoPdf();
       toast.success('Memo generated');
     } catch (e: any) {
@@ -483,6 +472,7 @@ export default function Memo() {
       toast.error(e?.message || 'Failed to generate memo');
     }
   };
+
 
 
   // ---- Luggage rates UI state ----
@@ -528,6 +518,43 @@ export default function Memo() {
       </Layout>
     );
   }
+
+  if (!unlocked) {
+    const tryUnlock = () => {
+      if (gatePassword === MEMO_PASSWORD) {
+        setUnlocked(true);
+        setGatePassword('');
+      } else {
+        toast.error('Incorrect password');
+      }
+    };
+    return (
+      <Layout>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-md mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" /> Memo Access
+              </CardTitle>
+              <CardDescription>Enter password to access the Memo page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Input
+                type="password"
+                value={gatePassword}
+                onChange={(e) => setGatePassword(e.target.value)}
+                placeholder="Password"
+                onKeyDown={(e) => e.key === 'Enter' && tryUnlock()}
+                autoFocus
+              />
+              <Button className="w-full" onClick={tryUnlock}>Unlock</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
 
   return (
     <Layout>
@@ -732,28 +759,8 @@ export default function Memo() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={memoPasswordDialog} onOpenChange={setMemoPasswordDialog}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
-                Enter Password
-              </DialogTitle>
-              <DialogDescription>Enter password to generate memo</DialogDescription>
-            </DialogHeader>
-            <Input
-              type="password"
-              value={memoPassword}
-              onChange={(e) => setMemoPassword(e.target.value)}
-              placeholder="Password"
-              onKeyDown={(e) => e.key === 'Enter' && handleMemoPasswordSubmit()}
-            />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setMemoPasswordDialog(false)}>Cancel</Button>
-              <Button onClick={handleMemoPasswordSubmit}>Generate</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+
       </div>
     </Layout>
   );
