@@ -419,6 +419,34 @@ export default function SeatBookings() {
                 </Select>
               </div>
             </div>
+
+            {busConfirmed && (
+              <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t">
+                <div className="flex-1">
+                  <Label>Driver Name</Label>
+                  <Input
+                    className="mt-1"
+                    placeholder="e.g., Ramesh"
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value)}
+                    onBlur={(e) => saveSchedule(e.target.value, departureTime)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label>Departure Timing</Label>
+                  <Input
+                    className="mt-1"
+                    placeholder="e.g., 9:30 PM"
+                    value={departureTime}
+                    onChange={(e) => setDepartureTime(e.target.value)}
+                    onBlur={(e) => saveSchedule(driverName, e.target.value)}
+                  />
+                </div>
+                {scheduleSaving && (
+                  <div className="flex items-end text-xs text-muted-foreground pb-2">Saving…</div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
