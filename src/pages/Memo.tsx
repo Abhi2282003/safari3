@@ -519,6 +519,43 @@ export default function Memo() {
     );
   }
 
+  if (!unlocked) {
+    const tryUnlock = () => {
+      if (gatePassword === MEMO_PASSWORD) {
+        setUnlocked(true);
+        setGatePassword('');
+      } else {
+        toast.error('Incorrect password');
+      }
+    };
+    return (
+      <Layout>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-md mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" /> Memo Access
+              </CardTitle>
+              <CardDescription>Enter password to access the Memo page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Input
+                type="password"
+                value={gatePassword}
+                onChange={(e) => setGatePassword(e.target.value)}
+                placeholder="Password"
+                onKeyDown={(e) => e.key === 'Enter' && tryUnlock()}
+                autoFocus
+              />
+              <Button className="w-full" onClick={tryUnlock}>Unlock</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+
   return (
     <Layout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
