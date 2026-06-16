@@ -560,6 +560,21 @@ export default function SeatBookings() {
           </div>
         )}
 
+        {!busConfirmed && (
+          <Card className="border-dashed">
+            <CardContent className="py-16 flex flex-col items-center text-center gap-3">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bus className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold">Select a bus to begin</p>
+                <p className="text-sm text-muted-foreground mt-1">Choose a journey date and bus above to view the seat layout.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+
         {/* Floating action bar for seat selection */}
         {selectedSeats.length > 0 && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-full px-4 py-2 flex items-center gap-3">
