@@ -228,7 +228,8 @@ export default function Memo() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(90);
-    doc.text(`Total Seats: ${busBookings.length}   |   Luggage Items: ${busLuggage.length}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
+    const totalLuggageQty = busLuggage.reduce((s, l) => s + (l.quantity || 0), 0);
+    doc.text(`Total Seats: ${busBookings.length}   |   Luggage Qty: ${totalLuggageQty}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
 
     let currentY = busBoxY + 17;
 
