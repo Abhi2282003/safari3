@@ -24,19 +24,18 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CalendarIcon, Loader2, Bus, CheckCircle2, Search, Package, FileText, Plus, Lock } from 'lucide-react';
+import { CalendarIcon, Loader2, Bus, CheckCircle2, Search, Package, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatBooking } from '@/hooks/useSeatBookings';
 import { useLuggageBookings, LuggageBooking } from '@/hooks/useLuggageBookings';
+import { useLuggageRates } from '@/hooks/useLuggageRates';
 import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
 
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const TOTAL_SEATS = 36;
-const MEMO_PASSWORD = 'safari123';
 
 export default function SeatBookings() {
   const { user } = useAuth();
@@ -51,41 +50,10 @@ export default function SeatBookings() {
   
   const [luggageDialogOpen, setLuggageDialogOpen] = useState(false);
   const [editingLuggage, setEditingLuggage] = useState<LuggageBooking | null>(null);
-  
-  const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
-  const [memoPassword, setMemoPassword] = useState('');
-  
-  
-  const [companySettings, setCompanySettings] = useState<{ name: string; logoUrl: string; address: string; phone: string }>({
-    name: 'ROYAL SAFARI',
-    logoUrl: '',
-    address: '',
-    phone: '',
-  });
-
-  // Fetch company settings
-  useEffect(() => {
-    const fetchSettings = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('company_settings')
-        .select('name, logo_url, address, phone')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (data) {
-        setCompanySettings({
-          name: data.name || 'ROYAL SAFARI',
-          logoUrl: data.logo_url || '',
-          address: data.address || '',
-          phone: (data as any).phone || '',
-        });
-      }
-    };
-    fetchSettings();
-  }, [user]);
 
   const { seatBookings, loading, getSeatsByDate, saveSeatBooking, markCollected, deleteSeatBooking } = useSeatBookings();
   const { luggageBookings, loading: luggageLoading, saveLuggageBooking, deleteLuggageBooking, getLuggageByDateAndBus } = useLuggageBookings();
+  const { getRateFor } = useLuggageRates();
   const { agents } = useAgents();
   const { destinations } = useDestinations();
   const { buses, loading: busesLoading } = useBuses();
