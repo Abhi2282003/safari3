@@ -434,8 +434,12 @@ export default function Hisab() {
                 <CalIcon className="h-4 w-4 text-muted-foreground" />
                 <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
               </div>
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/tickets"><FileText className="h-4 w-4" />View Tickets</Link>
+              </Button>
               <Button onClick={downloadPDF} className="gap-2"><Download className="h-4 w-4" />Download PDF</Button>
             </div>
+
           </div>
 
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
