@@ -421,7 +421,7 @@ export default function Memo() {
 
     const finalY = (doc as any).lastAutoTable.finalY + 6;
     const boxY = finalY + 4;
-    const boxH = 30;
+    const boxH = 42;
     doc.setFillColor(240, 250, 245);
     doc.setDrawColor(brand[0], brand[1], brand[2]);
     doc.setLineWidth(0.3);
@@ -429,21 +429,21 @@ export default function Memo() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
-    doc.text('LUGGAGE SUMMARY', pageW - 94, boxY + 6);
+    doc.text('LUGGAGE SUMMARY', pageW - 94, boxY + 7);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text('Total Collected', pageW - 94, boxY + 13);
+    doc.text('Total Collected', pageW - 94, boxY + 16);
     doc.setTextColor(ink[0], ink[1], ink[2]);
-    doc.text(`Rs. ${luggageTotal.toFixed(0)}`, pageW - 18, boxY + 13, { align: 'right' });
+    doc.text(`Rs. ${luggageTotal.toFixed(0)}`, pageW - 18, boxY + 16, { align: 'right' });
 
     doc.setTextColor(180, 30, 30);
-    doc.text('Less', pageW - 94, boxY + 20);
-    doc.text(`- Rs. ${ourEarningTotal.toFixed(0)}`, pageW - 18, boxY + 20, { align: 'right' });
+    doc.text('Less', pageW - 94, boxY + 23);
+    doc.text(`- Rs. ${ourEarningTotal.toFixed(0)}`, pageW - 18, boxY + 23, { align: 'right' });
 
     doc.setFillColor(brand[0], brand[1], brand[2]);
-    doc.roundedRect(pageW - 96, boxY + boxH - 11, 82, 10, 1.5, 1.5, 'F');
+    doc.roundedRect(pageW - 96, boxY + boxH - 12, 82, 12, 1.5, 1.5, 'F');
     doc.setTextColor(255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
