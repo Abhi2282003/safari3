@@ -522,16 +522,6 @@ export default function SeatBookings() {
     doc.setFontSize(12);
     doc.text(`Rs. ${grandTotalToOwner.toFixed(0)}`, pageW - 18, ly + 7.5, { align: 'right' });
 
-    // Left note
-    doc.setTextColor(ink[0], ink[1], ink[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text(`Online: ${onlineBookings.length}  Agent: ${agentBookings.length}  Self: ${selfBookings.length}  Sonu: ${sonuBookings.length}  Return: ${returnBookings.length}`, 14, boxY + 7);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(110);
-    doc.text('Note: 15% deducted on Agent/Self/Sonu bookings; 5% commission deducted on Online/Return.', 14, boxY + 13);
-
     // Footer band
     const pageH = doc.internal.pageSize.getHeight();
     doc.setFillColor(brand[0], brand[1], brand[2]);
