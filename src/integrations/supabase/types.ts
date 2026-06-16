@@ -289,6 +289,33 @@ export type Database = {
         }
         Relationships: []
       }
+      luggage_rates: {
+        Row: {
+          created_at: string
+          destination: string
+          id: string
+          rate: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          id?: string
+          rate?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          id?: string
+          rate?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pay_collection_entries: {
         Row: {
           amount: number
