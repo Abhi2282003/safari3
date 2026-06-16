@@ -47,9 +47,9 @@ export default function Memo() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [busName, setBusName] = useState('');
-  const [memoPasswordDialog, setMemoPasswordDialog] = useState(false);
-  const [memoPassword, setMemoPassword] = useState('');
-  const [memoTarget, setMemoTarget] = useState<'bus' | 'luggage'>('bus');
+  const [unlocked, setUnlocked] = useState(false);
+  const [gatePassword, setGatePassword] = useState('');
+
 
 
   const [companySettings, setCompanySettings] = useState({ name: 'ROYAL SAFARI', logoUrl: '', address: '', phone: '' });
