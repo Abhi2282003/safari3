@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Settings, 
-  FileText,
   Bus,
   LogOut,
   Menu,
@@ -23,7 +22,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const adminItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/tickets', label: 'Tickets', icon: FileText },
   { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
   { href: '/memo', label: 'Memo', icon: Receipt },
   { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
@@ -32,6 +30,7 @@ const adminItems = [
   { href: '/admin', label: 'Admin', icon: TrendingUp },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
+
 
 const staffItems = [
   { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
