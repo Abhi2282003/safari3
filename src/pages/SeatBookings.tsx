@@ -385,9 +385,20 @@ export default function SeatBookings() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span>Booked Seats</span>
-                    <span className="font-medium">{busSummary.total} / {TOTAL_SEATS}</span>
+                  <div>
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-muted-foreground">Occupancy</span>
+                      <span className="font-semibold">{busSummary.total} / {TOTAL_SEATS}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${Math.min(100, (busSummary.total / TOTAL_SEATS) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {TOTAL_SEATS - busSummary.total} seat{TOTAL_SEATS - busSummary.total === 1 ? '' : 's'} available
+                    </p>
                   </div>
                   <div className="grid grid-cols-5 gap-1 text-center overflow-hidden">
                     <div className="p-1 sm:p-1.5 bg-blue-500/10 rounded overflow-hidden">
@@ -417,6 +428,7 @@ export default function SeatBookings() {
                   </div>
                 </CardContent>
               </Card>
+
 
               {/* Luggage Section */}
               <Card>
