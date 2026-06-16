@@ -458,24 +458,13 @@ export default function Memo() {
     doc.save(`Luggage-Memo-${busName.replace(/[^A-Z0-9]/gi, '_')}-${format(selectedDate, 'yyyyMMdd')}.pdf`);
   };
 
-  const handleGenerateMemo = (target: 'bus' | 'luggage' = 'bus') => {
+  const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus') => {
     if (!busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
-    setMemoTarget(target);
-    setMemoPassword('');
-    setMemoPasswordDialog(true);
-  };
-
-  const handleMemoPasswordSubmit = async () => {
-    if (memoPassword !== MEMO_PASSWORD) {
-      toast.error('Incorrect password');
-      return;
-    }
-    setMemoPasswordDialog(false);
     try {
-      if (memoTarget === 'luggage') await generateLuggageMemoPdf();
+      if (target === 'luggage') await generateLuggageMemoPdf();
       else await generateMemoPdf();
       toast.success('Memo generated');
     } catch (e: any) {
@@ -483,6 +472,7 @@ export default function Memo() {
       toast.error(e?.message || 'Failed to generate memo');
     }
   };
+
 
 
   // ---- Luggage rates UI state ----
