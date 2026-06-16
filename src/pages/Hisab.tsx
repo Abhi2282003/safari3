@@ -8,9 +8,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { format } from 'date-fns';
-import { IndianRupee, Receipt, Wallet, TrendingUp, Calendar as CalIcon, Download, ArrowLeft, User } from 'lucide-react';
+import { IndianRupee, Receipt, Wallet, TrendingUp, Calendar as CalIcon, Download, ArrowLeft, User, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
 
 interface PayEntry {
   id: string;
