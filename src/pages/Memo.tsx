@@ -265,36 +265,8 @@ export default function Memo() {
       currentY = (doc as any).lastAutoTable.finalY + 6;
     }
 
-    if (busLuggage.length > 0) {
-      autoTable(doc, {
-        startY: currentY,
-        head: [['Party', 'Destination', 'Item', 'Qty', 'Amount', 'To Owner']],
-        body: busLuggage.map((l) => [
-          l.partyName || '-',
-          l.destination,
-          l.itemName || '-',
-          String(l.quantity),
-          l.totalAmount.toFixed(0),
-          l.amountToOwner.toFixed(0),
-        ]),
-        foot: [[
-          { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-          { content: luggageToOwner.toFixed(0), styles: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any } },
-        ]],
-        styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
-        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
-        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
-        alternateRowStyles: { fillColor: [252, 250, 247] },
-        columnStyles: {
-          3: { halign: 'center' },
-          4: { halign: 'right' },
-          5: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
-        },
-        theme: 'grid',
-        margin: { left: 14, right: 14 },
-      });
-      currentY = (doc as any).lastAutoTable.finalY + 6;
-    }
+    // Luggage breakdown intentionally omitted from bus memo — only total is shown in summary.
+
 
     const boxY = currentY + 4;
     const lines: Array<[string, string, [number, number, number]?]> = [];
