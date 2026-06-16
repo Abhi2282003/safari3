@@ -620,10 +620,17 @@ export default function Memo() {
                     <span className="font-bold text-primary">₹{settlement.grand.toFixed(0)}</span>
                   </div>
 
-                  <Button className="w-full gap-2 mt-2" onClick={handleGenerateMemo}>
-                    <FileText className="h-4 w-4" />
-                    Generate Memo PDF
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    <Button className="w-full gap-2" onClick={() => handleGenerateMemo('bus')}>
+                      <FileText className="h-4 w-4" />
+                      Bus Memo PDF
+                    </Button>
+                    <Button variant="secondary" className="w-full gap-2" onClick={() => handleGenerateMemo('luggage')} disabled={busLuggage.length === 0}>
+                      <FileText className="h-4 w-4" />
+                      Luggage Memo PDF
+                    </Button>
+                  </div>
+
                 </CardContent>
               </Card>
             )}
