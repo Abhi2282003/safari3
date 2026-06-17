@@ -433,6 +433,10 @@ export default function Memo() {
     const ownerTotal = busLuggage.reduce((s, l) => s + l.amountToOwner, 0);
     const ourEarningTotal = luggageTotal - ownerTotal;
 
+    const pageH = doc.internal.pageSize.getHeight();
+    const bottomLimit = pageH - 16;
+    const summaryBoxH = 42;
+
     autoTable(doc, {
       startY: busBoxY + busBoxH + 4,
       head: [['#', 'Party', 'Destination', 'Qty', 'Amount']],
@@ -447,7 +451,7 @@ export default function Memo() {
         { content: 'TOTAL', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
         { content: luggageTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
       ]],
-      styles: { fontSize: 9.5, cellPadding: 3, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+      styles: { fontSize: 9, cellPadding: 2.2, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
       headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
       footStyles: { fillColor: [220, 240, 230], textColor: brandDark as any },
       alternateRowStyles: { fillColor: [247, 252, 250] },
@@ -457,12 +461,16 @@ export default function Memo() {
         4: { halign: 'right' },
       },
       theme: 'grid',
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, bottom: 20 },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY + 6;
-    const boxY = finalY + 4;
-    const boxH = 42;
+    let boxY = finalY + 4;
+    if (boxY + summaryBoxH > bottomLimit) {
+      doc.addPage();
+      boxY = 20;
+    }
+    const boxH = summaryBoxH;
     doc.setFillColor(240, 250, 245);
     doc.setDrawColor(brand[0], brand[1], brand[2]);
     doc.setLineWidth(0.3);
