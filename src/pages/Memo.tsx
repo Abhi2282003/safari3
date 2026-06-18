@@ -36,6 +36,7 @@ import { CalendarIcon, Bus, FileText, Lock, Loader2, Save, Trash2 } from 'lucide
 import { useSeatBookings } from '@/hooks/useSeatBookings';
 import { useLuggageBookings } from '@/hooks/useLuggageBookings';
 import { useLuggageRates } from '@/hooks/useLuggageRates';
+import { useLuggageParties } from '@/hooks/useLuggageParties';
 import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +78,7 @@ export default function Memo() {
   const { seatBookings, loading: bookingsLoading, getSeatsByDate } = useSeatBookings();
   const { luggageBookings, loading: luggageLoading, getLuggageByDateAndBus } = useLuggageBookings();
   const { rates, loading: ratesLoading, upsertRate, deleteRate, getRateFor } = useLuggageRates();
+  const { parties, loading: partiesLoading, saveParty, deleteParty } = useLuggageParties();
   const { destinations } = useDestinations();
   const { buses, loading: busesLoading } = useBuses();
 
@@ -362,16 +364,21 @@ export default function Memo() {
   };
 
   const generateLuggageMemoPdf = async () => {
-    if (!busLuggage.length) {
-      toast.error('No luggage entries for this bus/date');
+    // Combined luggage memo across all buses for the selected date, bifurcated per bus.
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr);
+    if (!dayLuggage.length) {
+      toast.error('No luggage entries for this date');
       return;
     }
+
     const { jsPDF } = await import('jspdf');
     const autoTable = (await import('jspdf-autotable')).default;
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
-    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-${busName.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
+    const pageH = doc.internal.pageSize.getHeight();
+    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-ALL`;
 
     const brand: [number, number, number] = [13, 110, 80];
     const brandDark: [number, number, number] = [6, 70, 50];
@@ -414,102 +421,114 @@ export default function Memo() {
     doc.text(`Memo No: ${memoNo}`, 14, 62);
     doc.text(`Date: ${format(selectedDate, 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
 
-    const busBoxY = 67;
-    const busBoxH = (schedule.driverName || schedule.departureTime) ? 19 : 13;
-    doc.setFillColor(240, 250, 245);
-    doc.setDrawColor(brand[0], brand[1], brand[2]);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(14, busBoxY, pageW - 28, busBoxH, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
-    doc.text('BUS', 18, busBoxY + 6);
-    doc.setTextColor(ink[0], ink[1], ink[2]);
-    doc.setFontSize(11);
-    doc.text(busName, 18, busBoxY + 11);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(90);
-    const totalLuggageQty2 = busLuggage.reduce((s, l) => s + (l.quantity || 0), 0);
-    doc.text(`Luggage Qty: ${totalLuggageQty2}`, pageW - 16, busBoxY + 8.5, { align: 'right' });
-    if (schedule.driverName || schedule.departureTime) {
-      doc.setTextColor(60);
-      const parts: string[] = [];
-      if (schedule.driverName) parts.push(`Driver: ${schedule.driverName}`);
-      if (schedule.departureTime) parts.push(`Time: ${schedule.departureTime}`);
-      doc.text(parts.join('   |   '), 18, busBoxY + 17);
+    // Group by bus
+    const busMap: Record<string, typeof dayLuggage> = {};
+    dayLuggage.forEach((l) => {
+      const k = l.busName || 'Unassigned';
+      if (!busMap[k]) busMap[k] = [];
+      busMap[k].push(l);
+    });
+    const busKeys = Object.keys(busMap).sort();
+
+    let cursorY = 68;
+    let grandTotal = 0;
+    let grandOwner = 0;
+    let grandQty = 0;
+
+    for (const bus of busKeys) {
+      const items = busMap[bus];
+      const busTotal = items.reduce((s, l) => s + l.totalAmount, 0);
+      const busOwner = items.reduce((s, l) => s + l.amountToOwner, 0);
+      const busQty = items.reduce((s, l) => s + (l.quantity || 0), 0);
+      grandTotal += busTotal;
+      grandOwner += busOwner;
+      grandQty += busQty;
+
+      // Bus header
+      if (cursorY + 12 > pageH - 25) {
+        doc.addPage();
+        cursorY = 20;
+      }
+      doc.setFillColor(240, 250, 245);
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14, cursorY, pageW - 28, 9, 1.5, 1.5, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.text(`BUS: ${bus}`, 18, cursorY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text(`Qty: ${busQty}   |   Amount: Rs. ${busTotal.toFixed(0)}`, pageW - 18, cursorY + 6, { align: 'right' });
+      cursorY += 11;
+
+      autoTable(doc, {
+        startY: cursorY,
+        head: [['#', 'Party', 'Destination', 'Item', 'Qty', 'Amount']],
+        body: items.map((l, i) => [
+          String(i + 1),
+          l.partyName || '-',
+          l.destination,
+          l.itemName || '-',
+          String(l.quantity),
+          l.totalAmount.toFixed(0),
+        ]),
+        foot: [[
+          { content: 'BUS TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: busTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
+        ]],
+        styles: { fontSize: 9, cellPadding: 2.2, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
+        footStyles: { fillColor: [220, 240, 230], textColor: brandDark as any },
+        alternateRowStyles: { fillColor: [247, 252, 250] },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 10 },
+          4: { halign: 'center' },
+          5: { halign: 'right' },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14, bottom: 20 },
+      });
+      cursorY = (doc as any).lastAutoTable.finalY + 6;
     }
 
-    const luggageTotal = busLuggage.reduce((s, l) => s + l.totalAmount, 0);
-    const ownerTotal = busLuggage.reduce((s, l) => s + l.amountToOwner, 0);
-    const ourEarningTotal = luggageTotal - ownerTotal;
-
-    const pageH = doc.internal.pageSize.getHeight();
-    const bottomLimit = pageH - 16;
+    const grandOurEarning = grandTotal - grandOwner;
     const summaryBoxH = 42;
-
-    autoTable(doc, {
-      startY: busBoxY + busBoxH + 4,
-      head: [['#', 'Party', 'Destination', 'Qty', 'Amount']],
-      body: busLuggage.map((l, i) => [
-        String(i + 1),
-        l.partyName || '-',
-        l.destination,
-        String(l.quantity),
-        l.totalAmount.toFixed(0),
-      ]),
-      foot: [[
-        { content: 'TOTAL', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
-        { content: luggageTotal.toFixed(0), styles: { halign: 'right', fontStyle: 'bold' } },
-      ]],
-      styles: { fontSize: 9, cellPadding: 2.2, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
-      headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9.5 },
-      footStyles: { fillColor: [220, 240, 230], textColor: brandDark as any },
-      alternateRowStyles: { fillColor: [247, 252, 250] },
-      columnStyles: {
-        0: { halign: 'center', cellWidth: 12 },
-        3: { halign: 'center' },
-        4: { halign: 'right' },
-      },
-      theme: 'grid',
-      margin: { left: 14, right: 14, bottom: 20 },
-    });
-
-    const finalY = (doc as any).lastAutoTable.finalY + 6;
-    let boxY = finalY + 4;
+    const bottomLimit = pageH - 16;
+    let boxY = cursorY + 4;
     if (boxY + summaryBoxH > bottomLimit) {
       doc.addPage();
       boxY = 20;
     }
-    const boxH = summaryBoxH;
     doc.setFillColor(240, 250, 245);
     doc.setDrawColor(brand[0], brand[1], brand[2]);
     doc.setLineWidth(0.3);
-    doc.roundedRect(pageW - 96, boxY, 82, boxH, 2, 2, 'FD');
+    doc.roundedRect(pageW - 96, boxY, 82, summaryBoxH, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
-    doc.text('LUGGAGE SUMMARY', pageW - 94, boxY + 7);
+    doc.text('GRAND SUMMARY', pageW - 94, boxY + 7);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(80);
     doc.text('Total Collected', pageW - 94, boxY + 16);
     doc.setTextColor(ink[0], ink[1], ink[2]);
-    doc.text(`Rs. ${luggageTotal.toFixed(0)}`, pageW - 18, boxY + 16, { align: 'right' });
+    doc.text(`Rs. ${grandTotal.toFixed(0)}`, pageW - 18, boxY + 16, { align: 'right' });
 
     doc.setTextColor(180, 30, 30);
     doc.text('Less', pageW - 94, boxY + 23);
-    doc.text(`- Rs. ${ourEarningTotal.toFixed(0)}`, pageW - 18, boxY + 23, { align: 'right' });
+    doc.text(`- Rs. ${grandOurEarning.toFixed(0)}`, pageW - 18, boxY + 23, { align: 'right' });
 
     doc.setFillColor(brand[0], brand[1], brand[2]);
-    doc.roundedRect(pageW - 96, boxY + boxH - 12, 82, 12, 1.5, 1.5, 'F');
+    doc.roundedRect(pageW - 96, boxY + summaryBoxH - 12, 82, 12, 1.5, 1.5, 'F');
     doc.setTextColor(255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('NET PAYABLE', pageW - 94, boxY + boxH - 4);
+    doc.text('NET PAYABLE', pageW - 94, boxY + summaryBoxH - 4);
     doc.setFontSize(12);
-    doc.text(`Rs. ${ownerTotal.toFixed(0)}`, pageW - 18, boxY + boxH - 4, { align: 'right' });
+    doc.text(`Rs. ${grandOwner.toFixed(0)}`, pageW - 18, boxY + summaryBoxH - 4, { align: 'right' });
 
     const totalPages = doc.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
@@ -522,11 +541,12 @@ export default function Memo() {
       doc.text('Generated by Royal Safari Booking System', pageW / 2, pageH - 10, { align: 'center' });
     }
 
-    doc.save(`Luggage-Memo-${busName.replace(/[^A-Z0-9]/gi, '_')}-${format(selectedDate, 'yyyyMMdd')}.pdf`);
+    doc.save(`Luggage-Memo-${format(selectedDate, 'yyyyMMdd')}.pdf`);
   };
 
+
   const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus') => {
-    if (!busName.trim()) {
+    if (target === 'bus' && !busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
@@ -539,6 +559,45 @@ export default function Memo() {
       toast.error(e?.message || 'Failed to generate memo');
     }
   };
+
+  // ---- Luggage parties UI state ----
+  const [newParty, setNewParty] = useState({ partyName: '', destination: '', itemName: '', rate: '' });
+  const [editParty, setEditParty] = useState<Record<string, { destination: string; itemName: string; rate: string }>>({});
+
+  const handleAddParty = async () => {
+    if (!newParty.partyName.trim()) return toast.error('Enter a party name');
+    if (!newParty.destination) return toast.error('Select a destination');
+    if (!newParty.itemName.trim()) return toast.error('Enter an item name');
+    const r = parseFloat(newParty.rate);
+    if (!r || r <= 0) return toast.error('Enter a valid rate');
+    try {
+      await saveParty({
+        partyName: newParty.partyName.trim(),
+        destination: newParty.destination,
+        itemName: newParty.itemName.trim(),
+        rate: r,
+      });
+      setNewParty({ partyName: '', destination: '', itemName: '', rate: '' });
+      toast.success('Party saved');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save party');
+    }
+  };
+
+  const handleUpdateParty = async (id: string, partyName: string) => {
+    const e = editParty[id];
+    if (!e) return;
+    const r = parseFloat(e.rate);
+    if (!e.destination || !e.itemName.trim() || !r || r <= 0) return toast.error('Fill destination, item and rate');
+    try {
+      await saveParty({ id, partyName, destination: e.destination, itemName: e.itemName.trim(), rate: r });
+      setEditParty((s) => { const n = { ...s }; delete n[id]; return n; });
+      toast.success('Party updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update');
+    }
+  };
+
 
 
 
@@ -576,7 +635,7 @@ export default function Memo() {
     }
   };
 
-  if (bookingsLoading || luggageLoading || busesLoading || ratesLoading) {
+  if (bookingsLoading || luggageLoading || busesLoading || ratesLoading || partiesLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center">
@@ -634,6 +693,7 @@ export default function Memo() {
         <Tabs defaultValue="memo" className="space-y-4">
           <TabsList>
             <TabsTrigger value="memo">Bus Owner Hisab</TabsTrigger>
+            <TabsTrigger value="parties">Luggage Parties</TabsTrigger>
             <TabsTrigger value="rates">Luggage Rates</TabsTrigger>
           </TabsList>
 
@@ -714,21 +774,142 @@ export default function Memo() {
                     <span className="font-bold text-primary">₹{settlement.grand.toFixed(0)}</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                    <Button className="w-full gap-2" onClick={() => handleGenerateMemo('bus')}>
-                      <FileText className="h-4 w-4" />
-                      Bus Memo PDF
-                    </Button>
-                    <Button variant="secondary" className="w-full gap-2" onClick={() => handleGenerateMemo('luggage')} disabled={busLuggage.length === 0}>
-                      <FileText className="h-4 w-4" />
-                      Luggage Memo PDF
-                    </Button>
-                  </div>
+                  <Button className="w-full gap-2 mt-2" onClick={() => handleGenerateMemo('bus')}>
+                    <FileText className="h-4 w-4" />
+                    Bus Memo PDF
+                  </Button>
 
                 </CardContent>
               </Card>
             )}
+
+            {/* Combined Luggage Memo across all buses for selected date */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Luggage Memo (All Buses)</CardTitle>
+                <CardDescription>
+                  Single luggage memo for {format(selectedDate, 'dd MMM yyyy')}, bifurcated by bus.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full gap-2"
+                  variant="secondary"
+                  onClick={() => handleGenerateMemo('luggage')}
+                  disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                >
+                  <FileText className="h-4 w-4" />
+                  Combined Luggage Memo PDF
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
+
+          <TabsContent value="parties" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Add Luggage Party</CardTitle>
+                <CardDescription>Save regular parties with their city, item, and rate. Then just pick + quantity when adding luggage.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div>
+                  <Label>Party Name</Label>
+                  <Input value={newParty.partyName} onChange={(e) => setNewParty({ ...newParty, partyName: e.target.value })} placeholder="e.g., Sharma Traders" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Destination / City</Label>
+                  <Select value={newParty.destination} onValueChange={(v) => setNewParty({ ...newParty, destination: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select destination" /></SelectTrigger>
+                    <SelectContent>
+                      {destinations.filter((d) => d.active).map((d) => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Item Name</Label>
+                  <Input value={newParty.itemName} onChange={(e) => setNewParty({ ...newParty, itemName: e.target.value })} placeholder="e.g., Box, Bag" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Rate per item (₹)</Label>
+                  <Input type="number" min="0" value={newParty.rate} onChange={(e) => setNewParty({ ...newParty, rate: e.target.value })} placeholder="e.g., 150" className="mt-1" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Button onClick={handleAddParty} className="gap-2"><Save className="h-4 w-4" /> Save Party</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Configured Parties</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {parties.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No parties configured yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Party</TableHead>
+                        <TableHead>Destination</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="text-right">Rate</TableHead>
+                        <TableHead className="w-72">Edit</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parties.map((p) => {
+                        const e = editParty[p.id];
+                        return (
+                          <TableRow key={p.id}>
+                            <TableCell className="font-medium">{p.partyName}</TableCell>
+                            <TableCell>{p.destination}</TableCell>
+                            <TableCell>{p.itemName}</TableCell>
+                            <TableCell className="text-right">₹{p.rate.toFixed(0)}</TableCell>
+                            <TableCell>
+                              {e ? (
+                                <div className="flex gap-1">
+                                  <Select value={e.destination} onValueChange={(v) => setEditParty((s) => ({ ...s, [p.id]: { ...s[p.id], destination: v } }))}>
+                                    <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {destinations.filter((d) => d.active).map((d) => (
+                                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Input className="h-8 w-20" value={e.itemName} onChange={(ev) => setEditParty((s) => ({ ...s, [p.id]: { ...s[p.id], itemName: ev.target.value } }))} placeholder="Item" />
+                                  <Input className="h-8 w-20" type="number" value={e.rate} onChange={(ev) => setEditParty((s) => ({ ...s, [p.id]: { ...s[p.id], rate: ev.target.value } }))} placeholder="Rate" />
+                                  <Button size="sm" variant="outline" onClick={() => handleUpdateParty(p.id, p.partyName)}>Save</Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="outline" onClick={() => setEditParty((s) => ({ ...s, [p.id]: { destination: p.destination, itemName: p.itemName, rate: String(p.rate) } }))}>Edit</Button>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={async () => {
+                                  try { await deleteParty(p.id); toast.success('Party removed'); }
+                                  catch (e: any) { toast.error(e.message || 'Failed'); }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
 
           <TabsContent value="rates" className="space-y-4">
             <Card>

@@ -258,9 +258,9 @@ export default function SeatBookings() {
     }
   };
 
-  const handleLuggageSave = async (data: { destination: string; itemName: string; partyName: string; quantity: number }) => {
+  const handleLuggageSave = async (data: { destination: string; itemName: string; partyName: string; quantity: number; rate?: number }) => {
     try {
-      const rate = getRateFor(data.destination, data.itemName);
+      const rate = data.rate ?? getRateFor(data.destination, data.itemName);
       const totalAmount = rate * data.quantity;
       await saveLuggageBooking({
         id: editingLuggage?.id,
