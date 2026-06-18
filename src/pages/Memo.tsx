@@ -635,7 +635,7 @@ export default function Memo() {
     }
   };
 
-  if (bookingsLoading || luggageLoading || busesLoading || ratesLoading) {
+  if (bookingsLoading || luggageLoading || busesLoading || ratesLoading || partiesLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center">
@@ -693,6 +693,7 @@ export default function Memo() {
         <Tabs defaultValue="memo" className="space-y-4">
           <TabsList>
             <TabsTrigger value="memo">Bus Owner Hisab</TabsTrigger>
+            <TabsTrigger value="parties">Luggage Parties</TabsTrigger>
             <TabsTrigger value="rates">Luggage Rates</TabsTrigger>
           </TabsList>
 
