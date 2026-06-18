@@ -20,6 +20,7 @@ import {
 import { Package, Trash2 } from 'lucide-react';
 import { LuggageBooking } from '@/hooks/useLuggageBookings';
 import { useLuggageRates } from '@/hooks/useLuggageRates';
+import { useLuggageParties } from '@/hooks/useLuggageParties';
 
 interface LuggageDialogProps {
   open: boolean;
@@ -35,6 +36,8 @@ interface LuggageDialogProps {
   editingLuggage?: LuggageBooking | null;
 }
 
+const OTHER = '__other__';
+
 export function LuggageDialog({
   open,
   onOpenChange,
@@ -44,6 +47,10 @@ export function LuggageDialog({
   editingLuggage,
 }: LuggageDialogProps) {
   const { getItemsFor } = useLuggageRates();
+  const { parties } = useLuggageParties();
+
+  // Selected preset party id, or OTHER, or '' (none yet)
+  const [selectedPartyId, setSelectedPartyId] = useState<string>('');
   const [formData, setFormData] = useState({
     destination: '',
     itemName: '',
@@ -52,33 +59,59 @@ export function LuggageDialog({
   });
 
   useEffect(() => {
-    if (open) {
-      if (editingLuggage) {
-        setFormData({
-          destination: editingLuggage.destination || '',
-          itemName: editingLuggage.itemName || '',
-          partyName: editingLuggage.partyName || '',
-          quantity: editingLuggage.quantity?.toString() || '1',
-        });
-      } else {
-        setFormData({
-          destination: destinations.find((d) => d.active)?.name || '',
-          itemName: '',
-          partyName: '',
-          quantity: '1',
-        });
-      }
+    if (!open) return;
+    if (editingLuggage) {
+      // Try matching existing preset
+      const match = parties.find(
+        (p) =>
+          p.partyName === editingLuggage.partyName &&
+          p.destination === editingLuggage.destination &&
+          (p.itemName === editingLuggage.itemName || !editingLuggage.itemName)
+      );
+      setSelectedPartyId(match ? match.id : OTHER);
+      setFormData({
+        destination: editingLuggage.destination || '',
+        itemName: editingLuggage.itemName || '',
+        partyName: editingLuggage.partyName || '',
+        quantity: editingLuggage.quantity?.toString() || '1',
+      });
+    } else {
+      setSelectedPartyId('');
+      setFormData({
+        destination: '',
+        itemName: '',
+        partyName: '',
+        quantity: '1',
+      });
     }
-  }, [open, editingLuggage, destinations]);
+  }, [open, editingLuggage, parties]);
 
+  const isOther = selectedPartyId === OTHER;
   const availableItems = useMemo(
     () => getItemsFor(formData.destination),
     [formData.destination, getItemsFor]
   );
 
+  const handlePartyChange = (val: string) => {
+    setSelectedPartyId(val);
+    if (val === OTHER) {
+      setFormData({ destination: '', itemName: '', partyName: '', quantity: formData.quantity });
+    } else {
+      const p = parties.find((x) => x.id === val);
+      if (p) {
+        setFormData({
+          destination: p.destination,
+          itemName: p.itemName,
+          partyName: p.partyName,
+          quantity: formData.quantity,
+        });
+      }
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.destination) return;
     if (!formData.partyName.trim()) return;
+    if (!formData.destination) return;
     if (!formData.itemName) return;
     const qty = parseInt(formData.quantity) || 1;
     if (qty <= 0) return;
@@ -90,6 +123,8 @@ export function LuggageDialog({
     });
   };
 
+  const activeParties = parties.filter((p) => p.active);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -98,65 +133,95 @@ export function LuggageDialog({
             <Package className="h-5 w-5" />
             {editingLuggage ? 'Edit Luggage' : 'Add Luggage'}
           </DialogTitle>
-          <DialogDescription>Enter party name, destination, item and quantity.</DialogDescription>
+          <DialogDescription>
+            Pick a saved party, or choose Other to enter details manually.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid gap-2">
-            <Label>Party Name</Label>
-            <Input
-              value={formData.partyName}
-              onChange={(e) => setFormData({ ...formData, partyName: e.target.value })}
-              placeholder="Enter party name"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Destination</Label>
-            <Select
-              value={formData.destination}
-              onValueChange={(v) => setFormData({ ...formData, destination: v, itemName: '' })}
-            >
+            <Label>Party</Label>
+            <Select value={selectedPartyId} onValueChange={handlePartyChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Select destination" />
+                <SelectValue placeholder="Select party" />
               </SelectTrigger>
               <SelectContent>
-                {destinations.filter((d) => d.active).map((dest) => (
-                  <SelectItem key={dest.id} value={dest.name}>
-                    {dest.name}
+                {activeParties.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.partyName} — {p.destination} ({p.itemName})
                   </SelectItem>
                 ))}
+                <SelectItem value={OTHER}>Other (enter manually)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label>Item</Label>
-            <Select
-              value={formData.itemName}
-              onValueChange={(v) => setFormData({ ...formData, itemName: v })}
-              disabled={!formData.destination || availableItems.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    !formData.destination
-                      ? 'Select destination first'
-                      : availableItems.length === 0
-                      ? 'No items configured for this destination'
-                      : 'Select item'
-                  }
+          {isOther && (
+            <>
+              <div className="grid gap-2">
+                <Label>Party Name</Label>
+                <Input
+                  value={formData.partyName}
+                  onChange={(e) => setFormData({ ...formData, partyName: e.target.value })}
+                  placeholder="Enter party name"
                 />
-              </SelectTrigger>
-              <SelectContent>
-                {availableItems.map((it) => (
-                  <SelectItem key={it.id} value={it.itemName}>
-                    {it.itemName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Destination</Label>
+                <Select
+                  value={formData.destination}
+                  onValueChange={(v) => setFormData({ ...formData, destination: v, itemName: '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select destination" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {destinations.filter((d) => d.active).map((dest) => (
+                      <SelectItem key={dest.id} value={dest.name}>
+                        {dest.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Item</Label>
+                <Select
+                  value={formData.itemName}
+                  onValueChange={(v) => setFormData({ ...formData, itemName: v })}
+                  disabled={!formData.destination || availableItems.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        !formData.destination
+                          ? 'Select destination first'
+                          : availableItems.length === 0
+                          ? 'No items configured for this destination'
+                          : 'Select item'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableItems.map((it) => (
+                      <SelectItem key={it.id} value={it.itemName}>
+                        {it.itemName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
+          {!isOther && selectedPartyId && (
+            <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+              <div><span className="text-muted-foreground">Destination:</span> {formData.destination}</div>
+              <div><span className="text-muted-foreground">Item:</span> {formData.itemName}</div>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label>Quantity</Label>
@@ -179,7 +244,9 @@ export function LuggageDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>{editingLuggage ? 'Update' : 'Add Luggage'}</Button>
+          <Button onClick={handleSave} disabled={!selectedPartyId}>
+            {editingLuggage ? 'Update' : 'Add Luggage'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
