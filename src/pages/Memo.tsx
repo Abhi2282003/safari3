@@ -546,7 +546,7 @@ export default function Memo() {
 
 
   const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus') => {
-    if (!busName.trim()) {
+    if (target === 'bus' && !busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
@@ -559,6 +559,45 @@ export default function Memo() {
       toast.error(e?.message || 'Failed to generate memo');
     }
   };
+
+  // ---- Luggage parties UI state ----
+  const [newParty, setNewParty] = useState({ partyName: '', destination: '', itemName: '', rate: '' });
+  const [editParty, setEditParty] = useState<Record<string, { destination: string; itemName: string; rate: string }>>({});
+
+  const handleAddParty = async () => {
+    if (!newParty.partyName.trim()) return toast.error('Enter a party name');
+    if (!newParty.destination) return toast.error('Select a destination');
+    if (!newParty.itemName.trim()) return toast.error('Enter an item name');
+    const r = parseFloat(newParty.rate);
+    if (!r || r <= 0) return toast.error('Enter a valid rate');
+    try {
+      await saveParty({
+        partyName: newParty.partyName.trim(),
+        destination: newParty.destination,
+        itemName: newParty.itemName.trim(),
+        rate: r,
+      });
+      setNewParty({ partyName: '', destination: '', itemName: '', rate: '' });
+      toast.success('Party saved');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save party');
+    }
+  };
+
+  const handleUpdateParty = async (id: string, partyName: string) => {
+    const e = editParty[id];
+    if (!e) return;
+    const r = parseFloat(e.rate);
+    if (!e.destination || !e.itemName.trim() || !r || r <= 0) return toast.error('Fill destination, item and rate');
+    try {
+      await saveParty({ id, partyName, destination: e.destination, itemName: e.itemName.trim(), rate: r });
+      setEditParty((s) => { const n = { ...s }; delete n[id]; return n; });
+      toast.success('Party updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update');
+    }
+  };
+
 
 
 
