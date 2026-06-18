@@ -774,21 +774,142 @@ export default function Memo() {
                     <span className="font-bold text-primary">₹{settlement.grand.toFixed(0)}</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                    <Button className="w-full gap-2" onClick={() => handleGenerateMemo('bus')}>
-                      <FileText className="h-4 w-4" />
-                      Bus Memo PDF
-                    </Button>
-                    <Button variant="secondary" className="w-full gap-2" onClick={() => handleGenerateMemo('luggage')} disabled={busLuggage.length === 0}>
-                      <FileText className="h-4 w-4" />
-                      Luggage Memo PDF
-                    </Button>
-                  </div>
+                  <Button className="w-full gap-2 mt-2" onClick={() => handleGenerateMemo('bus')}>
+                    <FileText className="h-4 w-4" />
+                    Bus Memo PDF
+                  </Button>
 
                 </CardContent>
               </Card>
             )}
+
+            {/* Combined Luggage Memo across all buses for selected date */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Luggage Memo (All Buses)</CardTitle>
+                <CardDescription>
+                  Single luggage memo for {format(selectedDate, 'dd MMM yyyy')}, bifurcated by bus.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full gap-2"
+                  variant="secondary"
+                  onClick={() => handleGenerateMemo('luggage')}
+                  disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                >
+                  <FileText className="h-4 w-4" />
+                  Combined Luggage Memo PDF
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
+
+          <TabsContent value="parties" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Add Luggage Party</CardTitle>
+                <CardDescription>Save regular parties with their city, item, and rate. Then just pick + quantity when adding luggage.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div>
+                  <Label>Party Name</Label>
+                  <Input value={newParty.partyName} onChange={(e) => setNewParty({ ...newParty, partyName: e.target.value })} placeholder="e.g., Sharma Traders" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Destination / City</Label>
+                  <Select value={newParty.destination} onValueChange={(v) => setNewParty({ ...newParty, destination: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select destination" /></SelectTrigger>
+                    <SelectContent>
+                      {destinations.filter((d) => d.active).map((d) => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Item Name</Label>
+                  <Input value={newParty.itemName} onChange={(e) => setNewParty({ ...newParty, itemName: e.target.value })} placeholder="e.g., Box, Bag" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Rate per item (₹)</Label>
+                  <Input type="number" min="0" value={newParty.rate} onChange={(e) => setNewParty({ ...newParty, rate: e.target.value })} placeholder="e.g., 150" className="mt-1" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Button onClick={handleAddParty} className="gap-2"><Save className="h-4 w-4" /> Save Party</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Configured Parties</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {parties.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No parties configured yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Party</TableHead>
+                        <TableHead>Destination</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="text-right">Rate</TableHead>
+                        <TableHead className="w-72">Edit</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parties.map((p) => {
+                        const e = editParty[p.id];
+                        return (
+                          <TableRow key={p.id}>
+                            <TableCell className="font-medium">{p.partyName}</TableCell>
+                            <TableCell>{p.destination}</TableCell>
+                            <TableCell>{p.itemName}</TableCell>
+                            <TableCell className="text-right">₹{p.rate.toFixed(0)}</TableCell>
+                            <TableCell>
+                              {e ? (
+                                <div className="flex gap-1">
+                                  <Select value={e.destination} onValueChange={(v) => setEditParty((s) => ({ ...s, [p.id]: { ...s[p.id], destination: v } }))}>
+                                    <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {destinations.filter((d) => d.active).map((d) => (
+                                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Input className="h-8 w-20" value={e.itemName} onChange={(ev) => setEditParty((s) => ({ ...s, [p.id]: { ...s[p.id], itemName: ev.target.value } }))} placeholder="Item" />
+                                  <Input className="h-8 w-20" type="number" value={e.rate} onChange={(ev) => setEditParty((s) => ({ ...s, [p.id]: { ...s[p.id], rate: ev.target.value } }))} placeholder="Rate" />
+                                  <Button size="sm" variant="outline" onClick={() => handleUpdateParty(p.id, p.partyName)}>Save</Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="outline" onClick={() => setEditParty((s) => ({ ...s, [p.id]: { destination: p.destination, itemName: p.itemName, rate: String(p.rate) } }))}>Edit</Button>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={async () => {
+                                  try { await deleteParty(p.id); toast.success('Party removed'); }
+                                  catch (e: any) { toast.error(e.message || 'Failed'); }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
 
           <TabsContent value="rates" className="space-y-4">
             <Card>
