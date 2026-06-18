@@ -36,6 +36,7 @@ import { CalendarIcon, Bus, FileText, Lock, Loader2, Save, Trash2 } from 'lucide
 import { useSeatBookings } from '@/hooks/useSeatBookings';
 import { useLuggageBookings } from '@/hooks/useLuggageBookings';
 import { useLuggageRates } from '@/hooks/useLuggageRates';
+import { useLuggageParties } from '@/hooks/useLuggageParties';
 import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +78,7 @@ export default function Memo() {
   const { seatBookings, loading: bookingsLoading, getSeatsByDate } = useSeatBookings();
   const { luggageBookings, loading: luggageLoading, getLuggageByDateAndBus } = useLuggageBookings();
   const { rates, loading: ratesLoading, upsertRate, deleteRate, getRateFor } = useLuggageRates();
+  const { parties, loading: partiesLoading, saveParty, deleteParty } = useLuggageParties();
   const { destinations } = useDestinations();
   const { buses, loading: busesLoading } = useBuses();
 
