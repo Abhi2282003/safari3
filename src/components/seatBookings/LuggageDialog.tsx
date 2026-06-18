@@ -31,6 +31,7 @@ interface LuggageDialogProps {
     itemName: string;
     partyName: string;
     quantity: number;
+    rate?: number;
   }) => Promise<void>;
   onDelete?: () => Promise<void>;
   editingLuggage?: LuggageBooking | null;
@@ -115,11 +116,13 @@ export function LuggageDialog({
     if (!formData.itemName) return;
     const qty = parseInt(formData.quantity) || 1;
     if (qty <= 0) return;
+    const preset = !isOther && selectedPartyId ? parties.find((p) => p.id === selectedPartyId) : undefined;
     await onSave({
       destination: formData.destination,
       itemName: formData.itemName,
       partyName: formData.partyName.trim(),
       quantity: qty,
+      rate: preset?.rate,
     });
   };
 
