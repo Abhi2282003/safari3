@@ -36,8 +36,11 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown, Bus, Wallet, CreditCard, User, MessageCircle, Send } from 'lucide-react';
+import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown, Bus, Wallet, CreditCard, User, MessageCircle, Send, CalendarIcon } from 'lucide-react';
 import { useSeatBookings, useAgents, SeatBooking } from '@/hooks/useSeatBookings';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,30 +115,43 @@ export default function AgentCollections() {
     fetchSettings();
   }, [user]);
 
-  // Fetch agent payments
+  // Fetch agent payments (paginated to bypass PostgREST 1000-row default)
   useEffect(() => {
     const fetchAgentPayments = async () => {
       if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('agent_collection_payments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('payment_date', { ascending: false });
-      
-      if (!error && data) {
-        setAgentPayments(data.map(p => ({
-          id: p.id,
-          agentId: p.agent_id,
-          amountPaid: p.amount_paid,
-          receivedBy: p.received_by,
-          paymentMode: p.payment_mode,
-          paymentDate: p.payment_date,
-          notes: p.notes,
-        })));
+
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      let all: any[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from('agent_collection_payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('payment_date', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+          console.error('Error fetching agent payments:', error);
+          return;
+        }
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
       }
+
+      setAgentPayments(all.map(p => ({
+        id: p.id,
+        agentId: p.agent_id,
+        amountPaid: p.amount_paid,
+        receivedBy: p.received_by,
+        paymentMode: p.payment_mode,
+        paymentDate: p.payment_date,
+        notes: p.notes,
+      })));
     };
-    
+
     fetchAgentPayments();
   }, [user, seatBookings]); // Refetch when seatBookings changes (after payment)
 
@@ -1114,15 +1130,35 @@ export default function AgentCollections() {
             {/* Date selector + day total */}
             <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 p-3 sm:p-4 rounded-lg border bg-card">
               <div className="flex flex-col gap-1">
-                <Label htmlFor="received-date" className="text-xs text-muted-foreground">Show collections received on</Label>
-                <Input
-                  id="received-date"
-                  type="date"
-                  value={receivedDate}
-                  onChange={(e) => setReceivedDate(e.target.value)}
-                  max={format(new Date(), 'yyyy-MM-dd')}
-                  className="w-full sm:w-[200px]"
-                />
+                <Label className="text-xs text-muted-foreground">Show collections received on</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full sm:w-[240px] justify-start text-left font-normal",
+                        !receivedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {receivedDate
+                        ? format(new Date(receivedDate), "PPP")
+                        : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={receivedDate ? new Date(receivedDate) : undefined}
+                      onSelect={(d) => {
+                        if (d) setReceivedDate(format(d, 'yyyy-MM-dd'));
+                      }}
+                      disabled={(d) => d > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Total Received on {format(new Date(receivedDate), 'dd MMM yyyy')}</p>
