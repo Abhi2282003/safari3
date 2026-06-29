@@ -1111,9 +1111,32 @@ export default function AgentCollections() {
 
           {/* Received Tab */}
           <TabsContent value="received">
-            {receivedAgents.length > 0 ? (
+            {/* Date selector + day total */}
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 p-3 sm:p-4 rounded-lg border bg-card">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="received-date" className="text-xs text-muted-foreground">Show collections received on</Label>
+                <Input
+                  id="received-date"
+                  type="date"
+                  value={receivedDate}
+                  onChange={(e) => setReceivedDate(e.target.value)}
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                  className="w-full sm:w-[200px]"
+                />
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Total Received on {format(new Date(receivedDate), 'dd MMM yyyy')}</p>
+                <p className="text-2xl font-bold text-green-600">₹{receivedDateTotal.toFixed(0)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {receivedAgentsForDate.length} agent{receivedAgentsForDate.length === 1 ? '' : 's'} ·{' '}
+                  {receivedAgentsForDate.reduce((s, x) => s + x.payments.length, 0)} payment(s)
+                </p>
+              </div>
+            </div>
+
+            {receivedAgentsForDate.length > 0 ? (
               <Accordion type="multiple" className="space-y-3">
-                {receivedAgents.map((agent) => (
+                {receivedAgentsForDate.map(({ agent, payments, total }) => (
                   <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
                     <AccordionTrigger className="hover:no-underline py-3">
                       <div className="flex items-center justify-between w-full pr-2 sm:pr-4">
@@ -1134,118 +1157,75 @@ export default function AgentCollections() {
                         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                           <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
-                            ₹{agent.totalCollected.toFixed(0)}
+                            ₹{total.toFixed(0)}
                           </Badge>
                         </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="pt-3 space-y-4">
-                        {/* Payment History */}
-                        {agent.payments.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                              <IndianRupee className="h-4 w-4 text-green-600" />
-                              Payment History
-                            </h4>
-                            <div className="rounded-lg border overflow-x-auto">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="text-xs">Date</TableHead>
-                                    <TableHead className="text-right text-xs">Amount</TableHead>
-                                    <TableHead className="text-xs">Payment Mode</TableHead>
-                                    <TableHead className="text-xs">Received By</TableHead>
+                        <div>
+                          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                            <IndianRupee className="h-4 w-4 text-green-600" />
+                            Payments on {format(new Date(receivedDate), 'dd MMM yyyy')}
+                          </h4>
+                          <div className="rounded-lg border overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">Time</TableHead>
+                                  <TableHead className="text-right text-xs">Amount</TableHead>
+                                  <TableHead className="text-xs">Payment Mode</TableHead>
+                                  <TableHead className="text-xs">Received By</TableHead>
+                                  <TableHead className="text-xs">Notes</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {payments.map((payment) => (
+                                  <TableRow key={payment.id}>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      {(() => {
+                                        const d = new Date(payment.paymentDate);
+                                        return isNaN(d.getTime()) ? '-' : format(d, 'hh:mm a');
+                                      })()}
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs sm:text-sm font-medium text-green-600">
+                                      ₹{payment.amountPaid.toFixed(0)}
+                                    </TableCell>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      <Badge variant="outline" className="text-xs">
+                                        <CreditCard className="h-3 w-3 mr-1" />
+                                        {payment.paymentMode}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-xs sm:text-sm">
+                                      <div className="flex items-center gap-1">
+                                        <User className="h-3 w-3 text-muted-foreground" />
+                                        {payment.receivedBy}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                      {payment.notes || '-'}
+                                    </TableCell>
                                   </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {agent.payments.map((payment) => (
-                                    <TableRow key={payment.id}>
-                                      <TableCell className="text-xs sm:text-sm">
-                                        {format(new Date(payment.paymentDate), 'dd MMM yyyy')}
-                                      </TableCell>
-                                      <TableCell className="text-right text-xs sm:text-sm font-medium text-green-600">
-                                        ₹{payment.amountPaid.toFixed(0)}
-                                      </TableCell>
-                                      <TableCell className="text-xs sm:text-sm">
-                                        <Badge variant="outline" className="text-xs">
-                                          <CreditCard className="h-3 w-3 mr-1" />
-                                          {payment.paymentMode}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-xs sm:text-sm">
-                                        <div className="flex items-center gap-1">
-                                          <User className="h-3 w-3 text-muted-foreground" />
-                                          {payment.receivedBy}
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
-                        )}
+                        </div>
 
-                        {/* Collected Bookings Table */}
-                        {agent.bookings.filter(b => b.agentCollectionStatus === 'collected').length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              Collected Bookings
-                            </h4>
-                            <div className="rounded-lg border overflow-x-auto">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="text-xs">Date</TableHead>
-                                    <TableHead className="text-xs">Bus</TableHead>
-                                    <TableHead className="text-xs">Seat</TableHead>
-                                    <TableHead className="text-right text-xs">Amount</TableHead>
-                                    <TableHead className="text-right text-xs">Collected</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {agent.bookings
-                                    .filter(b => b.agentCollectionStatus === 'collected')
-                                    .sort((a, b) => new Date(b.journeyDate).getTime() - new Date(a.journeyDate).getTime())
-                                    .map((booking) => (
-                                    <TableRow key={booking.id}>
-                                      <TableCell className="text-xs sm:text-sm">
-                                        {format(new Date(booking.journeyDate), 'dd MMM')}
-                                      </TableCell>
-                                      <TableCell className="text-xs sm:text-sm">
-                                        <div className="flex items-center gap-1">
-                                          <Bus className="h-3 w-3 text-muted-foreground" />
-                                          <span className="truncate max-w-[140px] sm:max-w-[200px]">{booking.busName || '-'}</span>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="text-xs sm:text-sm font-medium">#{booking.seatNumber}</TableCell>
-                                      <TableCell className="text-right text-xs sm:text-sm">₹{booking.bookingAmount.toFixed(0)}</TableCell>
-                                      <TableCell className="text-right text-xs sm:text-sm font-medium text-green-600">
-                                        ₹{(booking.originalAmountFromAgent || booking.amountFromAgent).toFixed(0)}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Summary */}
                         <div className="flex flex-wrap gap-4 text-xs sm:text-sm">
                           <div>
-                            <span className="text-muted-foreground">Payments:</span>{' '}
-                            <span className="font-medium">{agent.payments.length} records</span>
+                            <span className="text-muted-foreground">Payments today:</span>{' '}
+                            <span className="font-medium">{payments.length}</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Bookings:</span>{' '}
-                            <span className="font-medium">{agent.bookings.filter(b => b.agentCollectionStatus === 'collected').length} collected</span>
+                            <span className="text-muted-foreground">Total today:</span>{' '}
+                            <span className="font-medium text-green-600">₹{total.toFixed(0)}</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Total:</span>{' '}
-                            <span className="font-medium text-green-600">₹{agent.totalCollected.toFixed(0)}</span>
+                            <span className="text-muted-foreground">Lifetime collected:</span>{' '}
+                            <span className="font-medium">₹{agent.totalCollected.toFixed(0)}</span>
                           </div>
                         </div>
                       </div>
@@ -1256,7 +1236,7 @@ export default function AgentCollections() {
             ) : (
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
-                  No received payments yet. Collected payments will appear here.
+                  No collections received on {format(new Date(receivedDate), 'dd MMM yyyy')}.
                 </CardContent>
               </Card>
             )}
