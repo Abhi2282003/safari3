@@ -224,6 +224,26 @@ export default function AgentCollections() {
     return agentCollections.filter(a => a.totalCollected > 0);
   }, [agentCollections]);
 
+  // Agents with payments on the selected date, plus per-agent filtered payments and totals
+  const receivedAgentsForDate = useMemo(() => {
+    return agentCollections
+      .map(a => {
+        const payments = a.payments.filter(p => {
+          // payment_date may be a full ISO timestamp; compare yyyy-MM-dd prefix
+          return (p.paymentDate || '').slice(0, 10) === receivedDate;
+        });
+        const total = payments.reduce((s, p) => s + Number(p.amountPaid || 0), 0);
+        return { agent: a, payments, total };
+      })
+      .filter(x => x.payments.length > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [agentCollections, receivedDate]);
+
+  const receivedDateTotal = useMemo(
+    () => receivedAgentsForDate.reduce((s, x) => s + x.total, 0),
+    [receivedAgentsForDate]
+  );
+
   // Load logo as data URL (cached)
   const loadLogoDataUrl = async (): Promise<string | null> => {
     try {
