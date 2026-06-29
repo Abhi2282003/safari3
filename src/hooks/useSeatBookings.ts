@@ -182,20 +182,29 @@ export function useSeatBookings() {
   const fetchSeatBookings = useCallback(async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('seat_bookings')
-      .select(`
-        *,
-        agents(name)
-      `)
-      .eq('user_id', user.id)
-      .order('journey_date', { ascending: false });
+    // Paginate to bypass PostgREST's 1000-row default limit
+    const PAGE_SIZE = 1000;
+    let from = 0;
+    let allData: any[] = [];
+    while (true) {
+      const { data, error } = await supabase
+        .from('seat_bookings')
+        .select(`*, agents(name)`)
+        .eq('user_id', user.id)
+        .order('journey_date', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
 
-    if (error) {
-      console.error('Error fetching seat bookings:', error);
-      setLoading(false);
-      return;
+      if (error) {
+        console.error('Error fetching seat bookings:', error);
+        setLoading(false);
+        return;
+      }
+      if (!data || data.length === 0) break;
+      allData = allData.concat(data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
     }
+    const data = allData;
 
     setSeatBookings((data || []).map((s: any) => ({
       id: s.id,
