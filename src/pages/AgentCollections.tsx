@@ -1130,15 +1130,35 @@ export default function AgentCollections() {
             {/* Date selector + day total */}
             <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 p-3 sm:p-4 rounded-lg border bg-card">
               <div className="flex flex-col gap-1">
-                <Label htmlFor="received-date" className="text-xs text-muted-foreground">Show collections received on</Label>
-                <Input
-                  id="received-date"
-                  type="date"
-                  value={receivedDate}
-                  onChange={(e) => setReceivedDate(e.target.value)}
-                  max={format(new Date(), 'yyyy-MM-dd')}
-                  className="w-full sm:w-[200px]"
-                />
+                <Label className="text-xs text-muted-foreground">Show collections received on</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full sm:w-[240px] justify-start text-left font-normal",
+                        !receivedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {receivedDate
+                        ? format(new Date(receivedDate), "PPP")
+                        : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={receivedDate ? new Date(receivedDate) : undefined}
+                      onSelect={(d) => {
+                        if (d) setReceivedDate(format(d, 'yyyy-MM-dd'));
+                      }}
+                      disabled={(d) => d > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Total Received on {format(new Date(receivedDate), 'dd MMM yyyy')}</p>
