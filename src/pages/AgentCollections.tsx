@@ -112,30 +112,43 @@ export default function AgentCollections() {
     fetchSettings();
   }, [user]);
 
-  // Fetch agent payments
+  // Fetch agent payments (paginated to bypass PostgREST 1000-row default)
   useEffect(() => {
     const fetchAgentPayments = async () => {
       if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('agent_collection_payments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('payment_date', { ascending: false });
-      
-      if (!error && data) {
-        setAgentPayments(data.map(p => ({
-          id: p.id,
-          agentId: p.agent_id,
-          amountPaid: p.amount_paid,
-          receivedBy: p.received_by,
-          paymentMode: p.payment_mode,
-          paymentDate: p.payment_date,
-          notes: p.notes,
-        })));
+
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      let all: any[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from('agent_collection_payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('payment_date', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+          console.error('Error fetching agent payments:', error);
+          return;
+        }
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
       }
+
+      setAgentPayments(all.map(p => ({
+        id: p.id,
+        agentId: p.agent_id,
+        amountPaid: p.amount_paid,
+        receivedBy: p.received_by,
+        paymentMode: p.payment_mode,
+        paymentDate: p.payment_date,
+        notes: p.notes,
+      })));
     };
-    
+
     fetchAgentPayments();
   }, [user, seatBookings]); // Refetch when seatBookings changes (after payment)
 
