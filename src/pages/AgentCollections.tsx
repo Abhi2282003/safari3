@@ -85,6 +85,7 @@ export default function AgentCollections() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('pending-desc');
   const [activeTab, setActiveTab] = useState<TabType>('pending');
+  const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
   const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
