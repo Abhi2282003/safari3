@@ -32,7 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { CalendarIcon, Bus, FileText, Lock, Loader2, Save, Trash2 } from 'lucide-react';
+import { CalendarIcon, Bus, FileText, Lock, Loader2, Save, Trash2, Eye, Share2 } from 'lucide-react';
 import { useSeatBookings } from '@/hooks/useSeatBookings';
 import { useLuggageBookings } from '@/hooks/useLuggageBookings';
 import { useLuggageRates } from '@/hooks/useLuggageRates';
