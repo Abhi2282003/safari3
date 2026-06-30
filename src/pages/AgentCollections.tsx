@@ -960,7 +960,8 @@ export default function AgentCollections() {
                 {pendingAgents.map((agent) => (
                   <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
                     <AccordionTrigger className="hover:no-underline py-3">
-                      <div className="flex items-center justify-between w-full pr-2 sm:pr-4">
+                      <div className="flex items-center justify-between flex-1 min-w-0 gap-2 pr-2">
+
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
