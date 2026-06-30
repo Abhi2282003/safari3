@@ -620,6 +620,7 @@ export default function SeatBookings() {
                       else if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm';
                       else if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white shadow-sm';
                       else if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm';
+                      else if (booking?.bookingType === 'royal') bgClass = 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm';
                       else if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white shadow-sm';
 
                       return (
