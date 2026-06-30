@@ -50,6 +50,8 @@ export default function Memo() {
   const [busName, setBusName] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [gatePassword, setGatePassword] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('Memo Preview');
 
 
 
