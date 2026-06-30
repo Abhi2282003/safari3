@@ -375,8 +375,12 @@ export default function Memo() {
     const blob: Blob = doc.output('blob');
     if (action === 'preview') {
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      // Revoke previous preview URL if any
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+      setPreviewTitle(fileName);
       return;
     }
     // share
