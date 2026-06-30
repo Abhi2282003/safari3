@@ -723,6 +723,7 @@ export default function SeatBookings() {
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="self">Self</SelectItem>
                     <SelectItem value="sonu">Sonu</SelectItem>
+                    <SelectItem value="royal">Royal Chintamani Ahemdnagar</SelectItem>
                     <SelectItem value="return">Return</SelectItem>
                   </SelectContent>
                 </Select>
