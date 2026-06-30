@@ -197,6 +197,42 @@ export default function AgentCollections() {
         }
       });
 
+    // Add virtual parties: Sonu and Royal Chintamani Ahemdnagar
+    const VIRTUAL_PARTIES: { key: string; id: string; name: string; type: 'sonu' | 'royal' }[] = [
+      { key: 'sonu', id: 'party:sonu', name: 'Sonu', type: 'sonu' },
+      { key: 'royal', id: 'party:royal', name: 'Royal Chintamani Ahemdnagar', type: 'royal' },
+    ];
+    VIRTUAL_PARTIES.forEach((p) => {
+      const partyBookings = seatBookings.filter((b) => b.bookingType === p.type);
+      if (partyBookings.length === 0) return;
+      const payments = agentPayments.filter((pay) => (pay as any).partyKey === p.key || (pay as any).party_key === p.key);
+      const entry: AgentWithCollections = {
+        id: p.id,
+        name: p.name,
+        phone: undefined,
+        advanceBalance: 0,
+        bookings: [],
+        payments,
+        totalPending: 0,
+        totalCollected: 0,
+        originalTotal: 0,
+      };
+      partyBookings.forEach((booking) => {
+        const originalAmount = booking.originalAmountFromAgent || booking.amountFromAgent;
+        entry.bookings.push(booking);
+        entry.originalTotal += originalAmount;
+        if (booking.agentCollectionStatus === 'pending') {
+          entry.totalPending += booking.amountFromAgent;
+          if (originalAmount > booking.amountFromAgent) {
+            entry.totalCollected += originalAmount - booking.amountFromAgent;
+          }
+        } else {
+          entry.totalCollected += originalAmount;
+        }
+      });
+      agentMap.set(p.id, entry);
+    });
+
     // Show agents with pending collections OR advance balance
     let results = Array.from(agentMap.values());
     
