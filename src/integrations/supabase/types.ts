@@ -16,33 +16,36 @@ export type Database = {
     Tables: {
       agent_collection_payments: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           amount_paid: number
           created_at: string
           id: string
           notes: string | null
+          party_key: string | null
           payment_date: string
           payment_mode: string
           received_by: string
           user_id: string
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           amount_paid: number
           created_at?: string
           id?: string
           notes?: string | null
+          party_key?: string | null
           payment_date?: string
           payment_mode?: string
           received_by: string
           user_id: string
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           amount_paid?: number
           created_at?: string
           id?: string
           notes?: string | null
+          party_key?: string | null
           payment_date?: string
           payment_mode?: string
           received_by?: string
