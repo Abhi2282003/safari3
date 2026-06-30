@@ -840,10 +840,6 @@ export default function SeatBookings() {
                       <span>Total Booking Amount</span>
                       <span>₹{(parseFloat(formData.bookingAmount) * Math.max(1, selectedSeats.length)).toFixed(0)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Total Pay to Owner</span>
-                      <span>₹{(amounts.amountToOwner * Math.max(1, selectedSeats.length)).toFixed(0)}</span>
-                    </div>
                     {formData.bookingType === 'agent' && (
                       <div className="flex justify-between text-amber-600 font-medium">
                         <span>Total Collect from Agent</span>
