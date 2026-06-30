@@ -1056,8 +1056,50 @@ export default function Memo() {
         </Tabs>
 
 
+        <Dialog
+          open={!!previewUrl}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPreviewUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return null;
+              });
+            }
+          }}
+        >
+          <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0">
+            <DialogHeader className="px-4 py-3 border-b">
+              <DialogTitle className="text-base truncate">{previewTitle}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 bg-muted">
+              {previewUrl && (
+                <iframe
+                  src={previewUrl}
+                  title="PDF Preview"
+                  className="w-full h-full border-0"
+                />
+              )}
+            </div>
+            <DialogFooter className="px-4 py-3 border-t gap-2">
+              {previewUrl && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(previewUrl, '_blank')}
+                  >
+                    Open in new tab
+                  </Button>
+                  <a href={previewUrl} download={previewTitle} className="inline-flex">
+                    <Button>Download</Button>
+                  </a>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </Layout>
+
   );
 }
