@@ -578,6 +578,10 @@ export default function SeatBookings() {
                   <span>Sonu</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-orange-500" />
+                  <span>Royal</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded bg-purple-500" />
                   <span>Return</span>
                 </div>
