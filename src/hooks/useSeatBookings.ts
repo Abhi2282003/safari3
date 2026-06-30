@@ -58,7 +58,8 @@ const COMMISSION_RATES: Record<BookingType, number> = {
   agent: 15,    // Total 15% (10% to agent, 5% to us)
   self: 15,     // We earn full 15%
   return: 5,    // We earn 5%, nothing to owner (company bus return)
-  sonu: 15,     // 15% commission but 0% profit (just pay to owner)
+  sonu: 15,     // 15% commission, party pays us net (15% deducted)
+  royal: 15,    // 15% commission, party pays us net (15% deducted) - Royal Chintamani Ahemdnagar
 };
 
 export function calculateBookingAmounts(
