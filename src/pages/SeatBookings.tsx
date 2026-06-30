@@ -633,7 +633,7 @@ export default function SeatBookings() {
                           )}
                         >
                           <span>{seatNum}</span>
-                          {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
+                          {booking && (booking.bookingType === 'agent' || booking.bookingType === 'sonu' || booking.bookingType === 'royal') && booking.agentCollectionStatus === 'pending' && (
                             <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full ring-2 ring-white" />
                           )}
                         </button>
