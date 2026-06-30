@@ -124,7 +124,7 @@ export function Layout({ children }: LayoutProps) {
         <>
           <Sidebar />
           <main className={cn(
-            'pt-18 lg:pt-8 lg:ml-64 min-h-screen relative z-10 px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-8'
+            'pt-20 lg:pt-8 lg:ml-64 min-h-screen relative z-10 px-3 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-8 overflow-x-hidden'
           )}>
             {children}
           </main>
