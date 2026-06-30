@@ -253,7 +253,10 @@ export function useSeatBookings() {
 
     // Check if agent has advance balance for new agent bookings
     let finalAmountFromAgent = amounts.amountFromAgent;
-    let collectionStatus = booking.bookingType === 'agent' ? 'pending' : 'not_applicable';
+    let collectionStatus =
+      booking.bookingType === 'agent' || booking.bookingType === 'sonu' || booking.bookingType === 'royal'
+        ? 'pending'
+        : 'not_applicable';
     let agentAdvanceToDeduct = 0;
 
     if (booking.bookingType === 'agent' && booking.agentId && !booking.id) {
