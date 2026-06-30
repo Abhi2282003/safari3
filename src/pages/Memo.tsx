@@ -129,8 +129,9 @@ export default function Memo() {
     const agent = busBookings.filter((b) => b.bookingType === 'agent');
     const self = busBookings.filter((b) => b.bookingType === 'self');
     const sonu = busBookings.filter((b) => b.bookingType === 'sonu');
+    const royal = busBookings.filter((b) => b.bookingType === 'royal');
     const returnB = busBookings.filter((b) => b.bookingType === 'return');
-    const main = [...agent, ...self, ...sonu];
+    const main = [...agent, ...self, ...sonu, ...royal];
     const mainTotal = main.reduce((s, b) => s + b.bookingAmount, 0);
     const mainDeduction = main.reduce((s, b) => s + b.bookingAmount * 0.15, 0);
     const mainNet = mainTotal - mainDeduction;
@@ -139,7 +140,7 @@ export default function Memo() {
     const otherCommission = onlineCommission + returnCommission;
     const luggageToOwner = busLuggage.reduce((s, b) => s + b.amountToOwner, 0);
     const grand = mainNet - otherCommission + luggageToOwner;
-    return { mainTotal, mainDeduction, mainNet, otherCommission, luggageToOwner, grand, online, agent, self, sonu, returnB, main };
+    return { mainTotal, mainDeduction, mainNet, otherCommission, luggageToOwner, grand, online, agent, self, sonu, royal, returnB, main };
   }, [busBookings, busLuggage]);
 
   const loadLogoDataUrl = async (): Promise<string | null> => {
