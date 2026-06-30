@@ -480,7 +480,7 @@ export default function SeatBookings() {
                       {TOTAL_SEATS - busSummary.total} seat{TOTAL_SEATS - busSummary.total === 1 ? '' : 's'} available
                     </p>
                   </div>
-                  <div className="grid grid-cols-5 gap-1 text-center overflow-hidden">
+                  <div className="grid grid-cols-6 gap-1 text-center overflow-hidden">
                     <div className="p-1 sm:p-1.5 bg-blue-500/10 rounded overflow-hidden">
                       <p className="text-sm sm:text-base font-semibold text-blue-600">{busSummary.online}</p>
                       <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">Online</p>
@@ -496,6 +496,10 @@ export default function SeatBookings() {
                     <div className="p-1 sm:p-1.5 bg-pink-500/10 rounded overflow-hidden">
                       <p className="text-sm sm:text-base font-semibold text-pink-600">{busSummary.sonu}</p>
                       <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">Sonu</p>
+                    </div>
+                    <div className="p-1 sm:p-1.5 bg-orange-500/10 rounded overflow-hidden">
+                      <p className="text-sm sm:text-base font-semibold text-orange-600">{busSummary.royal}</p>
+                      <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">Royal</p>
                     </div>
                     <div className="p-1 sm:p-1.5 bg-purple-500/10 rounded overflow-hidden">
                       <p className="text-sm sm:text-base font-semibold text-purple-600">{busSummary.return}</p>
