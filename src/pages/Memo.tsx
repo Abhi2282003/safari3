@@ -50,6 +50,8 @@ export default function Memo() {
   const [busName, setBusName] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [gatePassword, setGatePassword] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('Memo Preview');
 
 
 
@@ -373,8 +375,12 @@ export default function Memo() {
     const blob: Blob = doc.output('blob');
     if (action === 'preview') {
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      // Revoke previous preview URL if any
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+      setPreviewTitle(fileName);
       return;
     }
     // share
@@ -1050,8 +1056,50 @@ export default function Memo() {
         </Tabs>
 
 
+        <Dialog
+          open={!!previewUrl}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPreviewUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return null;
+              });
+            }
+          }}
+        >
+          <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0">
+            <DialogHeader className="px-4 py-3 border-b">
+              <DialogTitle className="text-base truncate">{previewTitle}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 bg-muted">
+              {previewUrl && (
+                <iframe
+                  src={previewUrl}
+                  title="PDF Preview"
+                  className="w-full h-full border-0"
+                />
+              )}
+            </div>
+            <DialogFooter className="px-4 py-3 border-t gap-2">
+              {previewUrl && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(previewUrl, '_blank')}
+                  >
+                    Open in new tab
+                  </Button>
+                  <a href={previewUrl} download={previewTitle} className="inline-flex">
+                    <Button>Download</Button>
+                  </a>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </Layout>
+
   );
 }
