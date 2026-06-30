@@ -94,10 +94,12 @@ export function calculateBookingAmounts(
       amountFromAgent = 0;
       break;
     case 'sonu':
-      // Sonu booking: 15% commission deducted, but we earn 0% - just pay to owner
+    case 'royal':
+      // Sonu / Royal Chintamani: 15% commission deducted; party pays us the net (85%).
+      // Tracked under Agent Collections as a pending receivable from the party.
       ourEarning = 0;
       amountToOwner = totalAmount - totalCommission;
-      amountFromAgent = 0;
+      amountFromAgent = totalAmount - totalCommission;
       break;
     case 'return':
       // Company bus return - we earn 5%, nothing to owner
