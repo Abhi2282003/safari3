@@ -735,25 +735,30 @@ export default function AgentCollections() {
         if (error) throw error;
       }
 
-      // Update agent's advance balance
-      const { error: agentError } = await supabase
-        .from('agents')
-        .update({ advance_balance: newAdvanceBalance })
-        .eq('id', selectedAgent.id);
+      // Update agent's advance balance (skip for virtual parties)
+      const isVirtual = selectedAgent.id.startsWith('party:');
+      const partyKey = isVirtual ? selectedAgent.id.slice('party:'.length) : null;
+      if (!isVirtual) {
+        const { error: agentError } = await supabase
+          .from('agents')
+          .update({ advance_balance: newAdvanceBalance })
+          .eq('id', selectedAgent.id);
 
-      if (agentError) throw agentError;
+        if (agentError) throw agentError;
+      }
 
       // Record the payment
       const { error: paymentError } = await supabase
         .from('agent_collection_payments')
         .insert({
           user_id: user.id,
-          agent_id: selectedAgent.id,
+          agent_id: isVirtual ? null : selectedAgent.id,
+          party_key: partyKey,
           amount_paid: amount,
           received_by: receivedBy.trim(),
           payment_mode: paymentMode,
           notes: paymentNotes.trim() || null,
-        });
+        } as any);
 
       if (paymentError) throw paymentError;
 
