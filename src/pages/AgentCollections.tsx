@@ -47,7 +47,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface AgentPayment {
   id: string;
-  agentId: string;
+  agentId: string | null;
+  partyKey?: string | null;
   amountPaid: number;
   receivedBy: string;
   paymentMode: string;
