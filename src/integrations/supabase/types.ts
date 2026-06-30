@@ -16,33 +16,36 @@ export type Database = {
     Tables: {
       agent_collection_payments: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           amount_paid: number
           created_at: string
           id: string
           notes: string | null
+          party_key: string | null
           payment_date: string
           payment_mode: string
           received_by: string
           user_id: string
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           amount_paid: number
           created_at?: string
           id?: string
           notes?: string | null
+          party_key?: string | null
           payment_date?: string
           payment_mode?: string
           received_by: string
           user_id: string
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           amount_paid?: number
           created_at?: string
           id?: string
           notes?: string | null
+          party_key?: string | null
           payment_date?: string
           payment_mode?: string
           received_by?: string
@@ -832,7 +835,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
-      booking_type: "online" | "agent" | "self" | "return" | "sonu"
+      booking_type: "online" | "agent" | "self" | "return" | "sonu" | "royal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -961,7 +964,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
-      booking_type: ["online", "agent", "self", "return", "sonu"],
+      booking_type: ["online", "agent", "self", "return", "sonu", "royal"],
     },
   },
 } as const

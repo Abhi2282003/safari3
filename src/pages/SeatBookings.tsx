@@ -307,6 +307,7 @@ export default function SeatBookings() {
     const agent = busBookings.filter((b) => b.bookingType === 'agent');
     const self = busBookings.filter((b) => b.bookingType === 'self');
     const sonu = busBookings.filter((b) => b.bookingType === 'sonu');
+    const royal = busBookings.filter((b) => b.bookingType === 'royal');
     const returnBookings = busBookings.filter((b) => b.bookingType === 'return');
 
     return {
@@ -315,6 +316,7 @@ export default function SeatBookings() {
       agent: agent.length,
       self: self.length,
       sonu: sonu.length,
+      royal: royal.length,
       return: returnBookings.length,
       luggageCount: busLuggage.length,
     };
@@ -478,7 +480,7 @@ export default function SeatBookings() {
                       {TOTAL_SEATS - busSummary.total} seat{TOTAL_SEATS - busSummary.total === 1 ? '' : 's'} available
                     </p>
                   </div>
-                  <div className="grid grid-cols-5 gap-1 text-center overflow-hidden">
+                  <div className="grid grid-cols-6 gap-1 text-center overflow-hidden">
                     <div className="p-1 sm:p-1.5 bg-blue-500/10 rounded overflow-hidden">
                       <p className="text-sm sm:text-base font-semibold text-blue-600">{busSummary.online}</p>
                       <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">Online</p>
@@ -494,6 +496,10 @@ export default function SeatBookings() {
                     <div className="p-1 sm:p-1.5 bg-pink-500/10 rounded overflow-hidden">
                       <p className="text-sm sm:text-base font-semibold text-pink-600">{busSummary.sonu}</p>
                       <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">Sonu</p>
+                    </div>
+                    <div className="p-1 sm:p-1.5 bg-orange-500/10 rounded overflow-hidden">
+                      <p className="text-sm sm:text-base font-semibold text-orange-600">{busSummary.royal}</p>
+                      <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">Royal</p>
                     </div>
                     <div className="p-1 sm:p-1.5 bg-purple-500/10 rounded overflow-hidden">
                       <p className="text-sm sm:text-base font-semibold text-purple-600">{busSummary.return}</p>
@@ -572,6 +578,10 @@ export default function SeatBookings() {
                   <span>Sonu</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-orange-500" />
+                  <span>Royal</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded bg-purple-500" />
                   <span>Return</span>
                 </div>
@@ -610,6 +620,7 @@ export default function SeatBookings() {
                       else if (booking?.bookingType === 'agent') bgClass = 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm';
                       else if (booking?.bookingType === 'self') bgClass = 'bg-green-500 hover:bg-green-600 text-white shadow-sm';
                       else if (booking?.bookingType === 'sonu') bgClass = 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm';
+                      else if (booking?.bookingType === 'royal') bgClass = 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm';
                       else if (booking?.bookingType === 'return') bgClass = 'bg-purple-500 hover:bg-purple-600 text-white shadow-sm';
 
                       return (
@@ -622,7 +633,7 @@ export default function SeatBookings() {
                           )}
                         >
                           <span>{seatNum}</span>
-                          {booking && booking.bookingType === 'agent' && booking.agentCollectionStatus === 'pending' && (
+                          {booking && (booking.bookingType === 'agent' || booking.bookingType === 'sonu' || booking.bookingType === 'royal') && booking.agentCollectionStatus === 'pending' && (
                             <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full ring-2 ring-white" />
                           )}
                         </button>
@@ -712,6 +723,7 @@ export default function SeatBookings() {
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="self">Self</SelectItem>
                     <SelectItem value="sonu">Sonu</SelectItem>
+                    <SelectItem value="royal">Royal Chintamani Ahemdnagar</SelectItem>
                     <SelectItem value="return">Return</SelectItem>
                   </SelectContent>
                 </Select>

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 
-export type BookingType = 'online' | 'agent' | 'self' | 'return' | 'sonu';
+export type BookingType = 'online' | 'agent' | 'self' | 'return' | 'sonu' | 'royal';
 
 export interface Agent {
   id: string;
@@ -58,7 +58,8 @@ const COMMISSION_RATES: Record<BookingType, number> = {
   agent: 15,    // Total 15% (10% to agent, 5% to us)
   self: 15,     // We earn full 15%
   return: 5,    // We earn 5%, nothing to owner (company bus return)
-  sonu: 15,     // 15% commission but 0% profit (just pay to owner)
+  sonu: 15,     // 15% commission, party pays us net (15% deducted)
+  royal: 15,    // 15% commission, party pays us net (15% deducted) - Royal Chintamani Ahemdnagar
 };
 
 export function calculateBookingAmounts(
@@ -93,10 +94,12 @@ export function calculateBookingAmounts(
       amountFromAgent = 0;
       break;
     case 'sonu':
-      // Sonu booking: 15% commission deducted, but we earn 0% - just pay to owner
+    case 'royal':
+      // Sonu / Royal Chintamani: 15% commission deducted; party pays us the net (85%).
+      // Tracked under Agent Collections as a pending receivable from the party.
       ourEarning = 0;
       amountToOwner = totalAmount - totalCommission;
-      amountFromAgent = 0;
+      amountFromAgent = totalAmount - totalCommission;
       break;
     case 'return':
       // Company bus return - we earn 5%, nothing to owner
@@ -250,7 +253,10 @@ export function useSeatBookings() {
 
     // Check if agent has advance balance for new agent bookings
     let finalAmountFromAgent = amounts.amountFromAgent;
-    let collectionStatus = booking.bookingType === 'agent' ? 'pending' : 'not_applicable';
+    let collectionStatus =
+      booking.bookingType === 'agent' || booking.bookingType === 'sonu' || booking.bookingType === 'royal'
+        ? 'pending'
+        : 'not_applicable';
     let agentAdvanceToDeduct = 0;
 
     if (booking.bookingType === 'agent' && booking.agentId && !booking.id) {
@@ -368,7 +374,9 @@ export function useSeatBookings() {
 
   const getPendingCollections = (): SeatBooking[] => {
     return seatBookings.filter(
-      (s) => s.bookingType === 'agent' && s.agentCollectionStatus === 'pending'
+      (s) =>
+        (s.bookingType === 'agent' || s.bookingType === 'sonu' || s.bookingType === 'royal') &&
+        s.agentCollectionStatus === 'pending'
     );
   };
 

@@ -47,7 +47,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface AgentPayment {
   id: string;
-  agentId: string;
+  agentId: string | null;
+  partyKey?: string | null;
   amountPaid: number;
   receivedBy: string;
   paymentMode: string;
@@ -144,6 +145,7 @@ export default function AgentCollections() {
       setAgentPayments(all.map(p => ({
         id: p.id,
         agentId: p.agent_id,
+        partyKey: (p as any).party_key ?? null,
         amountPaid: p.amount_paid,
         receivedBy: p.received_by,
         paymentMode: p.payment_mode,
@@ -196,6 +198,42 @@ export default function AgentCollections() {
           agentData.totalCollected += (originalAmount - booking.amountFromAgent);
         }
       });
+
+    // Add virtual parties: Sonu and Royal Chintamani Ahemdnagar
+    const VIRTUAL_PARTIES: { key: string; id: string; name: string; type: 'sonu' | 'royal' }[] = [
+      { key: 'sonu', id: 'party:sonu', name: 'Sonu', type: 'sonu' },
+      { key: 'royal', id: 'party:royal', name: 'Royal Chintamani Ahemdnagar', type: 'royal' },
+    ];
+    VIRTUAL_PARTIES.forEach((p) => {
+      const partyBookings = seatBookings.filter((b) => b.bookingType === p.type);
+      if (partyBookings.length === 0) return;
+      const payments = agentPayments.filter((pay) => (pay as any).partyKey === p.key || (pay as any).party_key === p.key);
+      const entry: AgentWithCollections = {
+        id: p.id,
+        name: p.name,
+        phone: undefined,
+        advanceBalance: 0,
+        bookings: [],
+        payments,
+        totalPending: 0,
+        totalCollected: 0,
+        originalTotal: 0,
+      };
+      partyBookings.forEach((booking) => {
+        const originalAmount = booking.originalAmountFromAgent || booking.amountFromAgent;
+        entry.bookings.push(booking);
+        entry.originalTotal += originalAmount;
+        if (booking.agentCollectionStatus === 'pending') {
+          entry.totalPending += booking.amountFromAgent;
+          if (originalAmount > booking.amountFromAgent) {
+            entry.totalCollected += originalAmount - booking.amountFromAgent;
+          }
+        } else {
+          entry.totalCollected += originalAmount;
+        }
+      });
+      agentMap.set(p.id, entry);
+    });
 
     // Show agents with pending collections OR advance balance
     let results = Array.from(agentMap.values());
@@ -584,16 +622,19 @@ export default function AgentCollections() {
       }
 
       // Record the payment
+      const isVirtual = selectedAgent.id.startsWith('party:');
+      const partyKey = isVirtual ? selectedAgent.id.slice('party:'.length) : null;
       const { error: paymentError } = await supabase
         .from('agent_collection_payments')
         .insert({
           user_id: user.id,
-          agent_id: selectedAgent.id,
+          agent_id: isVirtual ? null : selectedAgent.id,
+          party_key: partyKey,
           amount_paid: amount,
           received_by: receivedBy.trim(),
           payment_mode: paymentMode,
           notes: paymentNotes.trim() || `Seat #${selectedBooking.seatNumber}`,
-        });
+        } as any);
 
       if (paymentError) throw paymentError;
 
@@ -694,25 +735,30 @@ export default function AgentCollections() {
         if (error) throw error;
       }
 
-      // Update agent's advance balance
-      const { error: agentError } = await supabase
-        .from('agents')
-        .update({ advance_balance: newAdvanceBalance })
-        .eq('id', selectedAgent.id);
+      // Update agent's advance balance (skip for virtual parties)
+      const isVirtual = selectedAgent.id.startsWith('party:');
+      const partyKey = isVirtual ? selectedAgent.id.slice('party:'.length) : null;
+      if (!isVirtual) {
+        const { error: agentError } = await supabase
+          .from('agents')
+          .update({ advance_balance: newAdvanceBalance })
+          .eq('id', selectedAgent.id);
 
-      if (agentError) throw agentError;
+        if (agentError) throw agentError;
+      }
 
       // Record the payment
       const { error: paymentError } = await supabase
         .from('agent_collection_payments')
         .insert({
           user_id: user.id,
-          agent_id: selectedAgent.id,
+          agent_id: isVirtual ? null : selectedAgent.id,
+          party_key: partyKey,
           amount_paid: amount,
           received_by: receivedBy.trim(),
           payment_mode: paymentMode,
           notes: paymentNotes.trim() || null,
-        });
+        } as any);
 
       if (paymentError) throw paymentError;
 
