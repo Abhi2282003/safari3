@@ -374,7 +374,9 @@ export function useSeatBookings() {
 
   const getPendingCollections = (): SeatBooking[] => {
     return seatBookings.filter(
-      (s) => s.bookingType === 'agent' && s.agentCollectionStatus === 'pending'
+      (s) =>
+        (s.bookingType === 'agent' || s.bookingType === 'sonu' || s.bookingType === 'royal') &&
+        s.agentCollectionStatus === 'pending'
     );
   };
 
