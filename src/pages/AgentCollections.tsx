@@ -622,16 +622,19 @@ export default function AgentCollections() {
       }
 
       // Record the payment
+      const isVirtual = selectedAgent.id.startsWith('party:');
+      const partyKey = isVirtual ? selectedAgent.id.slice('party:'.length) : null;
       const { error: paymentError } = await supabase
         .from('agent_collection_payments')
         .insert({
           user_id: user.id,
-          agent_id: selectedAgent.id,
+          agent_id: isVirtual ? null : selectedAgent.id,
+          party_key: partyKey,
           amount_paid: amount,
           received_by: receivedBy.trim(),
           payment_mode: paymentMode,
           notes: paymentNotes.trim() || `Seat #${selectedBooking.seatNumber}`,
-        });
+        } as any);
 
       if (paymentError) throw paymentError;
 
