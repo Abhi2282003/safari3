@@ -307,6 +307,7 @@ export default function SeatBookings() {
     const agent = busBookings.filter((b) => b.bookingType === 'agent');
     const self = busBookings.filter((b) => b.bookingType === 'self');
     const sonu = busBookings.filter((b) => b.bookingType === 'sonu');
+    const royal = busBookings.filter((b) => b.bookingType === 'royal');
     const returnBookings = busBookings.filter((b) => b.bookingType === 'return');
 
     return {
@@ -315,6 +316,7 @@ export default function SeatBookings() {
       agent: agent.length,
       self: self.length,
       sonu: sonu.length,
+      royal: royal.length,
       return: returnBookings.length,
       luggageCount: busLuggage.length,
     };
