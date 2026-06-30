@@ -145,6 +145,7 @@ export default function AgentCollections() {
       setAgentPayments(all.map(p => ({
         id: p.id,
         agentId: p.agent_id,
+        partyKey: (p as any).party_key ?? null,
         amountPaid: p.amount_paid,
         receivedBy: p.received_by,
         paymentMode: p.payment_mode,
