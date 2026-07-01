@@ -1137,6 +1137,7 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Travels Management */}
