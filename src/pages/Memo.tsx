@@ -472,7 +472,7 @@ export default function Memo() {
     );
   };
 
-  const generateLuggageMemoPdf = async () => {
+  const generateLuggageMemoPdf = async (action: 'save' | 'share' = 'save') => {
     // Combined luggage memo across all buses for the selected date, bifurcated per bus.
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr);
