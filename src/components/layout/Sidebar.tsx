@@ -29,6 +29,12 @@ const adminItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
+
+const staffItems = [
+  { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
+  { href: '/hisab', label: 'Daily Hisab', icon: ClipboardList },
+];
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
   const { user, signOut } = useAuth();
