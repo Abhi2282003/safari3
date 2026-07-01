@@ -368,23 +368,13 @@ export default function Memo() {
     await handlePdfOutput(doc, fileName, action);
   };
 
-  const handlePdfOutput = async (doc: any, fileName: string, action: 'save' | 'preview' | 'share') => {
+  const handlePdfOutput = async (doc: any, fileName: string, action: 'save' | 'share') => {
     if (action === 'save') {
       doc.save(fileName);
       return;
     }
-    const blob: Blob = doc.output('blob');
-    if (action === 'preview') {
-      const url = URL.createObjectURL(blob);
-      // Revoke previous preview URL if any
-      setPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
-      setPreviewTitle(fileName);
-      return;
-    }
     // share
+    const blob: Blob = doc.output('blob');
     const file = new File([blob], fileName, { type: 'application/pdf' });
     const nav: any = navigator;
     if (nav.canShare && nav.canShare({ files: [file] })) {
@@ -400,6 +390,86 @@ export default function Memo() {
     const text = encodeURIComponent(`${fileName} — please find the memo attached.`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
     toast.message('PDF downloaded. Attach it in WhatsApp.');
+  };
+
+  const openBusPreview = () => {
+    if (!busName.trim()) return toast.error('Select a bus first');
+    if (!busBookings.length && !busLuggage.length) return toast.error('Nothing to preview');
+    const main = settlement.main;
+    const groupsMap: Record<string, { destination: string; rate: number; seats: number[]; totalAmount: number; deduction: number; netAmount: number }> = {};
+    main.forEach((b) => {
+      const key = `${(b as any).destination || 'Unknown'}-${b.bookingAmount}`;
+      if (!groupsMap[key]) {
+        groupsMap[key] = { destination: (b as any).destination || 'Unknown', rate: b.bookingAmount, seats: [], totalAmount: 0, deduction: 0, netAmount: 0 };
+      }
+      groupsMap[key].seats.push(b.seatNumber);
+      groupsMap[key].totalAmount += b.bookingAmount;
+      groupsMap[key].deduction += b.bookingAmount * 0.15;
+    });
+    const groups = Object.values(groupsMap).map((g) => ({ ...g, netAmount: g.totalAmount - g.deduction })).sort((a, b) => a.destination.localeCompare(b.destination));
+    const totalLuggageQty = busLuggage.reduce((s, l) => s + (l.quantity || 0), 0);
+    const memoNo = `M-${format(selectedDate, 'yyyyMMdd')}-${busName.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
+    setPreviewTitle(`Bus Memo — ${busName} — ${format(selectedDate, 'dd MMM yyyy')}`);
+    setPreviewNode(
+      <BusMemoPreview
+        company={companySettings}
+        date={selectedDate}
+        busName={busName}
+        memoNo={memoNo}
+        schedule={schedule}
+        totalSeats={busBookings.length}
+        totalLuggageQty={totalLuggageQty}
+        groups={groups}
+        mainTotal={settlement.mainTotal}
+        mainDeduction={settlement.mainDeduction}
+        mainNet={settlement.mainNet}
+        otherCommission={settlement.otherCommission}
+        luggageToOwner={settlement.luggageToOwner}
+        grand={settlement.grand}
+      />
+    );
+  };
+
+  const openLuggagePreview = () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr);
+    if (!dayLuggage.length) return toast.error('No luggage entries for this date');
+    const busMap: Record<string, typeof dayLuggage> = {};
+    dayLuggage.forEach((l) => {
+      const k = l.busName || 'Unassigned';
+      if (!busMap[k]) busMap[k] = [];
+      busMap[k].push(l);
+    });
+    const buses = Object.keys(busMap).sort().map((bn) => {
+      const items = busMap[bn];
+      return {
+        busName: bn,
+        items: items.map((l) => ({
+          partyName: l.partyName,
+          destination: l.destination,
+          itemName: l.itemName,
+          quantity: l.quantity,
+          totalAmount: l.totalAmount,
+          amountToOwner: l.amountToOwner,
+        })),
+        busTotal: items.reduce((s, l) => s + l.totalAmount, 0),
+        busQty: items.reduce((s, l) => s + (l.quantity || 0), 0),
+      };
+    });
+    const grandTotal = buses.reduce((s, b) => s + b.busTotal, 0);
+    const grandOwner = dayLuggage.reduce((s, l) => s + l.amountToOwner, 0);
+    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-ALL`;
+    setPreviewTitle(`Luggage Memo — ${format(selectedDate, 'dd MMM yyyy')}`);
+    setPreviewNode(
+      <LuggageMemoPreview
+        company={companySettings}
+        date={selectedDate}
+        memoNo={memoNo}
+        buses={buses}
+        grandTotal={grandTotal}
+        grandOwner={grandOwner}
+      />
+    );
   };
 
   const generateLuggageMemoPdf = async () => {
