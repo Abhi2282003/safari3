@@ -1073,6 +1073,7 @@ export default function AgentCollections() {
                               <Send className="h-4 w-4" />
                               Download Voucher PDF
                             </Button>
+                          )}
                           {agent.totalPending > 0 && (
                             <Button
                               variant="outline"
