@@ -1084,7 +1084,6 @@ export default function AgentCollections() {
                               Share Pending
                             </Button>
                           )}
-                          )}
                         </div>
 
                         {/* Bookings Table - Grouped by Date + Bus */}
