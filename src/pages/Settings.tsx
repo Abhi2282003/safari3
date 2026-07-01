@@ -1010,6 +1010,7 @@ export default function Settings() {
                 </Button>
               </div>
             </CardContent>
+            )}
           </Card>
 
 
