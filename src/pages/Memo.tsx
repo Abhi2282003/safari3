@@ -41,6 +41,7 @@ import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { BusMemoPreview, LuggageMemoPreview } from '@/components/memo/MemoPreview';
 
 const MEMO_PASSWORD = 'safari123';
 
@@ -50,7 +51,7 @@ export default function Memo() {
   const [busName, setBusName] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [gatePassword, setGatePassword] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewNode, setPreviewNode] = useState<React.ReactNode | null>(null);
   const [previewTitle, setPreviewTitle] = useState('Memo Preview');
 
 
