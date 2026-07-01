@@ -201,30 +201,23 @@ export function LuggageDialog({
 
               <div className="grid gap-2">
                 <Label>Item</Label>
-                <Select
+                <Input
                   value={formData.itemName}
-                  onValueChange={(v) => setFormData({ ...formData, itemName: v })}
-                  disabled={!formData.destination || availableItems.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        !formData.destination
-                          ? 'Select destination first'
-                          : availableItems.length === 0
-                          ? 'No items configured for this destination'
-                          : 'Select item'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableItems.map((it) => (
-                      <SelectItem key={it.id} value={it.itemName}>
-                        {it.itemName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
+                  placeholder="Enter item name"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Amount (per unit)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.rate}
+                  onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                  placeholder="Enter rate per unit"
+                />
               </div>
             </>
           )}
