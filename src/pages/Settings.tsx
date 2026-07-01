@@ -102,7 +102,7 @@ export default function Settings() {
   ) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from(table).update(payload).eq('id', id).eq('user_id', user.id);
+      const { error } = await (supabase.from(table) as any).update(payload).eq('id', id).eq('user_id', user.id);
       if (error) throw error;
 
       if (table === 'agents') setAgents(agents.map(a => a.id === id ? { ...a, ...{ name: payload.name, phone: payload.phone || undefined } } : a));
