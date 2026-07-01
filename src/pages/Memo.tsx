@@ -912,15 +912,35 @@ export default function Memo() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button
-                  className="w-full gap-2"
-                  variant="secondary"
-                  onClick={() => handleGenerateMemo('luggage')}
-                  disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
-                >
-                  <FileText className="h-4 w-4" />
-                  Combined Luggage Memo PDF
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Button
+                    className="w-full gap-2"
+                    variant="secondary"
+                    onClick={() => handleGenerateMemo('luggage', 'save')}
+                    disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Luggage PDF
+                  </Button>
+                  <Button
+                    className="w-full gap-2"
+                    variant="outline"
+                    onClick={openLuggagePreview}
+                    disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                  >
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </Button>
+                  <Button
+                    className="w-full gap-2"
+                    variant="outline"
+                    onClick={() => handleGenerateMemo('luggage', 'share')}
+                    disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
