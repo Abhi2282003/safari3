@@ -520,6 +520,45 @@ export default function AgentCollections() {
     doc.save(`Voucher_${safeName}_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
 
+  // Share pending amount via WhatsApp / Web Share
+  const sharePendingMessage = async (agent: AgentWithCollections) => {
+    const pendingBookings = agent.bookings.filter(b => b.agentCollectionStatus === 'pending');
+    const netPending = Math.max(0, agent.totalPending - agent.advanceBalance);
+    const company = companyInfo?.company_name || 'Royal Safari';
+
+    const lines: string[] = [];
+    lines.push(`Namaste ${agent.name},`);
+    lines.push('');
+    lines.push(`Aapke naam par pending collection ka vivran:`);
+    lines.push('');
+    lines.push(`Total Seats: ${pendingBookings.length}`);
+    lines.push(`Pending Amount: Rs. ${agent.totalPending.toFixed(2)}`);
+    if (agent.advanceBalance > 0) {
+      lines.push(`Less Advance: Rs. ${agent.advanceBalance.toFixed(2)}`);
+      lines.push(`Net Payable: Rs. ${netPending.toFixed(2)}`);
+    }
+    lines.push('');
+    lines.push('Kripya jald settlement kare. Dhanyawad.');
+    lines.push(`- ${company}`);
+
+    const message = lines.join('\n');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Pending Collection', text: message });
+        return;
+      }
+    } catch (e) {
+      // fall through to WhatsApp
+    }
+
+    const phone = (agent.phone || '').replace(/\D/g, '');
+    const url = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+      : `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
 
 
 
