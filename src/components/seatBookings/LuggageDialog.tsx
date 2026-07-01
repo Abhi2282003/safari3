@@ -57,6 +57,7 @@ export function LuggageDialog({
     itemName: '',
     partyName: '',
     quantity: '1',
+    rate: '',
   });
 
   useEffect(() => {
