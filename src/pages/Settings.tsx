@@ -948,15 +948,19 @@ export default function Settings() {
         <div className="space-y-8">
           {/* Company Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                Company Details
-              </CardTitle>
-              <CardDescription>
-                These details will appear on printed tickets
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('company')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Company Details
+                  </CardTitle>
+                  <CardDescription>These details will appear on printed tickets</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['company'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['company'] && (
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="companyName">Company Name</Label>
