@@ -92,8 +92,8 @@ export default function AgentCollections() {
   const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
-  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string; whatsappTemplate: string }>({
-    name: '', phone: '', address: '', whatsappTemplate: ''
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
+    name: '', phone: '', address: ''
   });
 
   // Fetch company info for voucher header
@@ -102,7 +102,7 @@ export default function AgentCollections() {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('name, phone, address, whatsapp_template')
+        .select('name, phone, address')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
@@ -110,7 +110,6 @@ export default function AgentCollections() {
           name: data.name || 'ROYAL TRAVELS',
           phone: data.phone || '',
           address: data.address || '',
-          whatsappTemplate: (data as any).whatsapp_template || '',
         });
       }
     };
@@ -521,57 +520,42 @@ export default function AgentCollections() {
     doc.save(`Voucher_${safeName}_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
 
-  // Share pending amount via WhatsApp with templated message + PDF download
+  // Share pending amount via WhatsApp / Web Share
   const sharePendingMessage = async (agent: AgentWithCollections) => {
     const pendingBookings = agent.bookings.filter(b => b.agentCollectionStatus === 'pending');
     const netPending = Math.max(0, agent.totalPending - agent.advanceBalance);
     const company = companyInfo?.name || 'Royal Safari';
 
-    const DEFAULT_TEMPLATE = [
-      'Namaste {agent_name},',
-      '',
-      'Aapke naam par pending collection ka vivran:',
-      '',
-      'Total Seats: {seats}',
-      'Pending Amount: Rs. {pending}',
-      'Less Advance: Rs. {advance}',
-      'Net Payable: Rs. {net_payable}',
-      '',
-      'Voucher PDF attached. Kripya jald settlement kare. Dhanyawad.',
-      '- {company}',
-    ].join('\n');
+    const lines: string[] = [];
+    lines.push(`Namaste ${agent.name},`);
+    lines.push('');
+    lines.push(`Aapke naam par pending collection ka vivran:`);
+    lines.push('');
+    lines.push(`Total Seats: ${pendingBookings.length}`);
+    lines.push(`Pending Amount: Rs. ${agent.totalPending.toFixed(2)}`);
+    if (agent.advanceBalance > 0) {
+      lines.push(`Less Advance: Rs. ${agent.advanceBalance.toFixed(2)}`);
+      lines.push(`Net Payable: Rs. ${netPending.toFixed(2)}`);
+    }
+    lines.push('');
+    lines.push('Kripya jald settlement kare. Dhanyawad.');
+    lines.push(`- ${company}`);
 
-    const template = (companyInfo.whatsappTemplate || '').trim() || DEFAULT_TEMPLATE;
-    const message = template
-      .replace(/\{agent_name\}/g, agent.name)
-      .replace(/\{seats\}/g, String(pendingBookings.length))
-      .replace(/\{pending\}/g, agent.totalPending.toFixed(2))
-      .replace(/\{advance\}/g, agent.advanceBalance.toFixed(2))
-      .replace(/\{net_payable\}/g, netPending.toFixed(2))
-      .replace(/\{company\}/g, company)
-      .replace(/\{date\}/g, format(new Date(), 'dd MMM yyyy'));
+    const message = lines.join('\n');
 
-    // Auto-download the voucher PDF so user can attach it in WhatsApp
     try {
-      await generateVoucherPdf(agent);
-      toast.success('Voucher PDF downloaded. Attach it in WhatsApp.');
+      if (navigator.share) {
+        await navigator.share({ title: 'Pending Collection', text: message });
+        return;
+      }
     } catch (e) {
-      console.error('PDF generation failed', e);
+      // fall through to WhatsApp
     }
 
-    // Open WhatsApp chat to the agent's saved phone (always wa.me so you can
-    // pick the WhatsApp account on your phone e.g. 8390112000)
     const phone = (agent.phone || '').replace(/\D/g, '');
-    const normalizedPhone = phone
-      ? (phone.length === 10 ? `91${phone}` : phone)
-      : '';
-    const url = normalizedPhone
-      ? `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`
+    const url = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
       : `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-    if (!normalizedPhone) {
-      toast.warning('No phone saved for this agent. Add it in Settings → Agents.');
-    }
     window.open(url, '_blank');
   };
 
