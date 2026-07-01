@@ -1142,15 +1142,19 @@ export default function Settings() {
 
           {/* Travels Management */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bus className="h-5 w-5" />
-                Travels & Commission
-              </CardTitle>
-              <CardDescription>
-                Add travels with their commission percentage for collection calculation
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('travels')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bus className="h-5 w-5" />
+                    Travels & Commission
+                  </CardTitle>
+                  <CardDescription>Add travels with their commission percentage for collection calculation</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['travels'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['travels'] && (
             <CardContent>
               {/* Add New Travels */}
               <div className="flex gap-2 mb-6">
@@ -1219,19 +1223,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Pickup Locations */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Pickup Locations
-              </CardTitle>
-              <CardDescription>
-                Add pickup locations to select in the ticket form
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('pickups')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Pickup Locations
+                  </CardTitle>
+                  <CardDescription>Add pickup locations to select in the ticket form</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['pickups'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['pickups'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1289,19 +1298,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Destination Cities */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Navigation className="h-5 w-5" />
-                Destination Cities
-              </CardTitle>
-              <CardDescription>
-                Add destination cities for seat bookings
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('destinations')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Navigation className="h-5 w-5" />
+                    Destination Cities
+                  </CardTitle>
+                  <CardDescription>Add destination cities for seat bookings</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['destinations'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['destinations'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1359,19 +1373,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Buses */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Car className="h-5 w-5" />
-                Buses
-              </CardTitle>
-              <CardDescription>
-                Add bus numbers for seat bookings
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('buses')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Car className="h-5 w-5" />
+                    Buses
+                  </CardTitle>
+                  <CardDescription>Add bus numbers for seat bookings</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['buses'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['buses'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1429,16 +1448,21 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Receiver Names */}
           <Card>
-            <CardHeader>
-              <CardTitle>Receiver Names</CardTitle>
-              <CardDescription>
-                Manage the list of people who can receive payments
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('receivers')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Receiver Names</CardTitle>
+                  <CardDescription>Manage the list of people who can receive payments</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['receivers'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['receivers'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1496,6 +1520,7 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           <StaffManagement />
