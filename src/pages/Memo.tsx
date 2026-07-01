@@ -162,7 +162,7 @@ export default function Memo() {
     }
   };
 
-  const generateMemoPdf = async (action: 'save' | 'preview' | 'share' = 'save') => {
+  const generateMemoPdf = async (action: 'save' | 'share' = 'save') => {
     if (!busBookings.length && !busLuggage.length) {
       toast.error('Nothing to generate memo for');
       return;
