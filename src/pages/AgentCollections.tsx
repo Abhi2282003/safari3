@@ -524,7 +524,7 @@ export default function AgentCollections() {
   const sharePendingMessage = async (agent: AgentWithCollections) => {
     const pendingBookings = agent.bookings.filter(b => b.agentCollectionStatus === 'pending');
     const netPending = Math.max(0, agent.totalPending - agent.advanceBalance);
-    const company = companyInfo?.company_name || 'Royal Safari';
+    const company = companyInfo?.name || 'Royal Safari';
 
     const lines: string[] = [];
     lines.push(`Namaste ${agent.name},`);
