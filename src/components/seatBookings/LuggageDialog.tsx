@@ -76,7 +76,7 @@ export function LuggageDialog({
         itemName: editingLuggage.itemName || '',
         partyName: editingLuggage.partyName || '',
         quantity: editingLuggage.quantity?.toString() || '1',
-        rate: editingLuggage.rate ? String(editingLuggage.rate) : '',
+        rate: editingLuggage.quantity && editingLuggage.totalAmount ? String(editingLuggage.totalAmount / editingLuggage.quantity) : '',
       });
     } else {
       setSelectedPartyId('');
