@@ -889,7 +889,7 @@ export default function Memo() {
                       <FileText className="h-4 w-4" />
                       Bus Memo PDF
                     </Button>
-                    <Button variant="outline" className="w-full gap-2" onClick={() => handleGenerateMemo('bus', 'preview')}>
+                    <Button variant="outline" className="w-full gap-2" onClick={openBusPreview}>
                       <Eye className="h-4 w-4" />
                       Preview
                     </Button>
