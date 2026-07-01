@@ -960,6 +960,27 @@ export default function Settings() {
                 />
               </div>
 
+              <div className="grid gap-2 pt-2 border-t">
+                <Label htmlFor="whatsappTemplate" className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp Pending Reminder Template
+                </Label>
+                <Textarea
+                  id="whatsappTemplate"
+                  value={companySettings.whatsappTemplate}
+                  onChange={(e) => setCompanySettings(prev => ({ ...prev, whatsappTemplate: e.target.value }))}
+                  placeholder={`Namaste {agent_name},\n\nTotal Seats: {seats}\nPending: Rs. {pending}\nLess Advance: Rs. {advance}\nNet Payable: Rs. {net_payable}\n\n- {company}`}
+                  rows={8}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Placeholders: <code>{'{agent_name}'}</code>, <code>{'{seats}'}</code>, <code>{'{pending}'}</code>, <code>{'{advance}'}</code>, <code>{'{net_payable}'}</code>, <code>{'{company}'}</code>, <code>{'{date}'}</code>. Leave empty to use the default message.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Note: WhatsApp links can't auto-attach files. When you tap Share on an agent, the voucher PDF downloads automatically and WhatsApp opens with this message pre-filled — just tap the attach icon to add the PDF. Set each agent's phone number in the Agents section below so it opens the correct chat.
+                </p>
+              </div>
+
               <div className="pt-4">
                 <Button onClick={handleSaveCompany} disabled={isSaving} className="gap-2">
                   <Save className="h-4 w-4" />
