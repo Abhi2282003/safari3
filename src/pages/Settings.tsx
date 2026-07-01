@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Car, MessageCircle, Download } from 'lucide-react';
+import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Car, MessageCircle, Download, ChevronDown, Pencil, X, Check } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +80,45 @@ export default function Settings() {
   const [deleteAgentId, setDeleteAgentId] = useState<string | null>(null);
   const [showClearAgentsDialog, setShowClearAgentsDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Collapsible sections — closed by default; only open on click
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // Inline editing state
+  const [editing, setEditing] = useState<{ table: string; id: string } | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, any>>({});
+
+  const beginEdit = (table: string, id: string, values: Record<string, any>) => {
+    setEditing({ table, id });
+    setEditValues(values);
+  };
+  const cancelEdit = () => { setEditing(null); setEditValues({}); };
+
+  const saveEdit = async (
+    table: 'agents' | 'travels' | 'receivers' | 'pickup_locations' | 'destination_cities' | 'buses',
+    id: string,
+    payload: Record<string, any>
+  ) => {
+    if (!user) return;
+    try {
+      const { error } = await (supabase.from(table) as any).update(payload).eq('id', id).eq('user_id', user.id);
+      if (error) throw error;
+
+      if (table === 'agents') setAgents(agents.map(a => a.id === id ? { ...a, ...{ name: payload.name, phone: payload.phone || undefined } } : a));
+      if (table === 'travels') setTravels(travels.map(t => t.id === id ? { ...t, name: payload.name, commissionPercent: Number(payload.commission_percent) } : t));
+      if (table === 'receivers') setReceivers(receivers.map(r => r.id === id ? { ...r, name: payload.name } : r));
+      if (table === 'pickup_locations') setPickups(pickups.map(p => p.id === id ? { ...p, name: payload.name } : p));
+      if (table === 'destination_cities') setDestinations(destinations.map(d => d.id === id ? { ...d, name: payload.name } : d));
+      if (table === 'buses') setBuses(buses.map(b => b.id === id ? { ...b, name: payload.name } : b));
+
+      toast.success('Updated');
+      cancelEdit();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update');
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -909,15 +948,19 @@ export default function Settings() {
         <div className="space-y-8">
           {/* Company Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                Company Details
-              </CardTitle>
-              <CardDescription>
-                These details will appear on printed tickets
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('company')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Company Details
+                  </CardTitle>
+                  <CardDescription>These details will appear on printed tickets</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['company'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['company'] && (
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="companyName">Company Name</Label>
@@ -967,6 +1010,7 @@ export default function Settings() {
                 </Button>
               </div>
             </CardContent>
+            )}
           </Card>
 
 
@@ -975,7 +1019,7 @@ export default function Settings() {
 
           {/* Agents Management */}
           <Card>
-            <CardHeader>
+            <CardHeader onClick={() => toggleSection('agents')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
                   <CardTitle className="flex items-center gap-2">
@@ -986,18 +1030,22 @@ export default function Settings() {
                     Add agents manually with name and phone number
                   </CardDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadAgentsPdf}
-                  disabled={agents.length === 0}
-                  className="gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Download Contacts PDF
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleDownloadAgentsPdf(); }}
+                    disabled={agents.length === 0}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    PDF
+                  </Button>
+                  <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['agents'] ? 'rotate-180' : ''}`} />
+                </div>
               </div>
             </CardHeader>
+            {openSections['agents'] && (
             <CardContent>
               {/* Add New Agent */}
               <div className="flex gap-2 mb-4">
@@ -1045,10 +1093,20 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {agents.slice(0, 50).map((agent) => (
+                      {agents.slice(0, 50).map((agent) => {
+                        const isEd = editing?.table === 'agents' && editing.id === agent.id;
+                        return (
                         <TableRow key={agent.id}>
-                          <TableCell className="font-medium">{agent.name}</TableCell>
-                          <TableCell>{agent.phone || '-'}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : agent.name}
+                          </TableCell>
+                          <TableCell>
+                            {isEd ? (
+                              <Input value={editValues.phone || ''} onChange={(e) => setEditValues({ ...editValues, phone: e.target.value })} className="h-8" placeholder="Phone" />
+                            ) : (agent.phone || '-')}
+                          </TableCell>
                           <TableCell className="text-center">
                             <Switch
                               checked={agent.active}
@@ -1057,24 +1115,28 @@ export default function Settings() {
                                   .from('agents')
                                   .update({ active: !agent.active })
                                   .eq('id', agent.id);
-                                setAgents(agents.map(a => 
+                                setAgents(agents.map(a =>
                                   a.id === agent.id ? { ...a, active: !a.active } : a
                                 ));
                               }}
                             />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteAgentId(agent.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('agents', agent.id, { name: editValues.name, phone: editValues.phone || null })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('agents', agent.id, { name: agent.name, phone: agent.phone || '' })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteAgentId(agent.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   {agentsTotalCount > 50 && (
@@ -1089,19 +1151,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Travels Management */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bus className="h-5 w-5" />
-                Travels & Commission
-              </CardTitle>
-              <CardDescription>
-                Add travels with their commission percentage for collection calculation
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('travels')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bus className="h-5 w-5" />
+                    Travels & Commission
+                  </CardTitle>
+                  <CardDescription>Add travels with their commission percentage for collection calculation</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['travels'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['travels'] && (
             <CardContent>
               {/* Add New Travels */}
               <div className="flex gap-2 mb-6">
@@ -1139,28 +1206,39 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {travels.map((travel) => (
+                      {travels.map((travel) => {
+                        const isEd = editing?.table === 'travels' && editing.id === travel.id;
+                        return (
                         <TableRow key={travel.id}>
-                          <TableCell className="font-medium">{travel.name}</TableCell>
-                          <TableCell className="text-center">{travel.commissionPercent}%</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : travel.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={travel.active}
-                              onCheckedChange={() => handleToggleTravel(travel)}
-                            />
+                            {isEd ? (
+                              <Input type="number" value={editValues.commission_percent ?? ''} onChange={(e) => setEditValues({ ...editValues, commission_percent: e.target.value })} className="h-8 w-20 mx-auto" />
+                            ) : `${travel.commissionPercent}%`}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Switch checked={travel.active} onCheckedChange={() => handleToggleTravel(travel)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteTravelId(travel.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('travels', travel.id, { name: editValues.name, commission_percent: Number(editValues.commission_percent) || 0 })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('travels', travel.id, { name: travel.name, commission_percent: travel.commissionPercent })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteTravelId(travel.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1170,19 +1248,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Pickup Locations */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Pickup Locations
-              </CardTitle>
-              <CardDescription>
-                Add pickup locations to select in the ticket form
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('pickups')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Pickup Locations
+                  </CardTitle>
+                  <CardDescription>Add pickup locations to select in the ticket form</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['pickups'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['pickups'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1210,27 +1293,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pickups.map((pickup) => (
+                      {pickups.map((pickup) => {
+                        const isEd = editing?.table === 'pickup_locations' && editing.id === pickup.id;
+                        return (
                         <TableRow key={pickup.id}>
-                          <TableCell className="font-medium">{pickup.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : pickup.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={pickup.active}
-                              onCheckedChange={() => handleTogglePickup(pickup)}
-                            />
+                            <Switch checked={pickup.active} onCheckedChange={() => handleTogglePickup(pickup)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeletePickupId(pickup.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('pickup_locations', pickup.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('pickup_locations', pickup.id, { name: pickup.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeletePickupId(pickup.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1240,19 +1330,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Destination Cities */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Navigation className="h-5 w-5" />
-                Destination Cities
-              </CardTitle>
-              <CardDescription>
-                Add destination cities for seat bookings
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('destinations')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Navigation className="h-5 w-5" />
+                    Destination Cities
+                  </CardTitle>
+                  <CardDescription>Add destination cities for seat bookings</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['destinations'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['destinations'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1280,27 +1375,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {destinations.map((destination) => (
+                      {destinations.map((destination) => {
+                        const isEd = editing?.table === 'destination_cities' && editing.id === destination.id;
+                        return (
                         <TableRow key={destination.id}>
-                          <TableCell className="font-medium">{destination.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : destination.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={destination.active}
-                              onCheckedChange={() => handleToggleDestination(destination)}
-                            />
+                            <Switch checked={destination.active} onCheckedChange={() => handleToggleDestination(destination)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteDestinationId(destination.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('destination_cities', destination.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('destination_cities', destination.id, { name: destination.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteDestinationId(destination.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1310,19 +1412,24 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Buses */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Car className="h-5 w-5" />
-                Buses
-              </CardTitle>
-              <CardDescription>
-                Add bus numbers for seat bookings
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('buses')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Car className="h-5 w-5" />
+                    Buses
+                  </CardTitle>
+                  <CardDescription>Add bus numbers for seat bookings</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['buses'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['buses'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1350,27 +1457,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {buses.map((bus) => (
+                      {buses.map((bus) => {
+                        const isEd = editing?.table === 'buses' && editing.id === bus.id;
+                        return (
                         <TableRow key={bus.id}>
-                          <TableCell className="font-medium">{bus.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : bus.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={bus.active}
-                              onCheckedChange={() => handleToggleBus(bus)}
-                            />
+                            <Switch checked={bus.active} onCheckedChange={() => handleToggleBus(bus)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteBusId(bus.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('buses', bus.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('buses', bus.id, { name: bus.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteBusId(bus.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1380,16 +1494,21 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           {/* Receiver Names */}
           <Card>
-            <CardHeader>
-              <CardTitle>Receiver Names</CardTitle>
-              <CardDescription>
-                Manage the list of people who can receive payments
-              </CardDescription>
+            <CardHeader onClick={() => toggleSection('receivers')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Receiver Names</CardTitle>
+                  <CardDescription>Manage the list of people who can receive payments</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['receivers'] ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
+            {openSections['receivers'] && (
             <CardContent>
               {/* Add New */}
               <div className="flex gap-2 mb-6">
@@ -1417,27 +1536,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {receivers.map((receiver) => (
+                      {receivers.map((receiver) => {
+                        const isEd = editing?.table === 'receivers' && editing.id === receiver.id;
+                        return (
                         <TableRow key={receiver.id}>
-                          <TableCell className="font-medium">{receiver.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : receiver.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={receiver.active}
-                              onCheckedChange={() => handleToggleReceiver(receiver)}
-                            />
+                            <Switch checked={receiver.active} onCheckedChange={() => handleToggleReceiver(receiver)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteId(receiver.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('receivers', receiver.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('receivers', receiver.id, { name: receiver.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteId(receiver.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1447,6 +1573,7 @@ export default function Settings() {
                 </p>
               )}
             </CardContent>
+            )}
           </Card>
 
           <StaffManagement />
