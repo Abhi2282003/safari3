@@ -92,8 +92,8 @@ export default function AgentCollections() {
   const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
-  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
-    name: '', phone: '', address: ''
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string; whatsappTemplate: string }>({
+    name: '', phone: '', address: '', whatsappTemplate: ''
   });
 
   // Fetch company info for voucher header
@@ -102,7 +102,7 @@ export default function AgentCollections() {
       if (!user) return;
       const { data } = await supabase
         .from('company_settings')
-        .select('name, phone, address')
+        .select('name, phone, address, whatsapp_template')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
@@ -110,6 +110,7 @@ export default function AgentCollections() {
           name: data.name || 'ROYAL TRAVELS',
           phone: data.phone || '',
           address: data.address || '',
+          whatsappTemplate: (data as any).whatsapp_template || '',
         });
       }
     };
