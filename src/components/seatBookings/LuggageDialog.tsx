@@ -99,7 +99,7 @@ export function LuggageDialog({
   const handlePartyChange = (val: string) => {
     setSelectedPartyId(val);
     if (val === OTHER) {
-      setFormData({ destination: '', itemName: '', partyName: '', quantity: formData.quantity });
+      setFormData({ destination: '', itemName: '', partyName: '', quantity: formData.quantity, rate: '' });
     } else {
       const p = parties.find((x) => x.id === val);
       if (p) {
@@ -108,6 +108,7 @@ export function LuggageDialog({
           itemName: p.itemName,
           partyName: p.partyName,
           quantity: formData.quantity,
+          rate: '',
         });
       }
     }
