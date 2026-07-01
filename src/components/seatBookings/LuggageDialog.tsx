@@ -76,6 +76,7 @@ export function LuggageDialog({
         itemName: editingLuggage.itemName || '',
         partyName: editingLuggage.partyName || '',
         quantity: editingLuggage.quantity?.toString() || '1',
+        rate: editingLuggage.rate ? String(editingLuggage.rate) : '',
       });
     } else {
       setSelectedPartyId('');
@@ -84,6 +85,7 @@ export function LuggageDialog({
         itemName: '',
         partyName: '',
         quantity: '1',
+        rate: '',
       });
     }
   }, [open, editingLuggage, parties]);
