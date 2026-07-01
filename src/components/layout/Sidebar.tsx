@@ -24,8 +24,6 @@ const adminItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
   { href: '/memo', label: 'Memo', icon: Receipt },
-  { href: '/pay-collection', label: 'Pay Collection', icon: Wallet },
-  { href: '/hisab', label: 'Daily Hisab', icon: ClipboardList },
   { href: '/agent-collections', label: 'Agent Collections', icon: Users },
   { href: '/admin', label: 'Admin', icon: TrendingUp },
   { href: '/settings', label: 'Settings', icon: Settings },
