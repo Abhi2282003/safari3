@@ -654,13 +654,13 @@ export default function Memo() {
   };
 
 
-  const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus', action: 'save' | 'preview' | 'share' = 'save') => {
+  const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus', action: 'save' | 'share' = 'save') => {
     if (target === 'bus' && !busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
     try {
-      if (target === 'luggage') await generateLuggageMemoPdf();
+      if (target === 'luggage') await generateLuggageMemoPdf(action);
       else await generateMemoPdf(action);
       if (action === 'save') toast.success('Memo generated');
     } catch (e: any) {
