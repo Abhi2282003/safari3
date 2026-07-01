@@ -117,16 +117,22 @@ export function LuggageDialog({
   const handleSave = async () => {
     if (!formData.partyName.trim()) return;
     if (!formData.destination) return;
-    if (!formData.itemName) return;
+    if (!formData.itemName.trim()) return;
     const qty = parseInt(formData.quantity) || 1;
     if (qty <= 0) return;
     const preset = !isOther && selectedPartyId ? parties.find((p) => p.id === selectedPartyId) : undefined;
+    let rate: number | undefined = preset?.rate;
+    if (isOther) {
+      const r = parseFloat(formData.rate);
+      if (isNaN(r) || r < 0) return;
+      rate = r;
+    }
     await onSave({
       destination: formData.destination,
-      itemName: formData.itemName,
+      itemName: formData.itemName.trim(),
       partyName: formData.partyName.trim(),
       quantity: qty,
-      rate: preset?.rate,
+      rate,
     });
   };
 
