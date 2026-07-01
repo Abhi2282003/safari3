@@ -1093,10 +1093,20 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {agents.slice(0, 50).map((agent) => (
+                      {agents.slice(0, 50).map((agent) => {
+                        const isEd = editing?.table === 'agents' && editing.id === agent.id;
+                        return (
                         <TableRow key={agent.id}>
-                          <TableCell className="font-medium">{agent.name}</TableCell>
-                          <TableCell>{agent.phone || '-'}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : agent.name}
+                          </TableCell>
+                          <TableCell>
+                            {isEd ? (
+                              <Input value={editValues.phone || ''} onChange={(e) => setEditValues({ ...editValues, phone: e.target.value })} className="h-8" placeholder="Phone" />
+                            ) : (agent.phone || '-')}
+                          </TableCell>
                           <TableCell className="text-center">
                             <Switch
                               checked={agent.active}
@@ -1105,24 +1115,28 @@ export default function Settings() {
                                   .from('agents')
                                   .update({ active: !agent.active })
                                   .eq('id', agent.id);
-                                setAgents(agents.map(a => 
+                                setAgents(agents.map(a =>
                                   a.id === agent.id ? { ...a, active: !a.active } : a
                                 ));
                               }}
                             />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteAgentId(agent.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('agents', agent.id, { name: editValues.name, phone: editValues.phone || null })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('agents', agent.id, { name: agent.name, phone: agent.phone || '' })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteAgentId(agent.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   {agentsTotalCount > 50 && (
@@ -1192,28 +1206,39 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {travels.map((travel) => (
+                      {travels.map((travel) => {
+                        const isEd = editing?.table === 'travels' && editing.id === travel.id;
+                        return (
                         <TableRow key={travel.id}>
-                          <TableCell className="font-medium">{travel.name}</TableCell>
-                          <TableCell className="text-center">{travel.commissionPercent}%</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : travel.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={travel.active}
-                              onCheckedChange={() => handleToggleTravel(travel)}
-                            />
+                            {isEd ? (
+                              <Input type="number" value={editValues.commission_percent ?? ''} onChange={(e) => setEditValues({ ...editValues, commission_percent: e.target.value })} className="h-8 w-20 mx-auto" />
+                            ) : `${travel.commissionPercent}%`}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Switch checked={travel.active} onCheckedChange={() => handleToggleTravel(travel)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteTravelId(travel.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('travels', travel.id, { name: editValues.name, commission_percent: Number(editValues.commission_percent) || 0 })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('travels', travel.id, { name: travel.name, commission_percent: travel.commissionPercent })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteTravelId(travel.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1268,27 +1293,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pickups.map((pickup) => (
+                      {pickups.map((pickup) => {
+                        const isEd = editing?.table === 'pickup_locations' && editing.id === pickup.id;
+                        return (
                         <TableRow key={pickup.id}>
-                          <TableCell className="font-medium">{pickup.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : pickup.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={pickup.active}
-                              onCheckedChange={() => handleTogglePickup(pickup)}
-                            />
+                            <Switch checked={pickup.active} onCheckedChange={() => handleTogglePickup(pickup)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeletePickupId(pickup.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('pickup_locations', pickup.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('pickup_locations', pickup.id, { name: pickup.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeletePickupId(pickup.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1343,27 +1375,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {destinations.map((destination) => (
+                      {destinations.map((destination) => {
+                        const isEd = editing?.table === 'destination_cities' && editing.id === destination.id;
+                        return (
                         <TableRow key={destination.id}>
-                          <TableCell className="font-medium">{destination.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : destination.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={destination.active}
-                              onCheckedChange={() => handleToggleDestination(destination)}
-                            />
+                            <Switch checked={destination.active} onCheckedChange={() => handleToggleDestination(destination)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteDestinationId(destination.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('destination_cities', destination.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('destination_cities', destination.id, { name: destination.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteDestinationId(destination.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1418,27 +1457,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {buses.map((bus) => (
+                      {buses.map((bus) => {
+                        const isEd = editing?.table === 'buses' && editing.id === bus.id;
+                        return (
                         <TableRow key={bus.id}>
-                          <TableCell className="font-medium">{bus.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : bus.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={bus.active}
-                              onCheckedChange={() => handleToggleBus(bus)}
-                            />
+                            <Switch checked={bus.active} onCheckedChange={() => handleToggleBus(bus)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteBusId(bus.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('buses', bus.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('buses', bus.id, { name: bus.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteBusId(bus.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1490,27 +1536,34 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {receivers.map((receiver) => (
+                      {receivers.map((receiver) => {
+                        const isEd = editing?.table === 'receivers' && editing.id === receiver.id;
+                        return (
                         <TableRow key={receiver.id}>
-                          <TableCell className="font-medium">{receiver.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {isEd ? (
+                              <Input value={editValues.name || ''} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="h-8" />
+                            ) : receiver.name}
+                          </TableCell>
                           <TableCell className="text-center">
-                            <Switch
-                              checked={receiver.active}
-                              onCheckedChange={() => handleToggleReceiver(receiver)}
-                            />
+                            <Switch checked={receiver.active} onCheckedChange={() => handleToggleReceiver(receiver)} />
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteId(receiver.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isEd ? (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => saveEdit('receivers', receiver.id, { name: editValues.name })}><Check className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => beginEdit('receivers', receiver.id, { name: receiver.name })}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteId(receiver.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
