@@ -57,6 +57,7 @@ export function LuggageDialog({
     itemName: '',
     partyName: '',
     quantity: '1',
+    rate: '',
   });
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export function LuggageDialog({
         itemName: editingLuggage.itemName || '',
         partyName: editingLuggage.partyName || '',
         quantity: editingLuggage.quantity?.toString() || '1',
+        rate: editingLuggage.quantity && editingLuggage.totalAmount ? String(editingLuggage.totalAmount / editingLuggage.quantity) : '',
       });
     } else {
       setSelectedPartyId('');
@@ -83,6 +85,7 @@ export function LuggageDialog({
         itemName: '',
         partyName: '',
         quantity: '1',
+        rate: '',
       });
     }
   }, [open, editingLuggage, parties]);
@@ -96,7 +99,7 @@ export function LuggageDialog({
   const handlePartyChange = (val: string) => {
     setSelectedPartyId(val);
     if (val === OTHER) {
-      setFormData({ destination: '', itemName: '', partyName: '', quantity: formData.quantity });
+      setFormData({ destination: '', itemName: '', partyName: '', quantity: formData.quantity, rate: '' });
     } else {
       const p = parties.find((x) => x.id === val);
       if (p) {
@@ -105,6 +108,7 @@ export function LuggageDialog({
           itemName: p.itemName,
           partyName: p.partyName,
           quantity: formData.quantity,
+          rate: '',
         });
       }
     }
@@ -113,16 +117,22 @@ export function LuggageDialog({
   const handleSave = async () => {
     if (!formData.partyName.trim()) return;
     if (!formData.destination) return;
-    if (!formData.itemName) return;
+    if (!formData.itemName.trim()) return;
     const qty = parseInt(formData.quantity) || 1;
     if (qty <= 0) return;
     const preset = !isOther && selectedPartyId ? parties.find((p) => p.id === selectedPartyId) : undefined;
+    let rate: number | undefined = preset?.rate;
+    if (isOther) {
+      const r = parseFloat(formData.rate);
+      if (isNaN(r) || r < 0) return;
+      rate = r;
+    }
     await onSave({
       destination: formData.destination,
-      itemName: formData.itemName,
+      itemName: formData.itemName.trim(),
       partyName: formData.partyName.trim(),
       quantity: qty,
-      rate: preset?.rate,
+      rate,
     });
   };
 
@@ -191,30 +201,23 @@ export function LuggageDialog({
 
               <div className="grid gap-2">
                 <Label>Item</Label>
-                <Select
+                <Input
                   value={formData.itemName}
-                  onValueChange={(v) => setFormData({ ...formData, itemName: v })}
-                  disabled={!formData.destination || availableItems.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        !formData.destination
-                          ? 'Select destination first'
-                          : availableItems.length === 0
-                          ? 'No items configured for this destination'
-                          : 'Select item'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableItems.map((it) => (
-                      <SelectItem key={it.id} value={it.itemName}>
-                        {it.itemName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
+                  placeholder="Enter item name"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Amount (per unit)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.rate}
+                  onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                  placeholder="Enter rate per unit"
+                />
               </div>
             </>
           )}
