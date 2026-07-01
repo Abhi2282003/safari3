@@ -81,6 +81,45 @@ export default function Settings() {
   const [showClearAgentsDialog, setShowClearAgentsDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Collapsible sections — closed by default; only open on click
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // Inline editing state
+  const [editing, setEditing] = useState<{ table: string; id: string } | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, any>>({});
+
+  const beginEdit = (table: string, id: string, values: Record<string, any>) => {
+    setEditing({ table, id });
+    setEditValues(values);
+  };
+  const cancelEdit = () => { setEditing(null); setEditValues({}); };
+
+  const saveEdit = async (
+    table: 'agents' | 'travels' | 'receivers' | 'pickup_locations' | 'destination_cities' | 'buses',
+    id: string,
+    payload: Record<string, any>
+  ) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from(table).update(payload).eq('id', id).eq('user_id', user.id);
+      if (error) throw error;
+
+      if (table === 'agents') setAgents(agents.map(a => a.id === id ? { ...a, ...{ name: payload.name, phone: payload.phone || undefined } } : a));
+      if (table === 'travels') setTravels(travels.map(t => t.id === id ? { ...t, name: payload.name, commissionPercent: Number(payload.commission_percent) } : t));
+      if (table === 'receivers') setReceivers(receivers.map(r => r.id === id ? { ...r, name: payload.name } : r));
+      if (table === 'pickup_locations') setPickups(pickups.map(p => p.id === id ? { ...p, name: payload.name } : p));
+      if (table === 'destination_cities') setDestinations(destinations.map(d => d.id === id ? { ...d, name: payload.name } : d));
+      if (table === 'buses') setBuses(buses.map(b => b.id === id ? { ...b, name: payload.name } : b));
+
+      toast.success('Updated');
+      cancelEdit();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update');
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     fetchData();
