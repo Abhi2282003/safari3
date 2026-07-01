@@ -1019,7 +1019,7 @@ export default function Settings() {
 
           {/* Agents Management */}
           <Card>
-            <CardHeader>
+            <CardHeader onClick={() => toggleSection('agents')} className="cursor-pointer select-none hover:bg-muted/40 transition-colors">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
                   <CardTitle className="flex items-center gap-2">
@@ -1030,18 +1030,22 @@ export default function Settings() {
                     Add agents manually with name and phone number
                   </CardDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadAgentsPdf}
-                  disabled={agents.length === 0}
-                  className="gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Download Contacts PDF
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleDownloadAgentsPdf(); }}
+                    disabled={agents.length === 0}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    PDF
+                  </Button>
+                  <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openSections['agents'] ? 'rotate-180' : ''}`} />
+                </div>
               </div>
             </CardHeader>
+            {openSections['agents'] && (
             <CardContent>
               {/* Add New Agent */}
               <div className="flex gap-2 mb-4">
