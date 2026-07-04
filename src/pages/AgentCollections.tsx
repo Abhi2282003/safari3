@@ -822,10 +822,10 @@ export default function AgentCollections() {
 
   const handleMarkAllCollected = async (agent: AgentWithCollections) => {
     if (!user) return;
-    
-    const pendingBookingIds = agent.bookings
-      .filter(b => b.agentCollectionStatus === 'pending')
-      .map(b => b.id);
+
+    const pendingBookings = agent.bookings.filter(b => b.agentCollectionStatus === 'pending');
+    const pendingBookingIds = pendingBookings.map(b => b.id);
+    const totalPending = pendingBookings.reduce((s, b) => s + Number(b.amountFromAgent || 0), 0);
 
     if (pendingBookingIds.length === 0) return;
 
@@ -834,11 +834,30 @@ export default function AgentCollections() {
         .from('seat_bookings')
         .update({
           agent_collection_status: 'collected',
+          amount_from_agent: 0,
           collected_at: new Date().toISOString(),
         })
         .in('id', pendingBookingIds);
 
       if (error) throw error;
+
+      // Also record a payment so it shows up in the Received tab
+      if (totalPending > 0) {
+        const isVirtual = agent.id.startsWith('party:');
+        const partyKey = isVirtual ? agent.id.slice('party:'.length) : null;
+        const { error: paymentError } = await supabase
+          .from('agent_collection_payments')
+          .insert({
+            user_id: user.id,
+            agent_id: isVirtual ? null : agent.id,
+            party_key: partyKey,
+            amount_paid: totalPending,
+            received_by: 'Self',
+            payment_mode: 'Cash',
+            notes: `Bulk mark as received (${pendingBookingIds.length} seat${pendingBookingIds.length === 1 ? '' : 's'})`,
+          } as any);
+        if (paymentError) throw paymentError;
+      }
 
       toast.success(`All collections marked as received from ${agent.name}`);
       fetchSeatBookings();
