@@ -152,6 +152,7 @@ export default function SeatBookings() {
         destination: (existing as any).destination || '',
         passengerName: existing.passengerName || '',
         notes: existing.notes || '',
+        ticketNo: existing.ticketNo || '',
       });
       setSelectedSeat(seatNumber);
       setSelectedSeats([]);
