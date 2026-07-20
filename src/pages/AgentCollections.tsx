@@ -422,12 +422,15 @@ export default function AgentCollections() {
     const body: any[] = groups.map((g, idx) => {
       const first = g.seats[0];
       const seatList = g.seats.map(s => s.seatNumber).join(', ');
+      const ticketNos = Array.from(new Set(g.seats.map(s => s.ticketNo).filter(Boolean))) as string[];
+      const ticketNoDisplay = ticketNos.length ? ticketNos.join(', ') : '-';
       return [
         String(idx + 1),
         format(new Date(first.journeyDate), 'dd MMM yyyy'),
         first.busName || first.travelsName || '-',
         first.destination || '-',
         seatList,
+        ticketNoDisplay,
         g.actualFare.toFixed(2),
         `- ${g.commission.toFixed(2)}`,
         g.toCollect.toFixed(2),
