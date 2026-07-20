@@ -66,6 +66,7 @@ export default function SeatBookings() {
     destination: '',
     passengerName: '',
     notes: '',
+    ticketNo: '',
   });
   const [agentSearchQuery, setAgentSearchQuery] = useState('');
 
