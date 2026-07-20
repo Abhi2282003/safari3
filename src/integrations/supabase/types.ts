@@ -564,6 +564,7 @@ export type Database = {
           passenger_name: string | null
           seat_number: number
           ticket_id: string | null
+          ticket_no: string | null
           travels_name: string | null
           updated_at: string
           user_id: string
@@ -588,6 +589,7 @@ export type Database = {
           passenger_name?: string | null
           seat_number: number
           ticket_id?: string | null
+          ticket_no?: string | null
           travels_name?: string | null
           updated_at?: string
           user_id: string
@@ -612,6 +614,7 @@ export type Database = {
           passenger_name?: string | null
           seat_number?: number
           ticket_id?: string | null
+          ticket_no?: string | null
           travels_name?: string | null
           updated_at?: string
           user_id?: string

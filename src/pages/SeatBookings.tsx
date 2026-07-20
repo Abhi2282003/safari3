@@ -66,6 +66,7 @@ export default function SeatBookings() {
     destination: '',
     passengerName: '',
     notes: '',
+    ticketNo: '',
   });
   const [agentSearchQuery, setAgentSearchQuery] = useState('');
 
@@ -151,6 +152,7 @@ export default function SeatBookings() {
         destination: (existing as any).destination || '',
         passengerName: existing.passengerName || '',
         notes: existing.notes || '',
+        ticketNo: existing.ticketNo || '',
       });
       setSelectedSeat(seatNumber);
       setSelectedSeats([]);
@@ -180,6 +182,7 @@ export default function SeatBookings() {
       destination: destinations[0]?.name || '',
       passengerName: '',
       notes: '',
+      ticketNo: '',
     });
     setDialogOpen(true);
   };
@@ -222,6 +225,7 @@ export default function SeatBookings() {
           busName: busName.trim(),
           passengerName: formData.passengerName || undefined,
           notes: formData.notes || undefined,
+          ticketNo: formData.bookingType === 'agent' ? (formData.ticketNo || undefined) : undefined,
         });
       }
       
@@ -770,6 +774,18 @@ export default function SeatBookings() {
                   </Select>
                 </div>
               )}
+
+              {formData.bookingType === 'agent' && (
+                <div className="grid gap-2">
+                  <Label>Ticket No (optional)</Label>
+                  <Input
+                    value={formData.ticketNo}
+                    onChange={(e) => setFormData({ ...formData, ticketNo: e.target.value })}
+                    placeholder="e.g., ABC-1234"
+                  />
+                </div>
+              )}
+
 
               <div className="grid gap-2">
                 <Label>Booking Amount (₹)</Label>
