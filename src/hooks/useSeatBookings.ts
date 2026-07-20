@@ -288,6 +288,7 @@ export function useSeatBookings() {
     const dbBooking = {
       user_id: user.id,
       ticket_id: booking.ticketId || null,
+      ticket_no: booking.ticketNo || null,
       journey_date: booking.journeyDate,
       seat_number: booking.seatNumber,
       booking_type: booking.bookingType,
