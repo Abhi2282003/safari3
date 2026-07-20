@@ -213,6 +213,7 @@ export function useSeatBookings() {
     setSeatBookings((data || []).map((s: any) => ({
       id: s.id,
       ticketId: s.ticket_id || undefined,
+      ticketNo: s.ticket_no || undefined,
       journeyDate: s.journey_date,
       seatNumber: s.seat_number,
       bookingType: s.booking_type as BookingType,
