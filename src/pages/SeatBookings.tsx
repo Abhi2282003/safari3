@@ -225,6 +225,7 @@ export default function SeatBookings() {
           busName: busName.trim(),
           passengerName: formData.passengerName || undefined,
           notes: formData.notes || undefined,
+          ticketNo: formData.bookingType === 'agent' ? (formData.ticketNo || undefined) : undefined,
         });
       }
       
