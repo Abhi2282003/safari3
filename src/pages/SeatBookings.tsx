@@ -774,6 +774,18 @@ export default function SeatBookings() {
                 </div>
               )}
 
+              {formData.bookingType === 'agent' && (
+                <div className="grid gap-2">
+                  <Label>Ticket No (optional)</Label>
+                  <Input
+                    value={formData.ticketNo}
+                    onChange={(e) => setFormData({ ...formData, ticketNo: e.target.value })}
+                    placeholder="e.g., ABC-1234"
+                  />
+                </div>
+              )}
+
+
               <div className="grid gap-2">
                 <Label>Booking Amount (₹)</Label>
                 <Input
