@@ -182,6 +182,7 @@ export default function SeatBookings() {
       destination: destinations[0]?.name || '',
       passengerName: '',
       notes: '',
+      ticketNo: '',
     });
     setDialogOpen(true);
   };
