@@ -16,6 +16,7 @@ export interface Agent {
 export interface SeatBooking {
   id: string;
   ticketId?: string;
+  ticketNo?: string;
   journeyDate: string;
   seatNumber: number;
   bookingType: BookingType;
