@@ -69,7 +69,7 @@ interface AgentWithCollections {
 }
 
 type SortOption = 'pending-desc' | 'pending-asc' | 'name-asc' | 'name-desc' | 'collected-desc';
-type TabType = 'pending' | 'received';
+type TabType = 'pending' | 'received' | 'report';
 
 const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
@@ -91,6 +91,10 @@ export default function AgentCollections() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
+  const [reportAgentId, setReportAgentId] = useState<string>('');
+  const [reportFrom, setReportFrom] = useState<string>(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
+  const [reportTo, setReportTo] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [reportBusy, setReportBusy] = useState(false);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
   const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
     name: '', phone: '', address: ''
