@@ -1166,7 +1166,11 @@ export default function AgentCollections() {
 
         {/* Tabs for Pending/Received */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="report" className="gap-2 order-last">
+              <FileText className="h-4 w-4" />
+              Report
+            </TabsTrigger>
             <TabsTrigger value="pending" className="gap-2">
               <Clock className="h-4 w-4" />
               Pending
