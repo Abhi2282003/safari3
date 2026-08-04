@@ -1589,6 +1589,72 @@ export default function AgentCollections() {
               </Card>
             )}
           </TabsContent>
+
+          {/* Report Tab */}
+          <TabsContent value="report">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Booking & Collection Report</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Agent / Party</Label>
+                    <Select value={reportAgentId} onValueChange={setReportAgentId}>
+                      <SelectTrigger><SelectValue placeholder="Select agent" /></SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {agentCollections.map(a => (
+                          <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">From (Journey Date)</Label>
+                    <Input type="date" value={reportFrom} onChange={(e) => setReportFrom(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">To (Journey Date)</Label>
+                    <Input type="date" value={reportTo} onChange={(e) => setReportTo(e.target.value)} />
+                  </div>
+                </div>
+
+                {reportData && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Bookings</p>
+                      <p className="text-base font-bold">{reportData.groups.length}</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Seats</p>
+                      <p className="text-base font-bold">{reportData.totalSeats}</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Total Fare</p>
+                      <p className="text-base font-bold">₹{reportData.totalFare.toLocaleString('en-IN')}</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Collection Amount</p>
+                      <p className="text-base font-bold text-primary">₹{reportData.totalNet.toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  onClick={generateReportPdf}
+                  disabled={!reportData || reportData.bookings.length === 0 || reportBusy}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  {reportBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Generate Report PDF
+                </Button>
+
+                {reportAgentId && reportData && reportData.bookings.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No bookings in this duration.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Payment Dialog */}
