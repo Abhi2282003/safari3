@@ -40,7 +40,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown, Bus, Wallet, CreditCard, User, MessageCircle, Send, CalendarIcon } from 'lucide-react';
+import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown, Bus, Wallet, CreditCard, User, MessageCircle, Send, CalendarIcon, FileText } from 'lucide-react';
 import { useSeatBookings, useAgents, SeatBooking } from '@/hooks/useSeatBookings';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,7 +69,7 @@ interface AgentWithCollections {
 }
 
 type SortOption = 'pending-desc' | 'pending-asc' | 'name-asc' | 'name-desc' | 'collected-desc';
-type TabType = 'pending' | 'received';
+type TabType = 'pending' | 'received' | 'report';
 
 const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
@@ -91,6 +91,10 @@ export default function AgentCollections() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
+  const [reportAgentId, setReportAgentId] = useState<string>('');
+  const [reportFrom, setReportFrom] = useState<string>(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
+  const [reportTo, setReportTo] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [reportBusy, setReportBusy] = useState(false);
   const [seatPaymentDialogOpen, setSeatPaymentDialogOpen] = useState(false);
   const [companyInfo, setCompanyInfo] = useState<{ name: string; phone: string; address: string }>({
     name: '', phone: '', address: ''
@@ -563,7 +567,195 @@ export default function AgentCollections() {
     window.open(url, '_blank');
   };
 
+  // ===== Booking & Collection Report (agent + date range, all bookings) =====
+  const reportData = useMemo(() => {
+    const entry = agentCollections.find(a => a.id === reportAgentId);
+    if (!entry) return null;
+    const bookings = entry.bookings
+      .filter(b => b.journeyDate >= reportFrom && b.journeyDate <= reportTo)
+      .sort((a, b) => a.journeyDate.localeCompare(b.journeyDate) || a.seatNumber - b.seatNumber);
 
+    const groupsMap = new Map<string, SeatBooking[]>();
+    bookings.forEach(b => {
+      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.destination || ''}`;
+      if (!groupsMap.has(key)) groupsMap.set(key, []);
+      groupsMap.get(key)!.push(b);
+    });
+    const groups = Array.from(groupsMap.values()).map(seats => {
+      seats.sort((a, b) => a.seatNumber - b.seatNumber);
+      const actualFare = seats.reduce((s, b) => s + b.bookingAmount, 0);
+      const netAmount = seats.reduce((s, b) => s + (b.originalAmountFromAgent || b.amountFromAgent), 0);
+      return { seats, actualFare, commission: actualFare - netAmount, netAmount };
+    });
+
+    return {
+      agent: entry,
+      bookings,
+      groups,
+      totalSeats: bookings.length,
+      totalFare: groups.reduce((s, g) => s + g.actualFare, 0),
+      totalCommission: groups.reduce((s, g) => s + g.commission, 0),
+      totalNet: groups.reduce((s, g) => s + g.netAmount, 0),
+    };
+  }, [agentCollections, reportAgentId, reportFrom, reportTo]);
+
+  const generateReportPdf = async () => {
+    if (!reportData || reportData.bookings.length === 0) {
+      toast.error('No bookings found for the selected agent and duration');
+      return;
+    }
+    setReportBusy(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+
+      const { agent, groups, totalSeats, totalFare, totalCommission, totalNet } = reportData;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const brand: [number, number, number] = [234, 88, 12];
+      const brandDark: [number, number, number] = [124, 45, 18];
+      const ink: [number, number, number] = [30, 30, 30];
+
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.rect(0, 0, pageW, 6, 'F');
+
+      const logoData = await loadLogoDataUrl();
+      if (logoData) {
+        try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch (e) { /* ignore */ }
+      }
+
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text(companyInfo.name || 'ROYAL SAFARI', 44, 20);
+      doc.setTextColor(90);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (companyInfo.address) doc.text(companyInfo.address, 44, 26);
+      if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, 44, 31);
+
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.6);
+      doc.line(14, 40, pageW - 14, 40);
+
+      const title = 'BOOKING & COLLECTION REPORT';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      const titleW = doc.getTextWidth(title) + 12;
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+      doc.setTextColor(255);
+      doc.text(title, pageW / 2, 50.3, { align: 'center' });
+
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(
+        `Period: ${format(new Date(reportFrom), 'dd MMM yyyy')} to ${format(new Date(reportTo), 'dd MMM yyyy')}`,
+        14,
+        62
+      );
+      doc.text(`Date: ${format(new Date(), 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
+
+      const agentBoxY = 67;
+      doc.setFillColor(250, 245, 235);
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14, agentBoxY, pageW - 28, agent.phone ? 18 : 13, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.text('AGENT', 18, agentBoxY + 6);
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFontSize(11);
+      doc.text(agent.name, 18, agentBoxY + 12);
+      if (agent.phone) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.text(`Phone: ${agent.phone}`, 18, agentBoxY + 16.5);
+      }
+
+      const body = groups.map((g, idx) => {
+        const first = g.seats[0];
+        const ticketNos = Array.from(new Set(g.seats.map(s => s.ticketNo).filter(Boolean))) as string[];
+        return [
+          String(idx + 1),
+          format(new Date(first.journeyDate), 'dd MMM yyyy'),
+          first.busName || first.travelsName || '-',
+          first.destination || '-',
+          g.seats.map(s => s.seatNumber).join(', '),
+          ticketNos.length ? ticketNos.join(', ') : '-',
+          g.actualFare.toFixed(2),
+          `- ${g.commission.toFixed(2)}`,
+          g.netAmount.toFixed(2),
+        ];
+      });
+
+      autoTable(doc, {
+        startY: agentBoxY + (agent.phone ? 22 : 17),
+        head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Ticket No', 'Actual Fare', 'Commission', 'Net Amount']],
+        body,
+        foot: [[
+          { content: 'TOTAL', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
+          { content: totalFare.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: `- ${totalCommission.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: [180, 30, 30] } },
+          { content: totalNet.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
+        ]],
+        styles: { fontSize: 9, cellPadding: 2.5, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9 },
+        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+        alternateRowStyles: { fillColor: [252, 250, 247] },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 8 },
+          1: { halign: 'center' },
+          4: { halign: 'center', fontStyle: 'bold' },
+          5: { halign: 'center' },
+          6: { halign: 'right' },
+          7: { halign: 'right', textColor: [180, 30, 30] },
+          8: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14 },
+      });
+
+      let boxY = ((doc as any).lastAutoTable?.finalY || 90) + 10;
+      const pageH = doc.internal.pageSize.getHeight();
+      if (boxY + 30 > pageH - 20) {
+        doc.addPage();
+        boxY = 20;
+      }
+
+      doc.setFillColor(250, 245, 235);
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(pageW - 90, boxY, 76, 20, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.text('TOTAL COLLECTION AMOUNT', pageW - 88, boxY + 6);
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFontSize(15);
+      doc.text(`Rs. ${totalNet.toFixed(2)}`, pageW - 16, boxY + 14, { align: 'right' });
+
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(`Total Bookings: ${groups.length}`, 14, boxY + 7);
+      doc.text(`Total Seats: ${totalSeats}`, 14, boxY + 13);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(110);
+      doc.text('Note: Commission already deducted from net amount.', 14, boxY + 19);
+
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.rect(0, pageH - 6, pageW, 6, 'F');
+
+      const safeName = agent.name.replace(/[^a-z0-9]+/gi, '_');
+      doc.save(`Report_${safeName}_${reportFrom}_${reportTo}.pdf`);
+    } finally {
+      setReportBusy(false);
+    }
+  };
 
 
   const summary = useMemo(() => {
@@ -974,7 +1166,11 @@ export default function AgentCollections() {
 
         {/* Tabs for Pending/Received */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="report" className="gap-2 order-last">
+              <FileText className="h-4 w-4" />
+              Report
+            </TabsTrigger>
             <TabsTrigger value="pending" className="gap-2">
               <Clock className="h-4 w-4" />
               Pending
@@ -1396,6 +1592,72 @@ export default function AgentCollections() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Report Tab */}
+          <TabsContent value="report">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Booking & Collection Report</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Agent / Party</Label>
+                    <Select value={reportAgentId} onValueChange={setReportAgentId}>
+                      <SelectTrigger><SelectValue placeholder="Select agent" /></SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {agentCollections.map(a => (
+                          <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">From (Journey Date)</Label>
+                    <Input type="date" value={reportFrom} onChange={(e) => setReportFrom(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">To (Journey Date)</Label>
+                    <Input type="date" value={reportTo} onChange={(e) => setReportTo(e.target.value)} />
+                  </div>
+                </div>
+
+                {reportData && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Bookings</p>
+                      <p className="text-base font-bold">{reportData.groups.length}</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Seats</p>
+                      <p className="text-base font-bold">{reportData.totalSeats}</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Total Fare</p>
+                      <p className="text-base font-bold">₹{reportData.totalFare.toLocaleString('en-IN')}</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[11px] text-muted-foreground">Collection Amount</p>
+                      <p className="text-base font-bold text-primary">₹{reportData.totalNet.toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  onClick={generateReportPdf}
+                  disabled={!reportData || reportData.bookings.length === 0 || reportBusy}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  {reportBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Generate Report PDF
+                </Button>
+
+                {reportAgentId && reportData && reportData.bookings.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No bookings in this duration.</p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
