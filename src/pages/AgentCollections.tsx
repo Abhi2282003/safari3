@@ -567,7 +567,195 @@ export default function AgentCollections() {
     window.open(url, '_blank');
   };
 
+  // ===== Booking & Collection Report (agent + date range, all bookings) =====
+  const reportData = useMemo(() => {
+    const entry = agentCollections.find(a => a.id === reportAgentId);
+    if (!entry) return null;
+    const bookings = entry.bookings
+      .filter(b => b.journeyDate >= reportFrom && b.journeyDate <= reportTo)
+      .sort((a, b) => a.journeyDate.localeCompare(b.journeyDate) || a.seatNumber - b.seatNumber);
 
+    const groupsMap = new Map<string, SeatBooking[]>();
+    bookings.forEach(b => {
+      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.destination || ''}`;
+      if (!groupsMap.has(key)) groupsMap.set(key, []);
+      groupsMap.get(key)!.push(b);
+    });
+    const groups = Array.from(groupsMap.values()).map(seats => {
+      seats.sort((a, b) => a.seatNumber - b.seatNumber);
+      const actualFare = seats.reduce((s, b) => s + b.bookingAmount, 0);
+      const netAmount = seats.reduce((s, b) => s + (b.originalAmountFromAgent || b.amountFromAgent), 0);
+      return { seats, actualFare, commission: actualFare - netAmount, netAmount };
+    });
+
+    return {
+      agent: entry,
+      bookings,
+      groups,
+      totalSeats: bookings.length,
+      totalFare: groups.reduce((s, g) => s + g.actualFare, 0),
+      totalCommission: groups.reduce((s, g) => s + g.commission, 0),
+      totalNet: groups.reduce((s, g) => s + g.netAmount, 0),
+    };
+  }, [agentCollections, reportAgentId, reportFrom, reportTo]);
+
+  const generateReportPdf = async () => {
+    if (!reportData || reportData.bookings.length === 0) {
+      toast.error('No bookings found for the selected agent and duration');
+      return;
+    }
+    setReportBusy(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+
+      const { agent, groups, totalSeats, totalFare, totalCommission, totalNet } = reportData;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const brand: [number, number, number] = [234, 88, 12];
+      const brandDark: [number, number, number] = [124, 45, 18];
+      const ink: [number, number, number] = [30, 30, 30];
+
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.rect(0, 0, pageW, 6, 'F');
+
+      const logoData = await loadLogoDataUrl();
+      if (logoData) {
+        try { doc.addImage(logoData, 'PNG', 14, 10, 26, 26); } catch (e) { /* ignore */ }
+      }
+
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text(companyInfo.name || 'ROYAL SAFARI', 44, 20);
+      doc.setTextColor(90);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (companyInfo.address) doc.text(companyInfo.address, 44, 26);
+      if (companyInfo.phone) doc.text(`Phone: ${companyInfo.phone}`, 44, 31);
+
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.6);
+      doc.line(14, 40, pageW - 14, 40);
+
+      const title = 'BOOKING & COLLECTION REPORT';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      const titleW = doc.getTextWidth(title) + 12;
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.roundedRect((pageW - titleW) / 2, 44, titleW, 9, 2, 2, 'F');
+      doc.setTextColor(255);
+      doc.text(title, pageW / 2, 50.3, { align: 'center' });
+
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(
+        `Period: ${format(new Date(reportFrom), 'dd MMM yyyy')} to ${format(new Date(reportTo), 'dd MMM yyyy')}`,
+        14,
+        62
+      );
+      doc.text(`Date: ${format(new Date(), 'dd MMM yyyy')}`, pageW - 14, 62, { align: 'right' });
+
+      const agentBoxY = 67;
+      doc.setFillColor(250, 245, 235);
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14, agentBoxY, pageW - 28, agent.phone ? 18 : 13, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.text('AGENT', 18, agentBoxY + 6);
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFontSize(11);
+      doc.text(agent.name, 18, agentBoxY + 12);
+      if (agent.phone) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.text(`Phone: ${agent.phone}`, 18, agentBoxY + 16.5);
+      }
+
+      const body = groups.map((g, idx) => {
+        const first = g.seats[0];
+        const ticketNos = Array.from(new Set(g.seats.map(s => s.ticketNo).filter(Boolean))) as string[];
+        return [
+          String(idx + 1),
+          format(new Date(first.journeyDate), 'dd MMM yyyy'),
+          first.busName || first.travelsName || '-',
+          first.destination || '-',
+          g.seats.map(s => s.seatNumber).join(', '),
+          ticketNos.length ? ticketNos.join(', ') : '-',
+          g.actualFare.toFixed(2),
+          `- ${g.commission.toFixed(2)}`,
+          g.netAmount.toFixed(2),
+        ];
+      });
+
+      autoTable(doc, {
+        startY: agentBoxY + (agent.phone ? 22 : 17),
+        head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Ticket No', 'Actual Fare', 'Commission', 'Net Amount']],
+        body,
+        foot: [[
+          { content: 'TOTAL', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
+          { content: totalFare.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: `- ${totalCommission.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: [180, 30, 30] } },
+          { content: totalNet.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } },
+        ]],
+        styles: { fontSize: 9, cellPadding: 2.5, valign: 'middle', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: brandDark, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9 },
+        footStyles: { fillColor: [255, 237, 213], textColor: brandDark as any },
+        alternateRowStyles: { fillColor: [252, 250, 247] },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 8 },
+          1: { halign: 'center' },
+          4: { halign: 'center', fontStyle: 'bold' },
+          5: { halign: 'center' },
+          6: { halign: 'right' },
+          7: { halign: 'right', textColor: [180, 30, 30] },
+          8: { halign: 'right', fontStyle: 'bold', textColor: brandDark as any },
+        },
+        theme: 'grid',
+        margin: { left: 14, right: 14 },
+      });
+
+      let boxY = ((doc as any).lastAutoTable?.finalY || 90) + 10;
+      const pageH = doc.internal.pageSize.getHeight();
+      if (boxY + 30 > pageH - 20) {
+        doc.addPage();
+        boxY = 20;
+      }
+
+      doc.setFillColor(250, 245, 235);
+      doc.setDrawColor(brand[0], brand[1], brand[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(pageW - 90, boxY, 76, 20, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2]);
+      doc.text('TOTAL COLLECTION AMOUNT', pageW - 88, boxY + 6);
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFontSize(15);
+      doc.text(`Rs. ${totalNet.toFixed(2)}`, pageW - 16, boxY + 14, { align: 'right' });
+
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(`Total Bookings: ${groups.length}`, 14, boxY + 7);
+      doc.text(`Total Seats: ${totalSeats}`, 14, boxY + 13);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(110);
+      doc.text('Note: Commission already deducted from net amount.', 14, boxY + 19);
+
+      doc.setFillColor(brand[0], brand[1], brand[2]);
+      doc.rect(0, pageH - 6, pageW, 6, 'F');
+
+      const safeName = agent.name.replace(/[^a-z0-9]+/gi, '_');
+      doc.save(`Report_${safeName}_${reportFrom}_${reportTo}.pdf`);
+    } finally {
+      setReportBusy(false);
+    }
+  };
 
 
   const summary = useMemo(() => {
