@@ -1,25 +1,21 @@
 # Royal Safari improvement plan (uploaded document)
 
 Done
-- [x] Speed indexes, per-agent totals function, seat bookings load per date, multi-seat save refreshes once
-- [x] Tickets and luggage no longer capped at 1,000 rows
-- [x] Pages load on demand
-- [x] Sign-up removed; logins without a role see "Not authorised"
-- [x] Owner password moved to server (hashed, 5 tries -> 15 min lock, 10 min idle, Lock now)
-- [x] Owner area: Profit, Memo, Companies and buses, Seat layouts, Commissions
-- [x] Companies Jagirdar/Vedaa, buses linked, 4 missing buses added inactive
-- [x] Seat layouts (Jagirdar 36, Vedaa 34 from 4 Oct, Vedaa 36 before) + editor
-- [x] Booking types + default commission rules (match current code)
+- [x] Speed: indexes, per-date seat loading, one refresh per multi-seat save, pages load on demand, Settings loads together
+- [x] Tickets and luggage no longer capped at 1,000 rows; all agents shown in Settings with search
+- [x] Sign-up removed (page + backend); no-role logins see "Not authorised"; collection entries limited to staff/admin
+- [x] New staff get 6-digit PINs (old 4-digit PINs still work)
+- [x] Owner password on server; Owner area with Profit, Memo, Companies and buses, Seat layouts, Commissions
+- [x] Companies, buses, layouts, booking types, commission rules set up; old bookings linked to bus (new column only)
+- [x] Seat chart drawn from bus layout by date, with unplaced list
+- [x] New bookings and luggage use commission rules
+- [x] Agent payments saved in one safe step
 
 Open
-- [ ] Seat map on Seat Bookings drawn from layouts (berth labels, toilets, unplaced list)
-- [ ] New bookings use commission_rules instead of fixed rates
-- [ ] Fill bus_id on old bookings (preview count first)
-- [ ] Phase 5 booking flow, luggage tab per bus, staff booking via server functions, single payment function
-- [ ] Memo/Profit summed on server, read saved percentages
-- [ ] Agent collections using per-agent totals function; Dashboard summary query
-- [ ] Settings: parallel loads, all agents with search
-- [ ] 6-digit PIN for new staff, login lockout
+- [ ] Login lockout after 5 wrong PINs (needs server login check)
+- [ ] Phase 5: staff booking seats/luggage — waiting on user answer
+- [ ] Luggage tab per bus with no amounts; Profit/Memo totals summed on server
+- [ ] Dashboard summary query; Agent collections per-agent loading
 - [ ] Phase 6 full redesign
-- [ ] Decide on login kmahesh (no role, 2 tickets) and safari123 (no role) — waiting on user
-- [ ] Open questions in plan (MH30 CE 6759 vs 7659, staff seat booking) — waiting on user
+- [ ] Logins kmahesh / safari123 without role — waiting on user
+- [ ] MH30 CE 6759 vs 7659 — waiting on user

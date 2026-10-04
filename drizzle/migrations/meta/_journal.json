@@ -8,6 +8,20 @@
       "when": 1791106594372,
       "tag": "0000_royal_safari_improvement_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791107138372,
+      "tag": "0001_apply_agent_payment_function",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791107196740,
+      "tag": "0002_tighten_pay_collection_policies",
+      "breakpoints": true
     }
   ]
 }

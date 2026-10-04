@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { amountsFromRules, findBus } from '@/lib/commission';
 
 export type BookingType = 'online' | 'agent' | 'self' | 'return' | 'sonu' | 'royal';
 
@@ -255,7 +256,12 @@ export function useSeatBookings(options?: { journeyDate?: string }) {
   ) => {
     if (!user) return null;
 
-    const amounts = calculateBookingAmounts(booking.bookingType, booking.bookingAmount);
+    // New bookings follow admin commission rules; edits keep the built-in calculation.
+    const ruled = !booking.id
+      ? await amountsFromRules(booking.bookingType, booking.bookingAmount, { agentId: booking.agentId, busName: booking.busName })
+      : null;
+    const amounts = ruled || calculateBookingAmounts(booking.bookingType, booking.bookingAmount);
+    const busRow = ruled ? { id: ruled.busId } : await findBus(booking.busName);
 
     // Check if agent has advance balance for new agent bookings
     let finalAmountFromAgent = amounts.amountFromAgent;
@@ -310,6 +316,9 @@ export function useSeatBookings(options?: { journeyDate?: string }) {
       bus_name: booking.busName || null,
       passenger_name: booking.passengerName || null,
       notes: booking.notes || null,
+      ...(busRow?.id ? { bus_id: busRow.id } : {}),
+      ...(ruled ? { booking_type_id: ruled.bookingTypeId } : {}),
+      ...(!booking.id ? { created_by: user.id } : {}),
     };
 
     if (booking.id) {
