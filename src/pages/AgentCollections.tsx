@@ -831,45 +831,21 @@ export default function AgentCollections() {
 
     try {
       const isFullPayment = amount >= selectedBooking.amountFromAgent;
-      
-      if (isFullPayment) {
-        // Mark booking as collected
-        const { error } = await supabase
-          .from('seat_bookings')
-          .update({
-            agent_collection_status: 'collected',
-            collected_at: new Date().toISOString(),
-          })
-          .eq('id', selectedBooking.id);
-
-        if (error) throw error;
-      } else {
-        // Partial payment - reduce the pending amount
-        const newAmountFromAgent = selectedBooking.amountFromAgent - amount;
-        const { error } = await supabase
-          .from('seat_bookings')
-          .update({
-            amount_from_agent: newAmountFromAgent,
-          })
-          .eq('id', selectedBooking.id);
-
-        if (error) throw error;
-      }
-
-      // Record the payment
       const isVirtual = selectedAgent.id.startsWith('party:');
       const partyKey = isVirtual ? selectedAgent.id.slice('party:'.length) : null;
-      const { error: paymentError } = await supabase
-        .from('agent_collection_payments')
-        .insert({
-          user_id: user.id,
-          agent_id: isVirtual ? null : selectedAgent.id,
-          party_key: partyKey,
-          amount_paid: amount,
-          received_by: receivedBy.trim(),
-          payment_mode: paymentMode,
-          notes: paymentNotes.trim() || `Seat #${selectedBooking.seatNumber}`,
-        } as any);
+      // One server call: booking update + payment record together, or nothing
+      const { error: paymentError } = await (supabase as any).rpc('apply_agent_payment', {
+        _full_ids: isFullPayment ? [selectedBooking.id] : [],
+        _partials: isFullPayment ? [] : [{ id: selectedBooking.id, amount_from_agent: selectedBooking.amountFromAgent - amount }],
+        _zero_amount: false,
+        _agent_id: isVirtual ? null : selectedAgent.id,
+        _new_advance: null,
+        _party_key: partyKey,
+        _amount_paid: amount,
+        _received_by: receivedBy.trim(),
+        _payment_mode: paymentMode,
+        _notes: paymentNotes.trim() || `Seat #${selectedBooking.seatNumber}`,
+      });
 
       if (paymentError) throw paymentError;
 
@@ -945,55 +921,21 @@ export default function AgentCollections() {
         newAdvanceBalance = remainingAmount;
       }
 
-      // Update fully paid bookings
-      if (fullyPaidBookingIds.length > 0) {
-        const { error } = await supabase
-          .from('seat_bookings')
-          .update({
-            agent_collection_status: 'collected',
-            collected_at: new Date().toISOString(),
-          })
-          .in('id', fullyPaidBookingIds);
-
-        if (error) throw error;
-      }
-
-      // Update partial payment bookings
-      for (const update of partialPaymentUpdates) {
-        const { error } = await supabase
-          .from('seat_bookings')
-          .update({
-            amount_from_agent: update.newAmountFromAgent,
-          })
-          .eq('id', update.id);
-
-        if (error) throw error;
-      }
-
-      // Update agent's advance balance (skip for virtual parties)
       const isVirtual = selectedAgent.id.startsWith('party:');
       const partyKey = isVirtual ? selectedAgent.id.slice('party:'.length) : null;
-      if (!isVirtual) {
-        const { error: agentError } = await supabase
-          .from('agents')
-          .update({ advance_balance: newAdvanceBalance })
-          .eq('id', selectedAgent.id);
-
-        if (agentError) throw agentError;
-      }
-
-      // Record the payment
-      const { error: paymentError } = await supabase
-        .from('agent_collection_payments')
-        .insert({
-          user_id: user.id,
-          agent_id: isVirtual ? null : selectedAgent.id,
-          party_key: partyKey,
-          amount_paid: amount,
-          received_by: receivedBy.trim(),
-          payment_mode: paymentMode,
-          notes: paymentNotes.trim() || null,
-        } as any);
+      // One server call: bookings, advance balance and payment saved together, or nothing
+      const { error: paymentError } = await (supabase as any).rpc('apply_agent_payment', {
+        _full_ids: fullyPaidBookingIds,
+        _partials: partialPaymentUpdates.map((u) => ({ id: u.id, amount_from_agent: u.newAmountFromAgent })),
+        _zero_amount: false,
+        _agent_id: isVirtual ? null : selectedAgent.id,
+        _new_advance: isVirtual ? null : newAdvanceBalance,
+        _party_key: partyKey,
+        _amount_paid: amount,
+        _received_by: receivedBy.trim(),
+        _payment_mode: paymentMode,
+        _notes: paymentNotes.trim() || null,
+      });
 
       if (paymentError) throw paymentError;
 
@@ -1026,34 +968,21 @@ export default function AgentCollections() {
     if (pendingBookingIds.length === 0) return;
 
     try {
-      const { error } = await supabase
-        .from('seat_bookings')
-        .update({
-          agent_collection_status: 'collected',
-          amount_from_agent: 0,
-          collected_at: new Date().toISOString(),
-        })
-        .in('id', pendingBookingIds);
-
+      const isVirtual = agent.id.startsWith('party:');
+      const partyKey = isVirtual ? agent.id.slice('party:'.length) : null;
+      const { error } = await (supabase as any).rpc('apply_agent_payment', {
+        _full_ids: pendingBookingIds,
+        _partials: [],
+        _zero_amount: true,
+        _agent_id: isVirtual ? null : agent.id,
+        _new_advance: null,
+        _party_key: partyKey,
+        _amount_paid: totalPending,
+        _received_by: 'Self',
+        _payment_mode: 'Cash',
+        _notes: `Bulk mark as received (${pendingBookingIds.length} seat${pendingBookingIds.length === 1 ? '' : 's'})`,
+      });
       if (error) throw error;
-
-      // Also record a payment so it shows up in the Received tab
-      if (totalPending > 0) {
-        const isVirtual = agent.id.startsWith('party:');
-        const partyKey = isVirtual ? agent.id.slice('party:'.length) : null;
-        const { error: paymentError } = await supabase
-          .from('agent_collection_payments')
-          .insert({
-            user_id: user.id,
-            agent_id: isVirtual ? null : agent.id,
-            party_key: partyKey,
-            amount_paid: totalPending,
-            received_by: 'Self',
-            payment_mode: 'Cash',
-            notes: `Bulk mark as received (${pendingBookingIds.length} seat${pendingBookingIds.length === 1 ? '' : 's'})`,
-          } as any);
-        if (paymentError) throw paymentError;
-      }
 
       toast.success(`All collections marked as received from ${agent.name}`);
       fetchSeatBookings();
