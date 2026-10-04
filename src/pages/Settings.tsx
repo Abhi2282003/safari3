@@ -65,6 +65,7 @@ export default function Settings() {
   const [buses, setBuses] = useState<BusConfig[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agentsTotalCount, setAgentsTotalCount] = useState<number>(0);
+  const [agentSearch, setAgentSearch] = useState('');
   const [newReceiverName, setNewReceiverName] = useState('');
   const [newTravelName, setNewTravelName] = useState('');
   const [newTravelPercent, setNewTravelPercent] = useState('10');
@@ -1046,8 +1047,11 @@ export default function Settings() {
                 </div>
               )}
               
+              {agents.length > 0 && (
+                <Input value={agentSearch} onChange={(e) => setAgentSearch(e.target.value)} placeholder="Search agents" className="mb-2 max-w-xs" />
+              )}
               {agents.length > 0 ? (
-                <div className="rounded-lg border max-h-64 overflow-y-auto">
+                <div className="rounded-lg border max-h-96 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1058,7 +1062,7 @@ export default function Settings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {agents.slice(0, 50).map((agent) => {
+                      {agents.filter((a) => !agentSearch || a.name.toLowerCase().includes(agentSearch.toLowerCase()) || (a.phone || '').includes(agentSearch)).map((agent) => {
                         const isEd = editing?.table === 'agents' && editing.id === agent.id;
                         return (
                         <TableRow key={agent.id}>
@@ -1104,7 +1108,7 @@ export default function Settings() {
                       })}
                     </TableBody>
                   </Table>
-                  {agentsTotalCount > 50 && (
+                  {false && (
                     <p className="text-sm text-muted-foreground text-center py-2">
                       Showing first 50 of {agentsTotalCount} agents
                     </p>
