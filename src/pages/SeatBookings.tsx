@@ -32,6 +32,7 @@ import { useLuggageRates } from '@/hooks/useLuggageRates';
 import { useDestinations } from '@/hooks/useDestinations';
 import { useBuses } from '@/hooks/useBuses';
 
+import { useBusLayout, seatLabel } from '@/hooks/useBusLayout';
 import { LuggageDialog } from '@/components/seatBookings/LuggageDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -120,6 +121,10 @@ export default function SeatBookings() {
   };
 
   // Get bookings for selected date AND bus
+  const { data: layoutData } = useBusLayout(busConfirmed ? busName : '', format(selectedDate, 'yyyy-MM-dd'));
+  const layoutCells = layoutData?.cells || [];
+  const hasLayout = layoutCells.length > 0 && !!layoutData?.layout;
+  const totalSeats = hasLayout ? layoutData!.layout.total_berths : TOTAL_SEATS;
   const busBookings = useMemo(() => {
     if (!busConfirmed || !busName.trim()) return [];
     return getSeatsByDate(selectedDate).filter((b) => b.busName === busName.trim());
@@ -471,16 +476,16 @@ export default function SeatBookings() {
                   <div>
                     <div className="flex justify-between mb-1.5">
                       <span className="text-muted-foreground">Occupancy</span>
-                      <span className="font-semibold">{busSummary.total} / {TOTAL_SEATS}</span>
+                      <span className="font-semibold">{busSummary.total} / {totalSeats}</span>
                     </div>
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-full bg-primary transition-all"
-                        style={{ width: `${Math.min(100, (busSummary.total / TOTAL_SEATS) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (busSummary.total / totalSeats) * 100)}%` }}
                       />
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      {TOTAL_SEATS - busSummary.total} seat{TOTAL_SEATS - busSummary.total === 1 ? '' : 's'} available
+                      {totalSeats - busSummary.total} seat{totalSeats - busSummary.total === 1 ? '' : 's'} available
                     </p>
                   </div>
                   <div className="grid grid-cols-6 gap-1 text-center overflow-hidden">
@@ -612,6 +617,66 @@ export default function SeatBookings() {
                     </div>
                   </div>
 
+                  {hasLayout ? (
+                    <div className="overflow-x-auto">
+                      <div className="flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground mb-1 px-1">
+                        <span>Single side</span><span>Double side</span>
+                      </div>
+                      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${layoutData!.layout.cols}, minmax(2.6rem, 1fr))` }}>
+                        {Array.from({ length: layoutData!.layout.rows }).flatMap((_, ri) => {
+                          const minRow = Math.min(...layoutCells.map((c) => c.grid_row));
+                          return Array.from({ length: layoutData!.layout.cols }).map((__, ci) => {
+                            const cell = layoutCells.find((c) => c.grid_row === ri + minRow && c.grid_col === ci);
+                            const key = `${ri}-${ci}`;
+                            if (!cell || cell.cell_type === 'empty') return <div key={key} />;
+                            if (cell.cell_type !== 'berth' || cell.seat_number == null) {
+                              return <div key={key} className="h-12 rounded-md bg-muted text-[10px] flex items-center justify-center text-muted-foreground border border-dashed">{cell.label || cell.cell_type}</div>;
+                            }
+                            const seatNum = cell.seat_number;
+                            const booking = getBookingForSeat(seatNum);
+                            const isSelected = selectedSeats.includes(seatNum);
+                            const typeName: Record<string, string> = { online: 'Online', agent: 'Agent', self: 'Self', sonu: 'Sonu', royal: 'Royal', return: 'Return' };
+                            const typeBg: Record<string, string> = { online: 'bg-blue-500', agent: 'bg-amber-500', self: 'bg-green-500', sonu: 'bg-pink-500', royal: 'bg-orange-500', return: 'bg-purple-500' };
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => handleSeatClick(seatNum)}
+                                className={cn(
+                                  'h-12 rounded-md flex flex-col items-center justify-center text-xs font-semibold relative active:scale-95 transition-all',
+                                  booking ? `${typeBg[booking.bookingType]} text-white shadow-sm` :
+                                  isSelected ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1' :
+                                  cell.deck === 'upper' ? 'bg-secondary border text-foreground/80' : 'bg-background border text-foreground/80'
+                                )}
+                              >
+                                <span>{cell.label}</span>
+                                <span className="text-[8px] font-normal opacity-80">{booking ? typeName[booking.bookingType] : cell.deck === 'upper' ? 'Upper' : cell.deck === 'lower' ? 'Lower' : ''}</span>
+                                {booking && ['agent', 'sonu', 'royal'].includes(booking.bookingType) && booking.agentCollectionStatus === 'pending' && (
+                                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                                )}
+                              </button>
+                            );
+                          });
+                        })}
+                      </div>
+                      {(() => {
+                        const placed = new Set(layoutCells.filter((c) => c.cell_type === 'berth').map((c) => c.seat_number));
+                        const unplaced = busBookings.filter((b) => !placed.has(b.seatNumber));
+                        if (!unplaced.length) return null;
+                        return (
+                          <div className="mt-3 rounded-lg border border-dashed p-2">
+                            <p className="text-xs font-medium mb-1">Unplaced bookings (seat number not in this layout)</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {unplaced.map((b) => (
+                                <button key={b.id} onClick={() => handleSeatClick(b.seatNumber)} className="text-xs rounded border px-2 py-1 hover:bg-muted">
+                                  Seat {b.seatNumber} · {b.passengerName || b.bookingType}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
                   <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
                     {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((seatNum) => {
                       const booking = getBookingForSeat(seatNum);
@@ -643,6 +708,7 @@ export default function SeatBookings() {
                       );
                     })}
                   </div>
+                  )}
 
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground text-center mt-3">Rear</p>
                 </div>
@@ -671,7 +737,7 @@ export default function SeatBookings() {
         {selectedSeats.length > 0 && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-full px-4 py-2 flex items-center gap-3">
             <span className="text-sm font-medium">
-              {selectedSeats.length} seat{selectedSeats.length > 1 ? 's' : ''}: {selectedSeats.sort((a,b) => a-b).join(', ')}
+              {selectedSeats.length} seat{selectedSeats.length > 1 ? 's' : ''}: {[...selectedSeats].sort((a,b) => a-b).map((n) => seatLabel(layoutCells, n)).join(', ')}
             </span>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={clearSelection}>
