@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
 
     const { username, full_name, pin } = await req.json();
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username || "")) return json({ error: "Invalid username" }, 400);
-    if (!/^\d{4}$/.test(pin || "")) return json({ error: "PIN must be 4 digits" }, 400);
+    if (!/^\d{6}$/.test(pin || "")) return json({ error: "PIN must be 6 digits" }, 400);
     if (!full_name || typeof full_name !== "string") return json({ error: "Full name required" }, 400);
 
     const email = `${username.toLowerCase()}@tickets.local`;

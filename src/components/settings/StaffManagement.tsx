@@ -47,7 +47,7 @@ export function StaffManagement() {
   const handleAdd = async () => {
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return toast.error('Username 3-20 chars (letters, numbers, _)');
     if (!fullName.trim()) return toast.error('Full name required');
-    if (!/^\d{4}$/.test(pin)) return toast.error('PIN must be exactly 4 digits');
+    if (!/^\d{6}$/.test(pin)) return toast.error('PIN must be exactly 6 digits');
     setSaving(true);
     const { data, error } = await supabase.functions.invoke('admin-create-staff', {
       body: { username: username.toLowerCase(), full_name: fullName.trim(), pin },
@@ -74,7 +74,7 @@ export function StaffManagement() {
       <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div>
           <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Staff Members</CardTitle>
-          <CardDescription>Create staff accounts (username + 4-digit PIN). They can only access Pay Collection and Daily Hisab.</CardDescription>
+          <CardDescription>Create staff accounts (username + 6-digit PIN). They can only access Pay Collection and Daily Hisab.</CardDescription>
         </div>
         <Button onClick={() => setOpen(true)} className="gap-2"><UserPlus className="h-4 w-4" />Add Staff</Button>
       </CardHeader>
@@ -115,7 +115,7 @@ export function StaffManagement() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Staff Member</DialogTitle>
-            <DialogDescription>They sign in with this username and 4-digit PIN.</DialogDescription>
+            <DialogDescription>They sign in with this username and 6-digit PIN.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -127,8 +127,8 @@ export function StaffManagement() {
               <Input value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} placeholder="santosh" autoCapitalize="none" />
             </div>
             <div className="space-y-2">
-              <Label>4-Digit PIN</Label>
-              <Input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" inputMode="numeric" maxLength={4} className="text-center tracking-[0.5em] font-mono" />
+              <Label>6-Digit PIN</Label>
+              <Input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="123456" inputMode="numeric" maxLength={6} className="text-center tracking-[0.5em] font-mono" />
             </div>
           </div>
           <DialogFooter>

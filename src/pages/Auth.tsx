@@ -16,8 +16,7 @@ const authSchema = z.object({
     .max(20, 'Username must be less than 20 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores'),
   pin: z.string()
-    .length(4, 'PIN must be exactly 4 digits')
-    .regex(/^\d{4}$/, 'PIN must be 4 digits only'),
+    .regex(/^(\d{4}|\d{6})$/, 'PIN must be 4 or 6 digits'),
 });
 
 export default function Auth() {
@@ -79,7 +78,7 @@ export default function Auth() {
 
   const handlePinChange = (value: string) => {
     // Only allow digits and max 4 characters
-    const digits = value.replace(/\D/g, '').slice(0, 4);
+    const digits = value.replace(/\D/g, '').slice(0, 6);
     setFormData((prev) => ({ ...prev, pin: digits }));
   };
 
@@ -101,7 +100,7 @@ export default function Auth() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Royal Safari</CardTitle>
-          <CardDescription>Enter your username and 4-digit PIN</CardDescription>
+          <CardDescription>Enter your username and PIN</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
@@ -124,7 +123,7 @@ export default function Auth() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="login-pin">4-Digit PIN</Label>
+                <Label htmlFor="login-pin">PIN</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -135,7 +134,7 @@ export default function Auth() {
                     onChange={(e) => handlePinChange(e.target.value)}
                     className="pl-10 pr-10 text-center text-xl tracking-[0.5em] font-mono"
                     inputMode="numeric"
-                    maxLength={4}
+                    maxLength={6}
                   />
                   <button
                     type="button"
