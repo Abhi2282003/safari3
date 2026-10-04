@@ -226,13 +226,6 @@ export default function Settings() {
         })));
       }
 
-      
-      const { data: agentsData } = await supabase
-        .from('agents')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true })
-        .limit(100);
 
       if (agentsData) {
         setAgents(agentsData.map(a => ({
