@@ -1016,56 +1016,12 @@ export default function AgentCollections() {
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mb-6">
-          <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-            <CardHeader className="pb-2 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-1 sm:gap-2">
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="truncate">Pending</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold text-amber-600">₹{summary.totalPending.toFixed(0)}</div>
-              <p className="text-xs text-amber-600/80 mt-0.5">{summary.agentsWithPending} agents</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
-            <CardHeader className="pb-2 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-1 sm:gap-2">
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="truncate">Collected</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold text-green-600">₹{summary.totalCollected.toFixed(0)}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
-            <CardHeader className="pb-2 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1 sm:gap-2">
-                <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="truncate">Advance</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold text-blue-600">₹{summary.totalAdvance.toFixed(0)}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2 p-3 sm:p-4">
-              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="truncate">Agents</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">{agentCollections.length}</div>
-            </CardContent>
-          </Card>
+        {/* Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border bg-card divide-x divide-y sm:divide-y-0 overflow-hidden mb-6">
+          <div className="p-4 sm:p-5"><p className="text-sm text-muted-foreground">Pending</p><p className="text-2xl sm:text-3xl font-bold mt-1">₹{Math.round(summary.totalPending).toLocaleString('en-IN')}</p><p className="text-xs text-muted-foreground mt-1">{summary.agentsWithPending} agents and parties</p></div>
+          <div className="p-4 sm:p-5"><p className="text-sm text-muted-foreground">Collected</p><p className="text-2xl sm:text-3xl font-bold mt-1">₹{Math.round(summary.totalCollected).toLocaleString('en-IN')}</p><p className="text-xs text-muted-foreground mt-1">All time</p></div>
+          <div className="p-4 sm:p-5"><p className="text-sm text-muted-foreground">Advance held</p><p className="text-2xl sm:text-3xl font-bold mt-1">₹{Math.round(summary.totalAdvance).toLocaleString('en-IN')}</p><p className="text-xs text-muted-foreground mt-1">Paid ahead by agents</p></div>
+          <div className="p-4 sm:p-5"><p className="text-sm text-muted-foreground">Agents</p><p className="text-2xl sm:text-3xl font-bold mt-1">{agentCollections.length}</p><p className="text-xs text-muted-foreground mt-1">On the list</p></div>
         </div>
 
         {/* Search and Sort Controls */}
