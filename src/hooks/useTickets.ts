@@ -103,11 +103,11 @@ export function useTickets() {
   const fetchTickets = useCallback(async () => {
     if (!user) return;
     
-    const { data: ticketsData, error } = await supabase
+    const { data: ticketsData, error } = await fetchAll<any>(() => supabase
       .from('tickets')
       .select('*')
       .eq('user_id', user.id)
-      .order('booking_date_time', { ascending: false });
+      .order('booking_date_time', { ascending: false }));
 
     if (error) {
       console.error('Error fetching tickets:', error);

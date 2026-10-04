@@ -38,8 +38,8 @@ export function useLuggageBookings() {
       const { data, error } = await supabase
         .from('luggage_bookings')
         .select('*')
-        .eq('user_id', user.id)
-        .order('journey_date', { ascending: false });
+        .order('journey_date', { ascending: false })
+        .order('id') as any;
 
       if (error) throw error;
 
