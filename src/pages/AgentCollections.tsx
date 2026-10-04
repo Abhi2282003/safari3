@@ -95,6 +95,8 @@ export default function AgentCollections() {
   const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
   const [paymentsVersion, setPaymentsVersion] = useState(0);
+  // Seats chosen with 'Receive All' on a trip row: money goes to these seats first
+  const [targetBookingIds, setTargetBookingIds] = useState<string[] | null>(null);
   const [reportAgentId, setReportAgentId] = useState<string>('');
   const [reportFrom, setReportFrom] = useState<string>(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
   const [reportTo, setReportTo] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -786,6 +788,7 @@ export default function AgentCollections() {
   const handleOpenPayment = (agent: AgentWithCollections) => {
     setSelectedAgent(agent);
     setSelectedBooking(null);
+    setTargetBookingIds(null);
     setPaymentAmount(agent.totalPending.toString());
     setReceivedBy('');
     setPaymentMode('Cash');
@@ -892,7 +895,12 @@ export default function AgentCollections() {
       // Get pending bookings sorted by date (oldest first)
       const pendingBookings = selectedAgent.bookings
         .filter(b => b.agentCollectionStatus === 'pending')
-        .sort((a, b) => new Date(a.journeyDate).getTime() - new Date(b.journeyDate).getTime());
+        .sort((a, b) => new Date(a.journeyDate).getTime() - new Date(b.journeyDate).getTime())
+        // Seats picked from a trip row are paid first, then the oldest
+        .sort((a, b) => {
+          if (!targetBookingIds) return 0;
+          return Number(targetBookingIds.includes(b.id)) - Number(targetBookingIds.includes(a.id));
+        });
 
       let remainingAmount = amountToApply;
       const fullyPaidBookingIds: string[] = [];
@@ -1194,7 +1202,9 @@ export default function AgentCollections() {
                                   <TableHead className="text-xs">Date</TableHead>
                                   <TableHead className="text-xs">Bus</TableHead>
                                   <TableHead className="text-xs">Seats</TableHead>
-                                  <TableHead className="text-right text-xs">Rate</TableHead>
+                                  <TableHead className="text-right text-xs">Fare</TableHead>
+                                  <TableHead className="text-right text-xs">Agent keeps</TableHead>
+                                  <TableHead className="text-right text-xs">Already paid</TableHead>
                                   <TableHead className="text-right text-xs">To Collect</TableHead>
                                   <TableHead className="text-right text-xs">Action</TableHead>
                                 </TableRow>
@@ -1250,9 +1260,27 @@ export default function AgentCollections() {
                                             <span className="text-muted-foreground ml-1">({seatNumbers.length})</span>
                                           )}
                                         </TableCell>
-                                        <TableCell className="text-right text-xs sm:text-sm">
-                                          ₹{firstBooking.bookingAmount.toFixed(0)}/seat
-                                        </TableCell>
+                                        {(() => {
+                                          const fare = group.bookings.reduce((t, b) => t + b.bookingAmount, 0);
+                                          const due = group.bookings.reduce((t, b) => t + (b.originalAmountFromAgent || b.amountFromAgent), 0);
+                                          const paid = due - group.totalCollect;
+                                          return (
+                                            <>
+                                              <TableCell className="text-right text-xs sm:text-sm">
+                                                ₹{fare.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                {seatNumbers.length > 1 && (
+                                                  <div className="text-[10px] text-muted-foreground">₹{firstBooking.bookingAmount.toFixed(0)} x {seatNumbers.length}</div>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-right text-xs sm:text-sm text-muted-foreground">
+                                                ₹{(fare - due).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                              </TableCell>
+                                              <TableCell className="text-right text-xs sm:text-sm text-muted-foreground">
+                                                {paid > 0.5 ? `₹${paid.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '-'}
+                                              </TableCell>
+                                            </>
+                                          );
+                                        })()}
                                         <TableCell className="text-right text-xs sm:text-sm font-medium text-amber-600">
                                           ₹{group.totalCollect.toFixed(0)}
                                         </TableCell>
@@ -1273,6 +1301,7 @@ export default function AgentCollections() {
                                               onClick={() => {
                                                 setSelectedAgent(agent);
                                                 setSelectedBooking(null);
+                                                setTargetBookingIds(group.bookings.map((b) => b.id));
                                                 setPaymentAmount(group.totalCollect.toString());
                                                 setReceivedBy('');
                                                 setPaymentMode('Cash');
