@@ -18,6 +18,7 @@ Open
 - [ ] Profit/Memo totals summed on server
 - [x] Today page rebuilt from design (week buses, largest pending, latest entries)
 - [x] Agent collections: pending total includes Sonu/Royal, restyled totals and list
+- [x] Speed round 2: lists load in parallel pages, Agent collections loads only agent/Sonu/Royal bookings, new indexes
 - [ ] Agent collections two-panel layout from design
 - [~] Phase 6 redesign: new colours, font, menu done; screen-by-screen layouts from the attached designs still to do
 - [ ] Logins kmahesh / safari123 without role — waiting on user

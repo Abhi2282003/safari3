@@ -108,7 +108,8 @@ export function useTickets() {
       .from('tickets')
       .select('*')
       .eq('user_id', user.id)
-      .order('booking_date_time', { ascending: false }));
+      .order('booking_date_time', { ascending: false })
+      .order('id'));
 
     if (error) {
       console.error('Error fetching tickets:', error);

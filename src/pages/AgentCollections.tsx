@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { Loader2, Users, CheckCircle2, Clock, Phone, IndianRupee, Search, ArrowUpDown, Bus, Wallet, CreditCard, User, MessageCircle, Send, CalendarIcon, FileText } from 'lucide-react';
 import { useSeatBookings, useAgents, SeatBooking } from '@/hooks/useSeatBookings';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAll } from '@/lib/fetchAll';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AgentPayment {
@@ -68,6 +69,8 @@ interface AgentWithCollections {
   originalTotal: number;
 }
 
+const AGENT_TYPES: ('agent' | 'sonu' | 'royal')[] = ['agent', 'sonu', 'royal'];
+
 type SortOption = 'pending-desc' | 'pending-asc' | 'name-asc' | 'name-desc' | 'collected-desc';
 type TabType = 'pending' | 'received' | 'report';
 
@@ -75,7 +78,7 @@ const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
 export default function AgentCollections() {
   const { user } = useAuth();
-  const { seatBookings, loading, fetchSeatBookings } = useSeatBookings();
+  const { seatBookings, loading, fetchSeatBookings } = useSeatBookings({ bookingTypes: AGENT_TYPES });
   const { agents, fetchAgents } = useAgents();
   
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -91,6 +94,7 @@ export default function AgentCollections() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [receivedDate, setReceivedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>([]);
+  const [paymentsVersion, setPaymentsVersion] = useState(0);
   const [reportAgentId, setReportAgentId] = useState<string>('');
   const [reportFrom, setReportFrom] = useState<string>(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
   const [reportTo, setReportTo] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -125,25 +129,15 @@ export default function AgentCollections() {
     const fetchAgentPayments = async () => {
       if (!user) return;
 
-      const PAGE_SIZE = 1000;
-      let from = 0;
-      let all: any[] = [];
-      while (true) {
-        const { data, error } = await supabase
-          .from('agent_collection_payments')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('payment_date', { ascending: false })
-          .range(from, from + PAGE_SIZE - 1);
-
-        if (error) {
-          console.error('Error fetching agent payments:', error);
-          return;
-        }
-        if (!data || data.length === 0) break;
-        all = all.concat(data);
-        if (data.length < PAGE_SIZE) break;
-        from += PAGE_SIZE;
+      const { data: all, error } = await fetchAll<any>(() => supabase
+        .from('agent_collection_payments')
+        .select('id, agent_id, party_key, amount_paid, received_by, payment_mode, payment_date, notes')
+        .eq('user_id', user.id)
+        .order('payment_date', { ascending: false })
+        .order('id'));
+      if (error) {
+        console.error('Error fetching agent payments:', error);
+        return;
       }
 
       setAgentPayments(all.map(p => ({
@@ -159,7 +153,7 @@ export default function AgentCollections() {
     };
 
     fetchAgentPayments();
-  }, [user, seatBookings]); // Refetch when seatBookings changes (after payment)
+  }, [user, paymentsVersion]); // Loads alongside bookings; refreshed after each payment
 
   // Group bookings by agent with pending collections
   const agentCollections = useMemo(() => {
@@ -857,6 +851,7 @@ export default function AgentCollections() {
       setPaymentNotes('');
       setSelectedBooking(null);
       fetchSeatBookings();
+      setPaymentsVersion((v) => v + 1);
       fetchAgents();
     } catch (error) {
       console.error('Error processing seat payment:', error);
@@ -950,6 +945,7 @@ export default function AgentCollections() {
       setReceivedBy('');
       setPaymentNotes('');
       fetchSeatBookings();
+      setPaymentsVersion((v) => v + 1);
       fetchAgents();
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -987,6 +983,7 @@ export default function AgentCollections() {
 
       toast.success(`All collections marked as received from ${agent.name}`);
       fetchSeatBookings();
+      setPaymentsVersion((v) => v + 1);
     } catch (error) {
       console.error('Error marking collected:', error);
       toast.error('Failed to update');
