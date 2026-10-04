@@ -1107,10 +1107,10 @@ export default function AgentCollections() {
 
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <span className="text-xs font-semibold">{agent.name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}</span>
                           </div>
                           <div className="text-left min-w-0">
-                            <p className="font-semibold text-sm sm:text-base truncate">{agent.name}</p>
+                            <p className="font-medium text-sm sm:text-base truncate">{agent.name}</p>
                             {agent.phone && (
                               <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
@@ -1126,10 +1126,7 @@ export default function AgentCollections() {
                               ₹{agent.advanceBalance.toFixed(0)} adv
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-amber-600 border-amber-600 text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            ₹{agent.totalPending.toFixed(0)}
-                          </Badge>
+                          <span className="font-semibold text-sm sm:text-base">₹{Math.round(agent.totalPending).toLocaleString('en-IN')}</span>
                         </div>
                       </div>
                     </AccordionTrigger>
