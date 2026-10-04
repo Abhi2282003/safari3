@@ -1,3 +1,4 @@
+import { fetchAll } from '@/lib/fetchAll';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Plus, Trash2, Save, Building, Ruler, Bus, Loader2, MapPin, Navigation, Users, Car, MessageCircle, Download, ChevronDown, Pencil, X, Check } from 'lucide-react';
@@ -129,12 +130,25 @@ export default function Settings() {
     if (!user) return;
     setLoading(true);
     try {
-      // Fetch company settings from Supabase
-      const { data: settingsData } = await supabase
-        .from('company_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const uid = user.id;
+      const [
+        { data: settingsData },
+        { data: receiversData },
+        { data: travelsData },
+        { data: pickupsData },
+        { data: destinationsData },
+        { data: busesData },
+        { data: agentsData },
+      ] = await Promise.all([
+        supabase.from('company_settings').select('*').eq('user_id', uid).maybeSingle(),
+        supabase.from('receivers').select('*').eq('user_id', uid).order('created_at', { ascending: true }),
+        supabase.from('travels').select('*').eq('user_id', uid).order('created_at', { ascending: true }),
+        supabase.from('pickup_locations').select('*').eq('user_id', uid).order('created_at', { ascending: true }),
+        supabase.from('destination_cities').select('*').eq('user_id', uid).order('name', { ascending: true }),
+        supabase.from('buses').select('*').eq('user_id', uid).order('name', { ascending: true }),
+        fetchAll<any>(() => supabase.from('agents').select('*').eq('user_id', uid).order('name', { ascending: true })),
+      ]);
+      setAgentsTotalCount(agentsData?.length || 0);
 
       if (settingsData) {
         setCompanySettings({
@@ -171,13 +185,6 @@ export default function Settings() {
         }
       }
 
-      // Fetch receivers from Supabase
-      const { data: receiversData } = await supabase
-        .from('receivers')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
       if (receiversData) {
         setReceivers(receiversData.map(r => ({
           id: r.id,
@@ -185,13 +192,6 @@ export default function Settings() {
           active: r.active ?? true,
         })));
       }
-
-      // Fetch travels from Supabase
-      const { data: travelsData } = await supabase
-        .from('travels')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
 
       if (travelsData) {
         setTravels(travelsData.map(t => ({
@@ -202,13 +202,6 @@ export default function Settings() {
         })));
       }
 
-      // Fetch pickup locations from Supabase
-      const { data: pickupsData } = await supabase
-        .from('pickup_locations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
       if (pickupsData) {
         setPickups(pickupsData.map(p => ({
           id: p.id,
@@ -216,13 +209,6 @@ export default function Settings() {
           active: p.active ?? true,
         })));
       }
-
-      // Fetch destination cities from Supabase
-      const { data: destinationsData } = await supabase
-        .from('destination_cities')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true });
 
       if (destinationsData) {
         setDestinations(destinationsData.map(d => ({
@@ -232,13 +218,6 @@ export default function Settings() {
         })));
       }
 
-      // Fetch buses from Supabase
-      const { data: busesData } = await supabase
-        .from('buses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true });
-
       if (busesData) {
         setBuses(busesData.map(b => ({
           id: b.id,
@@ -247,14 +226,7 @@ export default function Settings() {
         })));
       }
 
-      // Fetch agents count and first 100 from Supabase
-      const { count: agentsCount } = await supabase
-        .from('agents')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
       
-      setAgentsTotalCount(agentsCount || 0);
-
       const { data: agentsData } = await supabase
         .from('agents')
         .select('*')
