@@ -38,12 +38,13 @@ export default function Dashboard() {
   const [q, setQ] = useState('');
   const today = format(new Date(), 'yyyy-MM-dd');
   const weekStart = format(subDays(new Date(), 6), 'yyyy-MM-dd');
+  const weekEnd = format(subDays(new Date(), -7), 'yyyy-MM-dd');
 
   useEffect(() => {
     (async () => {
       const [s, l, p, b] = await Promise.all([
-        pageAll<Seat>((f, t) => supabase.from('seat_bookings').select('bus_name, journey_date, seat_number, booking_type, created_at, passenger_name, agents(name)').gte('journey_date', weekStart).lte('journey_date', today).range(f, t)),
-        pageAll<Lug>((f, t) => supabase.from('luggage_bookings').select('bus_name, journey_date, quantity, party_name, item_name, destination, created_at').gte('journey_date', weekStart).lte('journey_date', today).range(f, t)),
+        pageAll<Seat>((f, t) => supabase.from('seat_bookings').select('bus_name, journey_date, seat_number, booking_type, created_at, passenger_name, agents(name)').gte('journey_date', weekStart).lte('journey_date', weekEnd).range(f, t)),
+        pageAll<Lug>((f, t) => supabase.from('luggage_bookings').select('bus_name, journey_date, quantity, party_name, item_name, destination, created_at').gte('journey_date', weekStart).lte('journey_date', weekEnd).range(f, t)),
         pageAll<Pend>((f, t) => supabase.from('seat_bookings').select('booking_type, agent_id, amount_from_agent, journey_date, agents(name)').in('booking_type', ['agent', 'sonu', 'royal']).eq('agent_collection_status', 'pending').range(f, t)),
         supabase.from('buses').select('name, bus_companies(name)'),
       ]);
@@ -52,7 +53,7 @@ export default function Dashboard() {
       ((b as any).data || []).forEach((r: any) => { map[r.name.trim()] = { company: r.bus_companies?.name || '', berths: r.bus_companies?.name === 'Vedaa' ? 34 : 36 }; });
       setBusCompany(map);
     })();
-  }, [today, weekStart]);
+  }, [today, weekStart, weekEnd]);
 
   const rows = useMemo(() => {
     const m = new Map<string, { date: string; bus: string; berths: number; pieces: number }>();

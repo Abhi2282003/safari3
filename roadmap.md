@@ -16,7 +16,7 @@ Open
 - [ ] Phase 5: staff booking seats/luggage — waiting on user answer
 - [x] Luggage card shows total pieces and per destination, no amounts
 - [ ] Profit/Memo totals summed on server
-- [x] Dashboard loads only unpaid agent bookings
+- [x] Today page rebuilt from design (week buses, largest pending, latest entries)
 - [ ] Agent collections per-agent loading
 - [~] Phase 6 redesign: new colours, font, menu done; screen-by-screen layouts from the attached designs still to do
 - [ ] Logins kmahesh / safari123 without role — waiting on user
