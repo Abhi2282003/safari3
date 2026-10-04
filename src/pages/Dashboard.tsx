@@ -42,7 +42,7 @@ export default function Dashboard() {
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('seat_bookings')
-          .select('id, agent_id, agent_name, amount_from_agent')
+          .select('id, agent_id, amount_from_agent, agents(name)')
           .eq('booking_type', 'agent')
           .eq('agent_collection_status', 'pending')
           .not('agent_id', 'is', null)
@@ -51,7 +51,7 @@ export default function Dashboard() {
         rows.push(...data);
         if (data.length < 1000) break;
       }
-      setSeatBookings(rows.map((r) => ({ bookingType: 'agent', agentId: r.agent_id, agentName: r.agent_name, agentCollectionStatus: 'pending', amountFromAgent: Number(r.amount_from_agent) || 0 })));
+      setSeatBookings(rows.map((r) => ({ bookingType: 'agent', agentId: r.agent_id, agentName: r.agents?.name ?? null, agentCollectionStatus: 'pending', amountFromAgent: Number(r.amount_from_agent) || 0 })));
     })();
   }, []);
   const { agents } = useAgents();
