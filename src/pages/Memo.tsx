@@ -78,7 +78,7 @@ export default function Memo() {
     fetchSettings();
   }, [user]);
 
-  const { seatBookings, loading: bookingsLoading, getSeatsByDate } = useSeatBookings();
+  const { seatBookings, loading: bookingsLoading, getSeatsByDate } = useSeatBookings({ journeyDate: format(selectedDate, 'yyyy-MM-dd') });
   const { luggageBookings, loading: luggageLoading, getLuggageByDateAndBus } = useLuggageBookings();
   const { rates, loading: ratesLoading, upsertRate, deleteRate, getRateFor } = useLuggageRates();
   const { parties, loading: partiesLoading, saveParty, deleteParty } = useLuggageParties();
