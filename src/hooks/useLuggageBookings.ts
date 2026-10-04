@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { fetchAll } from '@/lib/fetchAll';
+import { luggagePercent, findBus } from '@/lib/commission';
 
 export interface LuggageBooking {
   id: string;
@@ -90,7 +91,10 @@ export function useLuggageBookings() {
   const saveLuggageBooking = async (booking: Omit<LuggageBooking, 'id' | 'createdAt'> & { id?: string }) => {
     if (!user) throw new Error('Not authenticated');
 
-    const amounts = calculateLuggageAmounts(booking.totalAmount);
+    const pct = booking.id ? LUGGAGE_PROFIT_PERCENT : await luggagePercent();
+    const ourEarningCalc = booking.totalAmount * (pct / 100);
+    const amounts = { ourEarning: ourEarningCalc, amountToOwner: booking.totalAmount - ourEarningCalc };
+    const bus = await findBus(booking.busName);
 
     const payload: any = {
       user_id: user.id,
@@ -104,6 +108,8 @@ export function useLuggageBookings() {
       our_earning: amounts.ourEarning,
       amount_to_owner: amounts.amountToOwner,
       notes: booking.notes || null,
+      ...(bus?.id ? { bus_id: bus.id } : {}),
+      ...(!booking.id ? { created_by: user.id } : {}),
     };
 
     if (booking.id) {
