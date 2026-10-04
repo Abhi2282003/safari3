@@ -2,34 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
     /* Navy Blue Professional Theme */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --background: 220 14% 97%;
+    --foreground: 222 47% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 222 47% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 222 47% 9%;
 
     /* Deep Navy Primary */
-    --primary: 215 50% 23%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 222 47% 9%;
+    --primary-foreground: 0 0% 100%;
 
     /* Light Gray Secondary */
-    --secondary: 210 15% 95%;
-    --secondary-foreground: 215 25% 25%;
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 15% 92%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 42%;
 
     /* Warm Amber Accent */
-    --accent: 38 92% 50%;
-    --accent-foreground: 215 50% 15%;
+    --accent: 45 96% 56%;
+    --accent-foreground: 222 47% 9%;
 
     /* Status Colors */
     --success: 142 70% 40%;
@@ -41,25 +41,25 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 215 50% 23%;
+    --border: 220 13% 90%;
+    --input: 220 13% 88%;
+    --ring: 222 47% 9%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* Custom Properties */
     --ticket-border: 215 30% 75%;
     --ticket-bg: 45 30% 97%;
     --ticket-accent: 215 50% 23%;
 
-    --sidebar-background: 215 50% 18%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 215 50% 15%;
-    --sidebar-accent: 215 45% 28%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 40% 25%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 222 47% 9%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 94%;
+    --sidebar-accent-foreground: 222 47% 9%;
+    --sidebar-border: 220 13% 90%;
+    --sidebar-ring: 222 47% 9%;
   }
 
   .dark {
@@ -116,7 +116,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-family: 'Inter Tight', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -125,6 +125,11 @@
 }
 
 @layer components {
+  .bus-plate {
+    font-family: 'JetBrains Mono', monospace;
+    @apply inline-flex items-center rounded-md border border-foreground/80 bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground whitespace-nowrap;
+  }
+
   .ticket-number {
     font-family: 'JetBrains Mono', monospace;
     @apply font-semibold tracking-wide;
