@@ -43,14 +43,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BusMemoPreview, LuggageMemoPreview } from '@/components/memo/MemoPreview';
 
-const MEMO_PASSWORD = 'safari123';
+import { OwnerGate, OwnerNav } from '@/components/owner/OwnerGate';
+import { useOwnerUnlock } from '@/lib/ownerLock';
 
 export default function Memo() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [busName, setBusName] = useState('');
-  const [unlocked, setUnlocked] = useState(false);
-  const [gatePassword, setGatePassword] = useState('');
+  const { unlocked } = useOwnerUnlock();
   const [previewNode, setPreviewNode] = useState<React.ReactNode | null>(null);
   const [previewTitle, setPreviewTitle] = useState('Memo Preview');
 
@@ -756,45 +756,13 @@ export default function Memo() {
   }
 
   if (!unlocked) {
-    const tryUnlock = () => {
-      if (gatePassword === MEMO_PASSWORD) {
-        setUnlocked(true);
-        setGatePassword('');
-      } else {
-        toast.error('Incorrect password');
-      }
-    };
-    return (
-      <Layout>
-        <div className="p-4 sm:p-6 lg:p-8 max-w-md mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" /> Memo Access
-              </CardTitle>
-              <CardDescription>Enter password to access the Memo page</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                type="password"
-                value={gatePassword}
-                onChange={(e) => setGatePassword(e.target.value)}
-                placeholder="Password"
-                onKeyDown={(e) => e.key === 'Enter' && tryUnlock()}
-                autoFocus
-              />
-              <Button className="w-full" onClick={tryUnlock}>Unlock</Button>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
+    return <Layout><OwnerGate>{null}</OwnerGate></Layout>;
   }
-
 
   return (
     <Layout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
+        <OwnerNav />
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Memo</h1>
           <p className="text-sm text-muted-foreground mt-1">Bus owner hisab, memo generation, and luggage rates</p>
