@@ -556,6 +556,24 @@ export default function SeatBookings() {
                         </div>
 
                       ))}
+                      <div className="pt-2 border-t text-xs space-y-1">
+                        <div className="flex justify-between font-semibold text-sm">
+                          <span>Total pieces</span>
+                          <span>{busLuggage.reduce((s, l) => s + (l.quantity || 0), 0)}</span>
+                        </div>
+                        {Object.entries(
+                          busLuggage.reduce<Record<string, number>>((acc, l) => {
+                            const k = l.destination || 'Other';
+                            acc[k] = (acc[k] || 0) + (l.quantity || 0);
+                            return acc;
+                          }, {})
+                        ).map(([dest, qty]) => (
+                          <div key={dest} className="flex justify-between text-muted-foreground">
+                            <span>{dest}</span>
+                            <span>{qty}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </CardContent>
