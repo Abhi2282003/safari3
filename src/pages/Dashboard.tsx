@@ -73,6 +73,7 @@ export default function Dashboard() {
   const pending = useMemo(() => {
     const m = new Map<string, { name: string; amount: number; berths: number; oldest: string }>();
     pend.forEach((p) => {
+      if (p.booking_type === 'agent' && !p.agent_id) return;
       const k = p.booking_type === 'agent' ? p.agent_id || 'x' : p.booking_type;
       const name = p.booking_type === 'agent' ? p.agents?.name || 'Agent' : TYPE_NAME[p.booking_type];
       const r = m.get(k) || { name, amount: 0, berths: 0, oldest: p.journey_date };
