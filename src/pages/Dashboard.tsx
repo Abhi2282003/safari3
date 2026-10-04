@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
@@ -27,14 +28,32 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTickets, useTravels, calculateStats } from '@/hooks/useTickets';
-import { useSeatBookings, useAgents } from '@/hooks/useSeatBookings';
+import { useAgents } from '@/hooks/useSeatBookings';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { tickets, loading } = useTickets();
   const { travels } = useTravels();
-  const { seatBookings } = useSeatBookings();
+  const [seatBookings, setSeatBookings] = useState<{ bookingType: string; agentId: string | null; agentName: string | null; agentCollectionStatus: string; amountFromAgent: number }[]>([]);
+  useEffect(() => {
+    (async () => {
+      const rows: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from('seat_bookings')
+          .select('id, agent_id, agent_name, amount_from_agent')
+          .eq('booking_type', 'agent')
+          .eq('agent_collection_status', 'pending')
+          .not('agent_id', 'is', null)
+          .range(from, from + 999);
+        if (error || !data) break;
+        rows.push(...data);
+        if (data.length < 1000) break;
+      }
+      setSeatBookings(rows.map((r) => ({ bookingType: 'agent', agentId: r.agent_id, agentName: r.agent_name, agentCollectionStatus: 'pending', amountFromAgent: Number(r.amount_from_agent) || 0 })));
+    })();
+  }, []);
   const { agents } = useAgents();
 
   // Calculate pending agent collections
