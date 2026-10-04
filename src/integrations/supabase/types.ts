@@ -1169,6 +1169,21 @@ export type Database = {
           pending_count: number
         }[]
       }
+      apply_agent_payment: {
+        Args: {
+          _agent_id: string
+          _amount_paid: number
+          _full_ids: string[]
+          _new_advance: number
+          _notes: string
+          _partials: Json
+          _party_key: string
+          _payment_mode: string
+          _received_by: string
+          _zero_amount: boolean
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
