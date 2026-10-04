@@ -767,8 +767,9 @@ export default function AgentCollections() {
     const agentPendingMap = new Map<string, number>();
     
     seatBookings
-      .filter((b) => b.bookingType === 'agent' && b.agentId)
+      .filter((b) => (b.bookingType === 'agent' && b.agentId) || b.bookingType === 'sonu' || b.bookingType === 'royal')
       .forEach((booking) => {
+        const partyKey = booking.bookingType === 'agent' ? booking.agentId! : booking.bookingType;
         const originalAmount = booking.originalAmountFromAgent || booking.amountFromAgent;
         
         if (booking.agentCollectionStatus === 'pending') {
@@ -776,7 +777,7 @@ export default function AgentCollections() {
           if (originalAmount > booking.amountFromAgent) {
             totalCollected += (originalAmount - booking.amountFromAgent);
           }
-          agentPendingMap.set(booking.agentId!, (agentPendingMap.get(booking.agentId!) || 0) + 1);
+          agentPendingMap.set(partyKey, (agentPendingMap.get(partyKey) || 0) + 1);
         } else {
           totalCollected += originalAmount;
         }
