@@ -196,7 +196,7 @@ export function useSeatBookings(options?: { journeyDate?: string; bookingTypes?:
     const { data, error } = await fetchAll<any>(() => {
       let q = supabase.from('seat_bookings').select(SEAT_COLUMNS).eq('user_id', user.id);
       if (journeyDate) q = q.eq('journey_date', journeyDate);
-      if (typesKey) q = q.in('booking_type', typesKey.split(','));
+      if (typesKey) q = q.in('booking_type', typesKey.split(',') as BookingType[]);
       return q.order('journey_date', { ascending: false }).order('id');
     });
     if (error) {
