@@ -11,7 +11,8 @@ import {
   TrendingUp,
   Wallet,
   ClipboardList,
-  Receipt
+  Receipt,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,10 +22,10 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const adminItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
-  { href: '/agent-collections', label: 'Agent Collections', icon: Users },
-  { href: '/admin', label: 'Owner area', icon: TrendingUp },
+  { href: '/', label: 'Today', icon: LayoutDashboard },
+  { href: '/seat-bookings', label: 'Book seats', icon: Armchair },
+  { href: '/agent-collections', label: 'Agent collections', icon: Users },
+  { href: '/admin', label: 'Owner area', icon: Lock, divider: true },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -47,29 +48,29 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
-          <Bus className="h-6 w-6 text-sidebar-primary-foreground" />
+      <div className="flex h-20 items-center gap-3 px-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary text-sm font-bold text-sidebar-primary-foreground">
+          RS
         </div>
         <div>
-          <h1 className="font-semibold text-lg">Royal Safari</h1>
-          <p className="text-xs text-sidebar-foreground/70">Bus booking</p>
+          <h1 className="font-semibold text-base leading-tight">Royal Safari</h1>
+          <p className="text-xs text-muted-foreground">Booking office</p>
         </div>
       </div>
 
-      <nav className="mt-6 px-4 flex-1">
+      <nav className="mt-2 px-3 flex-1">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href || (item.href === '/admin' && ['/memo', '/owner'].some((p) => location.pathname.startsWith(p)));
             return (
-              <li key={item.href}>
+              <li key={item.href} className={(item as any).divider ? 'mt-3 pt-3 border-t border-sidebar-border' : ''}>
                 <Link
                   to={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
                       : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
                   )}
                 >
@@ -83,21 +84,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-sidebar-border p-4">
-        {user && (
-          <div className="mb-3 px-2">
-            <p className="text-xs text-sidebar-foreground/70 truncate">{user.email}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold uppercase">
+            {(user?.email || 'ow').slice(0, 2)}
           </div>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogout}
-          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
-        <p className="text-xs text-sidebar-foreground/50 text-center mt-3">Royal Safari</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{user?.email?.split('@')[0]}</p>
+            <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Staff'}</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -121,14 +119,12 @@ export function Sidebar() {
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Bus className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">RS</div>
           <span className="font-semibold text-sidebar-foreground">Royal Safari</span>
         </div>
       </header>
 
-      <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground hidden lg:block">
+      <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground hidden lg:block">
         <SidebarContent />
       </aside>
     </>
