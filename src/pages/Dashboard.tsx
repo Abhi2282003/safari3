@@ -45,11 +45,11 @@ export default function Dashboard() {
         pageAll<Seat>((f, t) => supabase.from('seat_bookings').select('bus_name, journey_date, seat_number, booking_type, created_at, passenger_name, agents(name)').gte('journey_date', weekStart).lte('journey_date', today).range(f, t)),
         pageAll<Lug>((f, t) => supabase.from('luggage_bookings').select('bus_name, journey_date, quantity, party_name, item_name, destination, created_at').gte('journey_date', weekStart).lte('journey_date', today).range(f, t)),
         pageAll<Pend>((f, t) => supabase.from('seat_bookings').select('booking_type, agent_id, amount_from_agent, journey_date, agents(name)').in('booking_type', ['agent', 'sonu', 'royal']).eq('agent_collection_status', 'pending').range(f, t)),
-        supabase.from('buses').select('name, bus_companies(name), seat_layouts(total_berths)'),
+        supabase.from('buses').select('name, bus_companies(name)'),
       ]);
       setSeats(s); setLug(l); setPend(p);
       const map: Record<string, { company: string; berths: number }> = {};
-      ((b as any).data || []).forEach((r: any) => { map[r.name.trim()] = { company: r.bus_companies?.name || '', berths: r.seat_layouts?.total_berths || 36 }; });
+      ((b as any).data || []).forEach((r: any) => { map[r.name.trim()] = { company: r.bus_companies?.name || '', berths: r.bus_companies?.name === 'Vedaa' ? 34 : 36 }; });
       setBusCompany(map);
     })();
   }, [today, weekStart]);
