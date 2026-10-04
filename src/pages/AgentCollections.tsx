@@ -68,6 +68,8 @@ interface AgentWithCollections {
   originalTotal: number;
 }
 
+const AGENT_TYPES: ('agent' | 'sonu' | 'royal')[] = ['agent', 'sonu', 'royal'];
+
 type SortOption = 'pending-desc' | 'pending-asc' | 'name-asc' | 'name-desc' | 'collected-desc';
 type TabType = 'pending' | 'received' | 'report';
 
@@ -75,7 +77,7 @@ const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
 export default function AgentCollections() {
   const { user } = useAuth();
-  const { seatBookings, loading, fetchSeatBookings } = useSeatBookings();
+  const { seatBookings, loading, fetchSeatBookings } = useSeatBookings({ bookingTypes: AGENT_TYPES });
   const { agents, fetchAgents } = useAgents();
   
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);

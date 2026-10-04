@@ -230,7 +230,7 @@ export function useSeatBookings(options?: { journeyDate?: string; bookingTypes?:
       createdAt: s.created_at,
     })));
     setLoading(false);
-  }, [user, journeyDate]);
+  }, [user, journeyDate, typesKey]);
 
   useEffect(() => {
     fetchSeatBookings();
