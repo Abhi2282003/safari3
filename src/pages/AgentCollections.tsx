@@ -1008,11 +1008,10 @@ export default function AgentCollections() {
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Agent Collections
+            Agent collections
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Track and collect pending amounts from agents
+            Money still to come from agents and parties
           </p>
         </div>
 
