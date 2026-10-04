@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { amountsFromRules, findBus } from '@/lib/commission';
+import { fetchAll } from '@/lib/fetchAll';
 
 export type BookingType = 'online' | 'agent' | 'self' | 'return' | 'sonu' | 'royal';
 
@@ -179,40 +180,30 @@ export function useAgents() {
   return { agents, loading, fetchAgents, saveAgent, deleteAgent };
 }
 
-export function useSeatBookings(options?: { journeyDate?: string }) {
+const SEAT_COLUMNS =
+  'id, ticket_id, ticket_no, journey_date, seat_number, booking_type, agent_id, booking_amount, commission_percent, our_earning, amount_to_owner, amount_from_agent, original_amount_from_agent, agent_collection_status, collected_at, travels_name, destination, bus_name, passenger_name, notes, created_at, agents(name)';
+
+export function useSeatBookings(options?: { journeyDate?: string; bookingTypes?: BookingType[] }) {
   const { user } = useAuth();
   const journeyDate = options?.journeyDate;
+  const typesKey = options?.bookingTypes?.join(',') || '';
   const [seatBookings, setSeatBookings] = useState<SeatBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSeatBookings = useCallback(async () => {
     if (!user) return;
-    
-    // Paginate to bypass PostgREST's 1000-row default limit
-    const PAGE_SIZE = 1000;
-    let from = 0;
-    let allData: any[] = [];
-    while (true) {
-      let q = supabase
-        .from('seat_bookings')
-        .select(`*, agents(name)`)
-        .eq('user_id', user.id);
-      if (journeyDate) q = q.eq('journey_date', journeyDate);
-      const { data, error } = await q
-        .order('journey_date', { ascending: false })
-        .range(from, from + PAGE_SIZE - 1);
 
-      if (error) {
-        console.error('Error fetching seat bookings:', error);
-        setLoading(false);
-        return;
-      }
-      if (!data || data.length === 0) break;
-      allData = allData.concat(data);
-      if (data.length < PAGE_SIZE) break;
-      from += PAGE_SIZE;
+    const { data, error } = await fetchAll<any>(() => {
+      let q = supabase.from('seat_bookings').select(SEAT_COLUMNS).eq('user_id', user.id);
+      if (journeyDate) q = q.eq('journey_date', journeyDate);
+      if (typesKey) q = q.in('booking_type', typesKey.split(','));
+      return q.order('journey_date', { ascending: false }).order('id');
+    });
+    if (error) {
+      console.error('Error fetching seat bookings:', error);
+      setLoading(false);
+      return;
     }
-    const data = allData;
 
     setSeatBookings((data || []).map((s: any) => ({
       id: s.id,
