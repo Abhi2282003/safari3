@@ -52,7 +52,7 @@ export default function SeatBookings() {
   const [luggageDialogOpen, setLuggageDialogOpen] = useState(false);
   const [editingLuggage, setEditingLuggage] = useState<LuggageBooking | null>(null);
 
-  const { seatBookings, loading, getSeatsByDate, saveSeatBooking, markCollected, deleteSeatBooking } = useSeatBookings();
+  const { seatBookings, loading, getSeatsByDate, saveSeatBooking, markCollected, deleteSeatBooking, fetchSeatBookings } = useSeatBookings({ journeyDate: format(selectedDate, 'yyyy-MM-dd') });
   const { luggageBookings, loading: luggageLoading, saveLuggageBooking, deleteLuggageBooking, getLuggageByDateAndBus } = useLuggageBookings();
   const { getRateFor } = useLuggageRates();
   const { agents } = useAgents();
@@ -129,9 +129,7 @@ export default function SeatBookings() {
   const busLuggage = useMemo(() => {
     if (!busConfirmed || !busName.trim()) return [];
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    console.log('Filtering luggage for:', { dateStr, busName: busName.trim(), totalLuggage: luggageBookings.length });
     const filtered = getLuggageByDateAndBus(selectedDate, busName.trim());
-    console.log('Filtered luggage:', filtered);
     return filtered;
   }, [selectedDate, busName, busConfirmed, luggageBookings, getLuggageByDateAndBus]);
 
@@ -226,8 +224,9 @@ export default function SeatBookings() {
           passengerName: formData.passengerName || undefined,
           notes: formData.notes || undefined,
           ticketNo: formData.bookingType === 'agent' ? (formData.ticketNo || undefined) : undefined,
-        });
+        }, { skipRefresh: true });
       }
+      await fetchSeatBookings();
       
       const message = seatsToBook.length > 1 
         ? `${seatsToBook.length} seats booked successfully` 

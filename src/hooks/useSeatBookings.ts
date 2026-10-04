@@ -178,8 +178,9 @@ export function useAgents() {
   return { agents, loading, fetchAgents, saveAgent, deleteAgent };
 }
 
-export function useSeatBookings() {
+export function useSeatBookings(options?: { journeyDate?: string }) {
   const { user } = useAuth();
+  const journeyDate = options?.journeyDate;
   const [seatBookings, setSeatBookings] = useState<SeatBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -191,10 +192,12 @@ export function useSeatBookings() {
     let from = 0;
     let allData: any[] = [];
     while (true) {
-      const { data, error } = await supabase
+      let q = supabase
         .from('seat_bookings')
         .select(`*, agents(name)`)
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      if (journeyDate) q = q.eq('journey_date', journeyDate);
+      const { data, error } = await q
         .order('journey_date', { ascending: false })
         .range(from, from + PAGE_SIZE - 1);
 
@@ -235,7 +238,7 @@ export function useSeatBookings() {
       createdAt: s.created_at,
     })));
     setLoading(false);
-  }, [user]);
+  }, [user, journeyDate]);
 
   useEffect(() => {
     fetchSeatBookings();
@@ -247,7 +250,8 @@ export function useSeatBookings() {
   };
 
   const saveSeatBooking = async (
-    booking: Omit<SeatBooking, 'id' | 'createdAt' | 'agentName'> & { id?: string }
+    booking: Omit<SeatBooking, 'id' | 'createdAt' | 'agentName'> & { id?: string },
+    opts?: { skipRefresh?: boolean }
   ) => {
     if (!user) return null;
 
@@ -315,7 +319,7 @@ export function useSeatBookings() {
         .eq('id', booking.id);
       
       if (error) throw error;
-      await fetchSeatBookings();
+      if (!opts?.skipRefresh) await fetchSeatBookings();
       return booking.id;
     } else {
       const { data, error } = await supabase
@@ -343,7 +347,7 @@ export function useSeatBookings() {
         }
       }
 
-      await fetchSeatBookings();
+      if (!opts?.skipRefresh) await fetchSeatBookings();
       return data.id;
     }
   };

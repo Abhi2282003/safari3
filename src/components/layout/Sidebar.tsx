@@ -23,9 +23,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const adminItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/seat-bookings', label: 'Seat Bookings', icon: Armchair },
-  { href: '/memo', label: 'Memo', icon: Receipt },
   { href: '/agent-collections', label: 'Agent Collections', icon: Users },
-  { href: '/admin', label: 'Admin', icon: TrendingUp },
+  { href: '/admin', label: 'Owner area', icon: TrendingUp },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -53,15 +52,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <Bus className="h-6 w-6 text-sidebar-primary-foreground" />
         </div>
         <div>
-          <h1 className="font-semibold text-lg">Bus Tickets</h1>
-          <p className="text-xs text-sidebar-foreground/70">Booking System</p>
+          <h1 className="font-semibold text-lg">Royal Safari</h1>
+          <p className="text-xs text-sidebar-foreground/70">Bus booking</p>
         </div>
       </div>
 
       <nav className="mt-6 px-4 flex-1">
         <ul className="space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = location.pathname === item.href || (item.href === '/admin' && ['/memo', '/owner'].some((p) => location.pathname.startsWith(p)));
             return (
               <li key={item.href}>
                 <Link
@@ -98,7 +97,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <LogOut className="h-4 w-4" />
           Logout
         </Button>
-        <p className="text-xs text-sidebar-foreground/50 text-center mt-3">Manual Booking v1.0</p>
+        <p className="text-xs text-sidebar-foreground/50 text-center mt-3">Royal Safari</p>
       </div>
     </div>
   );
@@ -125,7 +124,7 @@ export function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <Bus className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
-          <span className="font-semibold text-sidebar-foreground">Bus Tickets</span>
+          <span className="font-semibold text-sidebar-foreground">Royal Safari</span>
         </div>
       </header>
 

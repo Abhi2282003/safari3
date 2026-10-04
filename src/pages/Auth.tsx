@@ -100,15 +100,11 @@ export default function Auth() {
               <Bus className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Bus Ticket System</CardTitle>
+          <CardTitle className="text-2xl font-bold">Royal Safari</CardTitle>
           <CardDescription>Enter your username and 4-digit PIN</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
 
             <TabsContent value="login" className="space-y-4">
               <div className="space-y-2">
@@ -159,56 +155,6 @@ export default function Auth() {
               </Button>
             </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-username">Username</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    placeholder="Choose a username"
-                    value={formData.username}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
-                    className="pl-10"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Letters, numbers, and underscores only</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-pin">Create 4-Digit PIN</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="signup-pin"
-                    type={showPin ? 'text' : 'password'}
-                    placeholder="••••"
-                    value={formData.pin}
-                    onChange={(e) => handlePinChange(e.target.value)}
-                    className="pl-10 pr-10 text-center text-xl tracking-[0.5em] font-mono"
-                    inputMode="numeric"
-                    maxLength={4}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPin(!showPin)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground">Remember this PIN to login</p>
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => handleSubmit('signup')}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating account...' : 'Create Account'}
-              </Button>
-            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>

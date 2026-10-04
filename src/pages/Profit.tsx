@@ -21,13 +21,12 @@ import { cn } from '@/lib/utils';
 import { useSeatBookings } from '@/hooks/useSeatBookings';
 import { useLuggageBookings } from '@/hooks/useLuggageBookings';
 import { useTickets, useTravels } from '@/hooks/useTickets';
-import { PasswordDialog } from '@/components/shared/PasswordDialog';
 
-const PROFIT_PASSWORD = 'safari123';
+import { OwnerGate, OwnerNav } from '@/components/owner/OwnerGate';
+import { useOwnerUnlock } from '@/lib/ownerLock';
 
 export default function Profit() {
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(true);
+  const { unlocked: isUnlocked } = useOwnerUnlock();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
 
@@ -168,10 +167,6 @@ export default function Profit() {
 
   const pendingCollections = useMemo(() => getPendingCollections(), [seatBookings]);
 
-  const handlePasswordSuccess = () => {
-    setIsUnlocked(true);
-    setPasswordDialogOpen(false);
-  };
 
   const handleExportCSV = () => {
     const headers = ['Date', 'Online', 'Online Profit', 'Agent', 'Agent Profit', 'Self', 'Self Profit', 'Total Profit'];
@@ -210,25 +205,7 @@ export default function Profit() {
   };
 
   if (!isUnlocked) {
-    return (
-      <Layout>
-        <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
-          <Lock className="h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Profit Reports</h1>
-          <p className="text-muted-foreground mb-6">Enter password to view profit data</p>
-          <Button onClick={() => setPasswordDialogOpen(true)}>
-            Unlock Reports
-          </Button>
-          <PasswordDialog
-            open={passwordDialogOpen}
-            onOpenChange={setPasswordDialogOpen}
-            onSuccess={handlePasswordSuccess}
-            title="Access Profit Reports"
-            description="Enter the admin password to view profit data"
-          />
-        </div>
-      </Layout>
-    );
+    return <Layout><OwnerGate>{null}</OwnerGate></Layout>;
   }
 
   if (loading || luggageLoading || ticketsLoading) {
@@ -244,6 +221,7 @@ export default function Profit() {
   return (
     <Layout>
       <div className="p-6 lg:p-8">
+        <OwnerNav />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

@@ -148,8 +148,114 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_types: {
+        Row: {
+          active: boolean
+          colour: string | null
+          created_at: string
+          creates_collection: boolean
+          id: string
+          key: string
+          name: string
+          needs_agent: boolean
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          colour?: string | null
+          created_at?: string
+          creates_collection?: boolean
+          id?: string
+          key: string
+          name: string
+          needs_agent?: boolean
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          colour?: string | null
+          created_at?: string
+          creates_collection?: boolean
+          id?: string
+          key?: string
+          name?: string
+          needs_agent?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bus_companies: {
+        Row: {
+          active: boolean
+          created_at: string
+          default_layout_id: string | null
+          id: string
+          name: string
+          number_prefix: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          default_layout_id?: string | null
+          id?: string
+          name: string
+          number_prefix?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          default_layout_id?: string | null
+          id?: string
+          name?: string
+          number_prefix?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bus_layouts: {
+        Row: {
+          bus_id: string
+          id: string
+          layout_id: string
+          user_id: string
+          valid_from: string
+        }
+        Insert: {
+          bus_id: string
+          id?: string
+          layout_id: string
+          user_id: string
+          valid_from?: string
+        }
+        Update: {
+          bus_id?: string
+          id?: string
+          layout_id?: string
+          user_id?: string
+          valid_from?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_layouts_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_layouts_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "seat_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bus_schedules: {
         Row: {
+          bus_id: string | null
           bus_name: string
           created_at: string
           departure_time: string | null
@@ -160,6 +266,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bus_id?: string | null
           bus_name: string
           created_at?: string
           departure_time?: string | null
@@ -170,6 +277,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bus_id?: string | null
           bus_name?: string
           created_at?: string
           departure_time?: string | null
@@ -184,26 +292,123 @@ export type Database = {
       buses: {
         Row: {
           active: boolean | null
+          company_id: string | null
           created_at: string
+          display_name: string | null
           id: string
+          layout_id: string | null
           name: string
           user_id: string
         }
         Insert: {
           active?: boolean | null
+          company_id?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
+          layout_id?: string | null
           name: string
           user_id: string
         }
         Update: {
           active?: boolean | null
+          company_id?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
+          layout_id?: string | null
           name?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "buses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "bus_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_rules: {
+        Row: {
+          agent_id: string | null
+          agent_percent: number
+          booking_type_id: string | null
+          bus_id: string | null
+          collect_from_party: boolean
+          company_id: string | null
+          created_at: string
+          id: string
+          is_luggage: boolean
+          our_percent: number
+          owner_gets: boolean
+          total_percent: number
+          user_id: string
+          valid_from: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_percent?: number
+          booking_type_id?: string | null
+          bus_id?: string | null
+          collect_from_party?: boolean
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_luggage?: boolean
+          our_percent?: number
+          owner_gets?: boolean
+          total_percent?: number
+          user_id: string
+          valid_from?: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_percent?: number
+          booking_type_id?: string | null
+          bus_id?: string | null
+          collect_from_party?: boolean
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_luggage?: boolean
+          our_percent?: number
+          owner_gets?: boolean
+          total_percent?: number
+          user_id?: string
+          valid_from?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_rules_booking_type_id_fkey"
+            columns: ["booking_type_id"]
+            isOneToOne: false
+            referencedRelation: "booking_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_rules_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "bus_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_settings: {
         Row: {
@@ -215,6 +420,7 @@ export type Database = {
           name: string
           phone: string | null
           preprinted_layout: Json | null
+          show_ticket_screens: boolean | null
           ticket_height: number | null
           ticket_width: number | null
           updated_at: string
@@ -231,6 +437,7 @@ export type Database = {
           name?: string
           phone?: string | null
           preprinted_layout?: Json | null
+          show_ticket_screens?: boolean | null
           ticket_height?: number | null
           ticket_width?: number | null
           updated_at?: string
@@ -247,6 +454,7 @@ export type Database = {
           name?: string
           phone?: string | null
           preprinted_layout?: Json | null
+          show_ticket_screens?: boolean | null
           ticket_height?: number | null
           ticket_width?: number | null
           updated_at?: string
@@ -283,8 +491,10 @@ export type Database = {
       luggage_bookings: {
         Row: {
           amount_to_owner: number
+          bus_id: string | null
           bus_name: string
           created_at: string
+          created_by: string | null
           destination: string
           id: string
           item_name: string | null
@@ -299,8 +509,10 @@ export type Database = {
         }
         Insert: {
           amount_to_owner?: number
+          bus_id?: string | null
           bus_name: string
           created_at?: string
+          created_by?: string | null
           destination: string
           id?: string
           item_name?: string | null
@@ -315,8 +527,10 @@ export type Database = {
         }
         Update: {
           amount_to_owner?: number
+          bus_id?: string | null
           bus_name?: string
           created_at?: string
+          created_by?: string | null
           destination?: string
           id?: string
           item_name?: string | null
@@ -392,6 +606,30 @@ export type Database = {
           id?: string
           item_name?: string
           rate?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      owner_security: {
+        Row: {
+          failed_attempts: number
+          locked_until: string | null
+          password_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          failed_attempts?: number
+          locked_until?: string | null
+          password_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          failed_attempts?: number
+          locked_until?: string | null
+          password_hash?: string
           updated_at?: string
           user_id?: string
         }
@@ -551,10 +789,13 @@ export type Database = {
           amount_to_owner: number
           booking_amount: number
           booking_type: Database["public"]["Enums"]["booking_type"]
+          booking_type_id: string | null
+          bus_id: string | null
           bus_name: string | null
           collected_at: string | null
           commission_percent: number
           created_at: string
+          created_by: string | null
           destination: string | null
           id: string
           journey_date: string
@@ -562,6 +803,7 @@ export type Database = {
           original_amount_from_agent: number | null
           our_earning: number
           passenger_name: string | null
+          passenger_phone: string | null
           seat_number: number
           ticket_id: string | null
           ticket_no: string | null
@@ -576,10 +818,13 @@ export type Database = {
           amount_to_owner?: number
           booking_amount?: number
           booking_type?: Database["public"]["Enums"]["booking_type"]
+          booking_type_id?: string | null
+          bus_id?: string | null
           bus_name?: string | null
           collected_at?: string | null
           commission_percent?: number
           created_at?: string
+          created_by?: string | null
           destination?: string | null
           id?: string
           journey_date: string
@@ -587,6 +832,7 @@ export type Database = {
           original_amount_from_agent?: number | null
           our_earning?: number
           passenger_name?: string | null
+          passenger_phone?: string | null
           seat_number: number
           ticket_id?: string | null
           ticket_no?: string | null
@@ -601,10 +847,13 @@ export type Database = {
           amount_to_owner?: number
           booking_amount?: number
           booking_type?: Database["public"]["Enums"]["booking_type"]
+          booking_type_id?: string | null
+          bus_id?: string | null
           bus_name?: string | null
           collected_at?: string | null
           commission_percent?: number
           created_at?: string
+          created_by?: string | null
           destination?: string | null
           id?: string
           journey_date?: string
@@ -612,6 +861,7 @@ export type Database = {
           original_amount_from_agent?: number | null
           our_earning?: number
           passenger_name?: string | null
+          passenger_phone?: string | null
           seat_number?: number
           ticket_id?: string | null
           ticket_no?: string | null
@@ -632,6 +882,88 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seat_layout_cells: {
+        Row: {
+          cell_type: string
+          deck: string | null
+          grid_col: number
+          grid_row: number
+          id: string
+          label: string | null
+          layout_id: string
+          seat_number: number | null
+        }
+        Insert: {
+          cell_type?: string
+          deck?: string | null
+          grid_col: number
+          grid_row: number
+          id?: string
+          label?: string | null
+          layout_id: string
+          seat_number?: number | null
+        }
+        Update: {
+          cell_type?: string
+          deck?: string | null
+          grid_col?: number
+          grid_row?: number
+          id?: string
+          label?: string | null
+          layout_id?: string
+          seat_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_layout_cells_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "seat_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seat_layouts: {
+        Row: {
+          cols: number
+          company_id: string | null
+          created_at: string
+          id: string
+          name: string
+          rows: number
+          total_berths: number
+          user_id: string
+        }
+        Insert: {
+          cols: number
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          rows: number
+          total_berths: number
+          user_id: string
+        }
+        Update: {
+          cols?: number
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          rows?: number
+          total_berths?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_layouts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "bus_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -827,6 +1159,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agent_pending_totals: {
+        Args: never
+        Returns: {
+          agent_id: string
+          collected: number
+          original: number
+          pending: number
+          pending_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -835,6 +1177,11 @@ export type Database = {
         Returns: boolean
       }
       next_ticket_no: { Args: never; Returns: string }
+      set_owner_password: {
+        Args: { _current: string; _new: string }
+        Returns: Json
+      }
+      verify_owner_password: { Args: { _password: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "staff"

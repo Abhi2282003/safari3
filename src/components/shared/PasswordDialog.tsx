@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
 
-const ADMIN_PASSWORD = 'safari123';
+import { checkOwnerPassword } from '@/lib/ownerLock';
 
 interface PasswordDialogProps {
   open: boolean;
@@ -33,9 +33,9 @@ export function PasswordDialog({
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    if (await checkOwnerPassword(password)) {
       setPassword('');
       setError(false);
       onOpenChange(false);
