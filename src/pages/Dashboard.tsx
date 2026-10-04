@@ -117,7 +117,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Today</h1>
             <p className="text-sm text-muted-foreground">
               Overview for {format(selectedDate, 'EEE, dd MMM yyyy')}
             </p>

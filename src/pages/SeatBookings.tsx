@@ -358,7 +358,7 @@ export default function SeatBookings() {
     <Layout>
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Seat Bookings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Book seats</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Enter bus number to view/manage seat layout
           </p>
