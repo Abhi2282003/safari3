@@ -41,9 +41,10 @@ const TOTAL_SEATS = 36;
 
 export default function SeatBookings() {
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [busName, setBusName] = useState('');
-  const [busConfirmed, setBusConfirmed] = useState(false);
+  const initParams = new URLSearchParams(window.location.search);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => { const d = initParams.get('date'); return d ? new Date(d + 'T00:00:00') : new Date(); });
+  const [busName, setBusName] = useState(() => initParams.get('bus') || '');
+  const [busConfirmed, setBusConfirmed] = useState(() => !!initParams.get('bus'));
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
