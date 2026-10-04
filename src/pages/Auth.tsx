@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bus, User, Lock, Eye, EyeOff } from 'lucide-react';
@@ -45,15 +46,24 @@ export default function Auth() {
       const password = `pin_${validated.pin}_secure`;
 
       if (mode === 'login') {
+        const uname = validated.username.toLowerCase();
+        const { data: lockedUntil } = await supabase.rpc('login_locked_until' as any, { _username: uname });
+        if (lockedUntil && new Date(lockedUntil as string) > new Date()) {
+          const mins = Math.ceil((new Date(lockedUntil as string).getTime() - Date.now()) / 60000);
+          toast.error(`Too many wrong PINs. Try again in ${mins} min.`);
+          return;
+        }
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
+            await supabase.rpc('record_login_attempt' as any, { _username: uname, _success: false });
             toast.error('Invalid username or PIN');
           } else {
             toast.error(error.message);
           }
           return;
         }
+        await supabase.rpc('record_login_attempt' as any, { _username: uname, _success: true });
         toast.success('Welcome back!');
       } else {
         const { error } = await signUp(email, password);

@@ -488,6 +488,27 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          failed_count: number
+          locked_until: string | null
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          failed_count?: number
+          locked_until?: string | null
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          failed_count?: number
+          locked_until?: string | null
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       luggage_bookings: {
         Row: {
           amount_to_owner: number
@@ -1191,7 +1212,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      login_locked_until: { Args: { _username: string }; Returns: string }
       next_ticket_no: { Args: never; Returns: string }
+      record_login_attempt: {
+        Args: { _success: boolean; _username: string }
+        Returns: undefined
+      }
       set_owner_password: {
         Args: { _current: string; _new: string }
         Returns: Json
