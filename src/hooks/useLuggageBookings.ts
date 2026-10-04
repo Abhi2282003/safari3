@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { fetchAll } from '@/lib/fetchAll';
 
 export interface LuggageBooking {
   id: string;
@@ -35,11 +36,12 @@ export function useLuggageBookings() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAll<any>(() => supabase
         .from('luggage_bookings')
         .select('*')
+        .eq('user_id', user.id)
         .order('journey_date', { ascending: false })
-        .order('id') as any;
+        .order('id'));
 
       if (error) throw error;
 
