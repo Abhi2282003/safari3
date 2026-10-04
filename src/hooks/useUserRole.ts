@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type AppRole = 'admin' | 'staff' | null;
+export type AppRole = 'admin' | 'staff' | 'none' | null;
 
 let cachedRoleUserId: string | null = null;
 let cachedRole: AppRole = null;
@@ -38,10 +38,10 @@ export function useUserRole() {
       if (cancelled) return;
       let nextRole: AppRole;
       if (error || !data || data.length === 0) {
-        nextRole = 'staff'; // default safe role
+        nextRole = 'none'; // no role = not authorised
       } else {
         const roles = data.map((r: { role: string }) => r.role);
-        nextRole = roles.includes('admin') ? 'admin' : 'staff';
+        nextRole = roles.includes('admin') ? 'admin' : roles.includes('staff') ? 'staff' : 'none';
       }
       cachedRoleUserId = user.id;
       cachedRole = nextRole;
@@ -61,5 +61,6 @@ export function useUserRole() {
     loading: effectiveLoading,
     isAdmin: effectiveRole === 'admin',
     isStaff: effectiveRole === 'staff',
+    isUnauthorised: effectiveRole === 'none',
   };
 }

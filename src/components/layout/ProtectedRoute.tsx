@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, adminOnly }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
@@ -25,6 +25,18 @@ export function ProtectedRoute({ children, adminOnly }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (role === 'none') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center space-y-3">
+          <h1 className="text-xl font-semibold">Not authorised</h1>
+          <p className="text-muted-foreground text-sm">This login has no access. Ask the admin to give you a role.</p>
+          <button className="underline text-sm" onClick={() => signOut()}>Log out</button>
+        </div>
+      </div>
+    );
   }
 
   if (adminOnly && role !== 'admin') {
