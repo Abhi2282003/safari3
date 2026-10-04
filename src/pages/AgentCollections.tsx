@@ -1101,12 +1101,12 @@ export default function AgentCollections() {
                 )}
                 <Accordion type="multiple" className="space-y-3">
                 {pendingAgents.map((agent) => (
-                  <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
+                  <AccordionItem key={agent.id} value={agent.id} className="border rounded-xl bg-card px-3 sm:px-4">
                     <AccordionTrigger className="hover:no-underline py-3">
                       <div className="flex items-center justify-between flex-1 min-w-0 gap-2 pr-2">
 
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                             <span className="text-xs font-semibold">{agent.name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}</span>
                           </div>
                           <div className="text-left min-w-0">
@@ -1371,7 +1371,7 @@ export default function AgentCollections() {
             {receivedAgentsForDate.length > 0 ? (
               <Accordion type="multiple" className="space-y-3">
                 {receivedAgentsForDate.map(({ agent, payments, total }) => (
-                  <AccordionItem key={agent.id} value={agent.id} className="border rounded-lg px-3 sm:px-4">
+                  <AccordionItem key={agent.id} value={agent.id} className="border rounded-xl bg-card px-3 sm:px-4">
                     <AccordionTrigger className="hover:no-underline py-3">
                       <div className="flex items-center justify-between flex-1 min-w-0 gap-2 pr-2">
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
