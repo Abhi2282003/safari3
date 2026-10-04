@@ -971,6 +971,7 @@ export default function AgentCollections() {
     const totalPending = pendingBookings.reduce((s, b) => s + Number(b.amountFromAgent || 0), 0);
 
     if (pendingBookingIds.length === 0) return;
+    if (!window.confirm(`Mark all ${pendingBookingIds.length} pending seat(s) of ${agent.name} as received?\n\nThis saves a payment of Rs ${totalPending.toLocaleString('en-IN')}. Only do this if the full money has come in.`)) return;
 
     try {
       const isVirtual = agent.id.startsWith('party:');
