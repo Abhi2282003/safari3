@@ -12,9 +12,10 @@ Done
 - [x] Agent payments saved in one safe step
 
 Open
-- [ ] Login lockout after 5 wrong PINs (needs server login check)
+- [x] Login lockout after 5 wrong PINs (15 min)
 - [ ] Phase 5: staff booking seats/luggage — waiting on user answer
-- [ ] Luggage tab per bus with no amounts; Profit/Memo totals summed on server
+- [x] Luggage card shows total pieces and per destination, no amounts
+- [ ] Profit/Memo totals summed on server
 - [ ] Dashboard summary query; Agent collections per-agent loading
 - [ ] Phase 6 full redesign
 - [ ] Logins kmahesh / safari123 without role — waiting on user
