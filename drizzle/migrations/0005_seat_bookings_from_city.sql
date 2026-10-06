@@ -1,0 +1,1 @@
+ALTER TABLE public.seat_bookings ADD COLUMN IF NOT EXISTS from_city text DEFAULT 'Pune';

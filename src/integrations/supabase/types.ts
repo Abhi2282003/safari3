@@ -818,6 +818,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           destination: string | null
+          from_city: string | null
           id: string
           journey_date: string
           notes: string | null
@@ -847,6 +848,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           destination?: string | null
+          from_city?: string | null
           id?: string
           journey_date: string
           notes?: string | null
@@ -876,6 +878,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           destination?: string | null
+          from_city?: string | null
           id?: string
           journey_date?: string
           notes?: string | null
