@@ -66,6 +66,7 @@ export default function SeatBookings() {
     agentId: '',
     bookingAmount: '',
     destination: '',
+    fromCity: 'Pune',
     passengerName: '',
     notes: '',
     ticketNo: '',
@@ -154,6 +155,7 @@ export default function SeatBookings() {
         agentId: existing.agentId || '',
         bookingAmount: existing.bookingAmount.toString(),
         destination: (existing as any).destination || '',
+        fromCity: existing.fromCity || 'Pune',
         passengerName: existing.passengerName || '',
         notes: existing.notes || '',
         ticketNo: existing.ticketNo || '',
@@ -184,6 +186,7 @@ export default function SeatBookings() {
       agentId: '',
       bookingAmount: '',
       destination: destinations[0]?.name || '',
+      fromCity: 'Pune',
       passengerName: '',
       notes: '',
       ticketNo: '',
@@ -226,6 +229,7 @@ export default function SeatBookings() {
           originalAmountFromAgent: 0,
           agentCollectionStatus: 'pending',
           destination: formData.destination || undefined,
+          fromCity: formData.fromCity.trim() || 'Pune',
           busName: busName.trim(),
           passengerName: formData.passengerName || undefined,
           notes: formData.notes || undefined,
@@ -879,6 +883,21 @@ export default function SeatBookings() {
                   onChange={(e) => setFormData({ ...formData, bookingAmount: e.target.value })}
                   placeholder="e.g., 500"
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>From City</Label>
+                <Input
+                  list="from-city-options"
+                  value={formData.fromCity}
+                  onChange={(e) => setFormData({ ...formData, fromCity: e.target.value })}
+                  placeholder="Pune"
+                />
+                <datalist id="from-city-options">
+                  {['Pune', ...destinations.filter((d) => d.active).map((d) => d.name).filter((n) => n !== 'Pune')].map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="grid gap-2">
