@@ -333,7 +333,7 @@ export default function AgentCollections() {
     // Group bookings by journey date + bus + destination (seats booked together)
     const groupsMap = new Map<string, SeatBooking[]>();
     pendingBookings.forEach(b => {
-      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.destination || ''}`;
+      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.fromCity || 'Pune'}|${b.destination || ''}`;
       if (!groupsMap.has(key)) groupsMap.set(key, []);
       groupsMap.get(key)!.push(b);
     });
@@ -428,7 +428,7 @@ export default function AgentCollections() {
         String(idx + 1),
         format(new Date(first.journeyDate), 'dd MMM yyyy'),
         first.busName || first.travelsName || '-',
-        first.destination || '-',
+        `${first.fromCity || 'Pune'} - ${first.destination || '-'}`,
         seatList,
         ticketNoDisplay,
         g.actualFare.toFixed(2),
@@ -442,7 +442,7 @@ export default function AgentCollections() {
 
     autoTable(doc, {
       startY: agentBoxY + (agent.phone ? 22 : 17),
-      head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Ticket No', 'Actual Fare', 'Commission', 'To Collect']],
+      head: [['#', 'Journey Date', 'Bus', 'From - Destination', 'Seats', 'Ticket No', 'Actual Fare', 'Commission', 'To Collect']],
       body,
       foot: [[
         { content: 'TOTAL', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
@@ -573,7 +573,7 @@ export default function AgentCollections() {
 
     const groupsMap = new Map<string, SeatBooking[]>();
     bookings.forEach(b => {
-      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.destination || ''}`;
+      const key = `${b.journeyDate}|${b.busName || b.travelsName || ''}|${b.fromCity || 'Pune'}|${b.destination || ''}`;
       if (!groupsMap.has(key)) groupsMap.set(key, []);
       groupsMap.get(key)!.push(b);
     });
@@ -678,7 +678,7 @@ export default function AgentCollections() {
           String(idx + 1),
           format(new Date(first.journeyDate), 'dd MMM yyyy'),
           first.busName || first.travelsName || '-',
-          first.destination || '-',
+          `${first.fromCity || 'Pune'} - ${first.destination || '-'}`,
           g.seats.map(s => s.seatNumber).join(', '),
           ticketNos.length ? ticketNos.join(', ') : '-',
           g.actualFare.toFixed(2),
@@ -689,7 +689,7 @@ export default function AgentCollections() {
 
       autoTable(doc, {
         startY: agentBoxY + (agent.phone ? 22 : 17),
-        head: [['#', 'Journey Date', 'Bus', 'Destination', 'Seats', 'Ticket No', 'Actual Fare', 'Commission', 'Net Amount']],
+        head: [['#', 'Journey Date', 'Bus', 'From - Destination', 'Seats', 'Ticket No', 'Actual Fare', 'Commission', 'Net Amount']],
         body,
         foot: [[
           { content: 'TOTAL', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },

@@ -34,6 +34,7 @@ export interface SeatBooking {
   collectedAt?: string;
   travelsName?: string;
   destination?: string;
+  fromCity?: string;
   busName?: string;
   passengerName?: string;
   notes?: string;
@@ -181,7 +182,7 @@ export function useAgents() {
 }
 
 const SEAT_COLUMNS =
-  'id, ticket_id, ticket_no, journey_date, seat_number, booking_type, agent_id, booking_amount, commission_percent, our_earning, amount_to_owner, amount_from_agent, original_amount_from_agent, agent_collection_status, collected_at, travels_name, destination, bus_name, passenger_name, notes, created_at, agents(name)';
+  'id, ticket_id, ticket_no, journey_date, seat_number, booking_type, agent_id, booking_amount, commission_percent, our_earning, amount_to_owner, amount_from_agent, original_amount_from_agent, agent_collection_status, collected_at, travels_name, destination, from_city, bus_name, passenger_name, notes, created_at, agents(name)';
 
 export function useSeatBookings(options?: { journeyDate?: string; bookingTypes?: BookingType[] }) {
   const { user } = useAuth();
@@ -224,6 +225,7 @@ export function useSeatBookings(options?: { journeyDate?: string; bookingTypes?:
       collectedAt: s.collected_at || undefined,
       travelsName: s.travels_name || undefined,
       destination: s.destination || undefined,
+      fromCity: s.from_city || undefined,
       busName: s.bus_name || undefined,
       passengerName: s.passenger_name || undefined,
       notes: s.notes || undefined,
@@ -304,6 +306,7 @@ export function useSeatBookings(options?: { journeyDate?: string; bookingTypes?:
       collected_at: collectionStatus === 'collected' ? new Date().toISOString() : null,
       travels_name: booking.travelsName || null,
       destination: booking.destination || null,
+      from_city: booking.fromCity?.trim() || 'Pune',
       bus_name: booking.busName || null,
       passenger_name: booking.passengerName || null,
       notes: booking.notes || null,
