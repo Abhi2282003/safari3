@@ -271,8 +271,10 @@ export default function AgentCollections() {
 
   // Filter agents based on active tab
   const pendingAgents = useMemo(() => {
+    // While searching, show every matching agent (even fully paid) so nobody looks missing
+    if (searchQuery.trim()) return agentCollections;
     return agentCollections.filter(a => a.totalPending > 0 || a.advanceBalance > 0);
-  }, [agentCollections]);
+  }, [agentCollections, searchQuery]);
 
   const receivedAgents = useMemo(() => {
     return agentCollections.filter(a => a.totalCollected > 0);
@@ -284,14 +286,37 @@ export default function AgentCollections() {
       .map(a => {
         const payments = a.payments.filter(p => {
           // payment_date may be a full ISO timestamp; compare yyyy-MM-dd prefix
+          // While searching an agent, show all their payments (every date)
+          if (searchQuery.trim()) return true;
           return (p.paymentDate || '').slice(0, 10) === receivedDate;
-        });
+        }).sort((x, y) => (y.paymentDate || '').localeCompare(x.paymentDate || ''));
         const total = payments.reduce((s, p) => s + Number(p.amountPaid || 0), 0);
         return { agent: a, payments, total };
       })
       .filter(x => x.payments.length > 0)
       .sort((a, b) => b.total - a.total);
-  }, [agentCollections, receivedDate]);
+  }, [agentCollections, receivedDate, searchQuery]);
+
+  // Which bookings a payment settled: seats of that agent marked collected at the moment of the payment
+  const bookingsForPayment = (agent: AgentWithCollections, payment: { paymentDate: string }) => {
+    const t = new Date(payment.paymentDate).getTime();
+    if (isNaN(t)) return [] as SeatBooking[];
+    return agent.bookings
+      .filter(b => b.collectedAt && Math.abs(new Date(b.collectedAt).getTime() - t) <= 120_000)
+      .sort((a, b) => a.journeyDate.localeCompare(b.journeyDate) || a.seatNumber - b.seatNumber);
+  };
+  const describeBookings = (list: SeatBooking[]) => {
+    const groups = new Map<string, SeatBooking[]>();
+    list.forEach(b => {
+      const k = `${b.journeyDate}|${b.busName || ''}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k)!.push(b);
+    });
+    return Array.from(groups.values()).map(g => {
+      const f = g[0];
+      return `${format(new Date(f.journeyDate), 'dd MMM yyyy')}${f.busName ? ' · ' + f.busName : ''} · Seat ${g.map(x => x.seatNumber).join(', ')}`;
+    });
+  };
 
   const receivedDateTotal = useMemo(
     () => receivedAgentsForDate.reduce((s, x) => s + x.total, 0),
@@ -1386,7 +1411,7 @@ export default function AgentCollections() {
                 </Popover>
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">Total Received on {format(new Date(receivedDate), 'dd MMM yyyy')}</p>
+                <p className="text-xs text-muted-foreground">{searchQuery.trim() ? 'Total received (all dates, matching search)' : `Total Received on ${format(new Date(receivedDate), 'dd MMM yyyy')}`}</p>
                 <p className="text-2xl font-bold text-green-600">₹{receivedDateTotal.toFixed(0)}</p>
                 <p className="text-xs text-muted-foreground">
                   {receivedAgentsForDate.length} agent{receivedAgentsForDate.length === 1 ? '' : 's'} ·{' '}
@@ -1395,6 +1420,9 @@ export default function AgentCollections() {
               </div>
             </div>
 
+            {searchQuery.trim() && (
+              <p className="mb-3 text-xs text-muted-foreground">Showing every payment for agents matching "{searchQuery.trim()}". Clear the search to go back to one date.</p>
+            )}
             {receivedAgentsForDate.length > 0 ? (
               <Accordion type="multiple" className="space-y-3">
                 {receivedAgentsForDate.map(({ agent, payments, total }) => (
@@ -1428,7 +1456,7 @@ export default function AgentCollections() {
                         <div>
                           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                             <IndianRupee className="h-4 w-4 text-green-600" />
-                            Payments on {format(new Date(receivedDate), 'dd MMM yyyy')}
+                            {searchQuery.trim() ? 'All payments' : `Payments on ${format(new Date(receivedDate), 'dd MMM yyyy')}`}
                           </h4>
                           <div className="rounded-lg border overflow-x-auto">
                             <Table>
@@ -1436,6 +1464,7 @@ export default function AgentCollections() {
                                 <TableRow>
                                   <TableHead className="text-xs">Time</TableHead>
                                   <TableHead className="text-right text-xs">Amount</TableHead>
+                                  <TableHead className="text-xs">For Bookings</TableHead>
                                   <TableHead className="text-xs">Payment Mode</TableHead>
                                   <TableHead className="text-xs">Received By</TableHead>
                                   <TableHead className="text-xs">Notes</TableHead>
@@ -1447,11 +1476,19 @@ export default function AgentCollections() {
                                     <TableCell className="text-xs sm:text-sm">
                                       {(() => {
                                         const d = new Date(payment.paymentDate);
-                                        return isNaN(d.getTime()) ? '-' : format(d, 'hh:mm a');
+                                        return isNaN(d.getTime()) ? '-' : format(d, searchQuery.trim() ? 'dd MMM yy, hh:mm a' : 'hh:mm a');
                                       })()}
                                     </TableCell>
                                     <TableCell className="text-right text-xs sm:text-sm font-medium text-green-600">
                                       ₹{payment.amountPaid.toFixed(0)}
+                                    </TableCell>
+                                    <TableCell className="text-xs min-w-[180px]">
+                                      {(() => {
+                                        const lines = describeBookings(bookingsForPayment(agent, payment));
+                                        return lines.length
+                                          ? lines.map((l) => <div key={l}>{l}</div>)
+                                          : <span className="text-muted-foreground">Part payment / advance</span>;
+                                      })()}
                                     </TableCell>
                                     <TableCell className="text-xs sm:text-sm">
                                       <Badge variant="outline" className="text-xs">
