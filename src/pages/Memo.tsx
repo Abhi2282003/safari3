@@ -150,7 +150,7 @@ export default function Memo() {
     const luggageToOwner = busLuggage.reduce((s, b) => s + b.amountToOwner, 0);
     const grand = mainNet - otherCommission + luggageToOwner;
     return { mainTotal, mainDeduction, mainNet, otherCommission, luggageToOwner, grand, online, agent, self, sonu, royal, returnB, main };
-  }, [busBookings, busLuggage]);
+  }, [busBookings, busLuggage, busName]);
 
   const loadLogoDataUrl = async (): Promise<string | null> => {
     try {
