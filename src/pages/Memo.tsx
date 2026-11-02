@@ -150,7 +150,12 @@ export default function Memo() {
     const otherCommission = onlineCommission + returnCommission;
     const luggageToOwner = busLuggage.reduce((s, b) => s + b.amountToOwner, 0);
     const grand = mainNet - otherCommission + luggageToOwner;
-    return { mainTotal, mainDeduction, mainNet, otherCommission, luggageToOwner, grand, online, agent, self, sonu, royal, returnB, main };
+    const singhOnlineTotal = isSingh ? online.reduce((s, b) => s + b.bookingAmount, 0) : 0;
+    const singhOnlineBase = singhOnlineTotal * 0.82;
+    const singhNote = singhOnlineTotal > 0
+      ? `Online Rs. ${singhOnlineTotal.toFixed(0)} - 18% = Rs. ${singhOnlineBase.toFixed(0)} (5% on this)`
+      : '';
+    return { mainTotal, mainDeduction, mainNet, otherCommission, luggageToOwner, grand, online, agent, self, sonu, royal, returnB, main, singhNote };
   }, [busBookings, busLuggage, busName]);
 
   const loadLogoDataUrl = async (): Promise<string | null> => {
