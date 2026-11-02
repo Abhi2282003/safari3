@@ -42,6 +42,7 @@ import { useBuses } from '@/hooks/useBuses';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BusMemoPreview, LuggageMemoPreview } from '@/components/memo/MemoPreview';
+const SINGH_BUSES = new Set(["UP65ST3339", "UP66AT1030"]);
 
 import { OwnerGate, OwnerNav } from '@/components/owner/OwnerGate';
 import { useOwnerUnlock } from '@/lib/ownerLock';
