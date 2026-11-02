@@ -42,6 +42,7 @@ import { useBuses } from '@/hooks/useBuses';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BusMemoPreview, LuggageMemoPreview } from '@/components/memo/MemoPreview';
+const SINGH_BUSES = new Set(["UP65ST3339", "UP66AT1030"]);
 
 import { OwnerGate, OwnerNav } from '@/components/owner/OwnerGate';
 import { useOwnerUnlock } from '@/lib/ownerLock';
@@ -138,13 +139,19 @@ export default function Memo() {
     const mainTotal = main.reduce((s, b) => s + b.bookingAmount, 0);
     const mainDeduction = main.reduce((s, b) => s + b.bookingAmount * 0.15, 0);
     const mainNet = mainTotal - mainDeduction;
-    const onlineCommission = online.reduce((s, b) => s + b.ourEarning, 0);
+    // Singh Bus: online seats -> deduct 18% first, then our 5% on the remainder
+    const norm = (s: string) => s.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    const isSingh = SINGH_BUSES.has(norm(busName)) || norm(busName).startsWith('UP');
+    const onlineCommission = online.reduce(
+      (s, b) => s + (isSingh ? b.bookingAmount * 0.82 * 0.05 : b.ourEarning),
+      0,
+    );
     const returnCommission = returnB.reduce((s, b) => s + b.ourEarning, 0);
     const otherCommission = onlineCommission + returnCommission;
     const luggageToOwner = busLuggage.reduce((s, b) => s + b.amountToOwner, 0);
     const grand = mainNet - otherCommission + luggageToOwner;
     return { mainTotal, mainDeduction, mainNet, otherCommission, luggageToOwner, grand, online, agent, self, sonu, royal, returnB, main };
-  }, [busBookings, busLuggage]);
+  }, [busBookings, busLuggage, busName]);
 
   const loadLogoDataUrl = async (): Promise<string | null> => {
     try {
