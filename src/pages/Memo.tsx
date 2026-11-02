@@ -349,6 +349,14 @@ export default function Memo() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     lines.forEach(([label, val, color]) => {
+      if (!val) {
+        doc.setFontSize(6.5);
+        doc.setTextColor(110);
+        doc.text(label, pageW - 94, ly - 1.5);
+        doc.setFontSize(9);
+        ly += 6;
+        return;
+      }
       doc.setTextColor(80);
       doc.text(label, pageW - 94, ly);
       if (color) doc.setTextColor(color[0], color[1], color[2]);
