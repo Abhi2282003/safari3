@@ -30,6 +30,7 @@ interface BusMemoPreviewProps {
   otherCommission: number;
   luggageToOwner: number;
   grand: number;
+  singhNote?: string;
 }
 
 const BRAND = '#ea580c';
@@ -125,6 +126,9 @@ export function BusMemoPreview(p: BusMemoPreviewProps) {
               <span>Less (5%)</span>
               <span>- Rs. {p.otherCommission.toFixed(0)}</span>
             </div>
+          )}
+          {p.singhNote && (
+            <div className="px-3 pb-1 text-xs text-gray-500">{p.singhNote}</div>
           )}
           {p.luggageToOwner > 0 && (
             <div className="px-3 py-1 text-sm flex justify-between">
