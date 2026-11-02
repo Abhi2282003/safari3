@@ -325,6 +325,7 @@ export default function Memo() {
     const lines: Array<[string, string, [number, number, number]?]> = [];
     lines.push(['Seats Subtotal', mainNet.toFixed(0)]);
     if (otherCommission > 0) lines.push(['Less (5%)', `- ${otherCommission.toFixed(0)}`, [180, 30, 30]]);
+    if (settlement.singhNote) lines.push([settlement.singhNote, '', [110, 110, 110]]);
     if (luggageToOwner > 0) lines.push(['+ Luggage', `+ ${luggageToOwner.toFixed(0)}`]);
     const boxH = 14 + lines.length * 6 + 12;
 
@@ -438,14 +439,15 @@ export default function Memo() {
         otherCommission={settlement.otherCommission}
         luggageToOwner={settlement.luggageToOwner}
         grand={settlement.grand}
+        singhNote={settlement.singhNote}
       />
     );
   };
 
   const openLuggagePreview = () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr);
-    if (!dayLuggage.length) return toast.error('No luggage entries for this date');
+    const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr && (b.busName || 'Unassigned') === busName);
+    if (!dayLuggage.length) return toast.error('No luggage entries for this bus on this date');
     const busMap: Record<string, typeof dayLuggage> = {};
     dayLuggage.forEach((l) => {
       const k = l.busName || 'Unassigned';
@@ -470,7 +472,7 @@ export default function Memo() {
     });
     const grandTotal = buses.reduce((s, b) => s + b.busTotal, 0);
     const grandOwner = dayLuggage.reduce((s, l) => s + l.amountToOwner, 0);
-    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-ALL`;
+    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-${busName.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
     setPreviewTitle(`Luggage Memo — ${format(selectedDate, 'dd MMM yyyy')}`);
     setPreviewNode(
       <LuggageMemoPreview
@@ -487,9 +489,9 @@ export default function Memo() {
   const generateLuggageMemoPdf = async (action: 'save' | 'share' = 'save') => {
     // Combined luggage memo across all buses for the selected date, bifurcated per bus.
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr);
+    const dayLuggage = luggageBookings.filter((b) => b.journeyDate === dateStr && (b.busName || 'Unassigned') === busName);
     if (!dayLuggage.length) {
-      toast.error('No luggage entries for this date');
+      toast.error('No luggage entries for this bus on this date');
       return;
     }
 
@@ -499,7 +501,7 @@ export default function Memo() {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-ALL`;
+    const memoNo = `L-${format(selectedDate, 'yyyyMMdd')}-${busName.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
 
     const brand: [number, number, number] = [13, 110, 80];
     const brandDark: [number, number, number] = [6, 70, 50];
@@ -668,7 +670,7 @@ export default function Memo() {
 
 
   const handleGenerateMemo = async (target: 'bus' | 'luggage' = 'bus', action: 'save' | 'share' = 'save') => {
-    if (target === 'bus' && !busName.trim()) {
+    if (!busName.trim()) {
       toast.error('Select a bus first');
       return;
     }
@@ -853,6 +855,9 @@ export default function Memo() {
                       <span>- ₹{settlement.otherCommission.toFixed(0)}</span>
                     </div>
                   )}
+                  {settlement.singhNote && (
+                    <div className="text-xs text-muted-foreground -mt-2">{settlement.singhNote}</div>
+                  )}
                   {settlement.luggageToOwner > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">+ Luggage to Owner</span>
@@ -886,9 +891,9 @@ export default function Memo() {
             {/* Combined Luggage Memo across all buses for selected date */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Luggage Memo (All Buses)</CardTitle>
+                <CardTitle className="text-base">Luggage Memo{busName ? ` — ${busName}` : ''}</CardTitle>
                 <CardDescription>
-                  Single luggage memo for {format(selectedDate, 'dd MMM yyyy')}, bifurcated by bus.
+                  {busName ? `Luggage memo for ${busName} on ${format(selectedDate, 'dd MMM yyyy')}.` : 'Select a bus above to make its luggage memo.'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -897,7 +902,7 @@ export default function Memo() {
                     className="w-full gap-2"
                     variant="secondary"
                     onClick={() => handleGenerateMemo('luggage', 'save')}
-                    disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                    disabled={busLuggage.length === 0}
                   >
                     <FileText className="h-4 w-4" />
                     Luggage PDF
@@ -906,7 +911,7 @@ export default function Memo() {
                     className="w-full gap-2"
                     variant="outline"
                     onClick={openLuggagePreview}
-                    disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                    disabled={busLuggage.length === 0}
                   >
                     <Eye className="h-4 w-4" />
                     Preview
@@ -915,7 +920,7 @@ export default function Memo() {
                     className="w-full gap-2"
                     variant="outline"
                     onClick={() => handleGenerateMemo('luggage', 'share')}
-                    disabled={luggageBookings.filter((b) => b.journeyDate === format(selectedDate, 'yyyy-MM-dd')).length === 0}
+                    disabled={busLuggage.length === 0}
                   >
                     <Share2 className="h-4 w-4" />
                     Share
