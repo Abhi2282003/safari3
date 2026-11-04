@@ -1,7 +1,7 @@
 # Royal Safari improvement plan (uploaded document)
 
 Done
-- [ ] Add individual bus layout selection with dated changes in Companies and buses
+- [x] Add individual bus layout selection with dated changes in Companies and buses
 - [x] Add Singh Bus Seater + Sleeper layout from the supplied chart, preserving existing bus assignments
 - [x] Speed: indexes, per-date seat loading, one refresh per multi-seat save, pages load on demand, Settings loads together
 - [x] Tickets and luggage no longer capped at 1,000 rows; all agents shown in Settings with search
