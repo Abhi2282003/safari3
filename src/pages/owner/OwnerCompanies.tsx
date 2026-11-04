@@ -140,7 +140,7 @@ function Content() {
               <SelectTrigger aria-label="New bus layout" className="w-full sm:w-60"><SelectValue placeholder="Layout" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">Company default</SelectItem>
-                {layouts.filter((l) => !l.company_id || l.company_id === newBus.company_id).map((l) => <SelectItem key={l.id} value={l.id}>{l.name} ({l.total_berths})</SelectItem>)}
+                {layouts.map((l) => <SelectItem key={l.id} value={l.id}>{l.name} ({l.total_berths})</SelectItem>)}
               </SelectContent>
             </Select>
             <Button onClick={addBus}>Add bus</Button>
@@ -171,7 +171,7 @@ function Content() {
               <Label>Seat layout</Label>
               <Select value={layoutEdit.layout_id} onValueChange={(v) => setLayoutEdit({ ...layoutEdit, layout_id: v })}>
                 <SelectTrigger aria-label="Seat layout"><SelectValue placeholder="Choose layout" /></SelectTrigger>
-                <SelectContent>{layouts.filter((l) => !l.company_id || l.company_id === buses.find((b) => b.id === layoutEdit.bus_id)?.company_id).map((l) => <SelectItem key={l.id} value={l.id}>{l.name} ({l.total_berths})</SelectItem>)}</SelectContent>
+                <SelectContent>{layouts.map((l) => <SelectItem key={l.id} value={l.id}>{l.name} ({l.total_berths})</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
