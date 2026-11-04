@@ -132,7 +132,7 @@ function Content() {
         <CardContent className="space-y-2">
           <div className="flex flex-wrap gap-2 mb-3">
             <Input placeholder="Bus number" value={newBus.name} onChange={(e) => onBusName(e.target.value)} className="max-w-xs" />
-            <Select value={newBus.company_id} onValueChange={(v) => setNewBus({ ...newBus, company_id: v })}>
+            <Select value={newBus.company_id} onValueChange={(v) => setNewBus({ ...newBus, company_id: v, layout_id: '' })}>
               <SelectTrigger className="w-44"><SelectValue placeholder="Company" /></SelectTrigger>
               <SelectContent>{companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
