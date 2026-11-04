@@ -1,0 +1,2 @@
+ALTER TABLE public.seat_bookings DROP CONSTRAINT seat_bookings_seat_number_check;
+ALTER TABLE public.seat_bookings ADD CONSTRAINT seat_bookings_seat_number_check CHECK (seat_number >= 1 AND seat_number <= 100);
