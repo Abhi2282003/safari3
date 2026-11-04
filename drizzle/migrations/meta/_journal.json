@@ -43,6 +43,13 @@
       "when": 1791294268659,
       "tag": "0005_seat_bookings_from_city",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793767378011,
+      "tag": "0006_seat_layout_cell_row_span",
+      "breakpoints": true
     }
   ]
 }

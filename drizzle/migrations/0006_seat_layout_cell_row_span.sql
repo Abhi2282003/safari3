@@ -1,0 +1,2 @@
+ALTER TABLE public.seat_layout_cells ADD COLUMN row_span integer NOT NULL DEFAULT 1;
+COMMENT ON COLUMN public.seat_layout_cells.row_span IS 'Number of grid rows occupied; mixed layouts use two rows for sleepers and one for seats.';
