@@ -1,5 +1,7 @@
 # Engineering rules
 
+- Bus-specific layout changes append dated `bus_layouts` assignments and invalidate layout queries; do not overwrite previous assignments or company defaults, so earlier journeys keep their charts.
+
 - Mixed seat charts use `seat_layout_cells.row_span` and the shared `layoutPositions` helper in both editor and booking views, so sleepers can span two seat rows without duplicate cells.
 
 - Load large lists through `src/lib/fetchAll.ts` with a stable order ending in `.order('id')` — it fetches 1,000-row pages in parallel, past the server row cap.

@@ -15,7 +15,7 @@ export function useBusLayout(busName: string, journeyDate: string) {
       const bus = (buses || []).find((b: any) => b.name.trim().toLowerCase() === busName.trim().toLowerCase());
       if (!bus) return null;
       const { data: bl } = await db.from('bus_layouts').select('layout_id,valid_from')
-        .eq('bus_id', bus.id).lte('valid_from', journeyDate).order('valid_from', { ascending: false }).limit(1);
+        .eq('bus_id', bus.id).lte('valid_from', journeyDate).order('valid_from', { ascending: false }).order('id', { ascending: false }).limit(1);
       const layoutId = bl?.[0]?.layout_id || bus.layout_id;
       if (!layoutId) return { bus, companyName: bus.bus_companies?.name as string | undefined, layout: null, cells: [] as LayoutCell[] };
       const [{ data: layout }, { data: cells }] = await Promise.all([
