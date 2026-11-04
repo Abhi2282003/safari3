@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CalendarIcon, Loader2, Bus, CheckCircle2, Search, Package, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { layoutPositions } from '@/lib/layoutPositions';
 import { useSeatBookings, useAgents, calculateBookingAmounts, BookingType, SeatBooking } from '@/hooks/useSeatBookings';
 import { useLuggageBookings, LuggageBooking } from '@/hooks/useLuggageBookings';
 import { useLuggageRates } from '@/hooks/useLuggageRates';
@@ -126,7 +127,7 @@ export default function SeatBookings() {
   const { data: layoutData } = useBusLayout(busConfirmed ? busName : '', format(selectedDate, 'yyyy-MM-dd'));
   const layoutCells = layoutData?.cells || [];
   const hasLayout = layoutCells.length > 0 && !!layoutData?.layout;
-  const totalSeats = hasLayout ? layoutData!.layout.total_berths : TOTAL_SEATS;
+  const totalSeats = hasLayout ? layoutData?.layout.total_berths : TOTAL_SEATS;
   const busBookings = useMemo(() => {
     if (!busConfirmed || !busName.trim()) return [];
     return getSeatsByDate(selectedDate).filter((b) => b.busName === busName.trim());
@@ -645,15 +646,13 @@ export default function SeatBookings() {
                       <div className="flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground mb-1 px-1">
                         <span>Single side</span><span>Double side</span>
                       </div>
-                      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${layoutData!.layout.cols}, minmax(2.6rem, 1fr))` }}>
-                        {Array.from({ length: layoutData!.layout.rows }).flatMap((_, ri) => {
-                          const minRow = Math.min(...layoutCells.map((c) => c.grid_row));
-                          return Array.from({ length: layoutData!.layout.cols }).map((__, ci) => {
-                            const cell = layoutCells.find((c) => c.grid_row === ri + minRow && c.grid_col === ci);
-                            const key = `${ri}-${ci}`;
-                            if (!cell || cell.cell_type === 'empty') return <div key={key} />;
+                      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${layoutData?.layout.cols}, minmax(2.6rem, 1fr))`, gridAutoRows: '3rem' }}>
+                        {layoutPositions(layoutCells, layoutData?.layout.rows || 0, layoutData?.layout.cols || 0).map(({ cell, row, col }) => {
+                            const key = `${row}-${col}`;
+                            const position = { gridRow: `${row} / span ${cell?.row_span || 1}`, gridColumn: col };
+                            if (!cell || cell.cell_type === 'empty') return <div key={key} style={position} />;
                             if (cell.cell_type !== 'berth' || cell.seat_number == null) {
-                              return <div key={key} className="h-12 rounded-md bg-muted text-[10px] flex items-center justify-center text-muted-foreground border border-dashed">{cell.label || cell.cell_type}</div>;
+                              return <div key={key} style={position} className="h-full rounded-md bg-muted text-[10px] flex items-center justify-center text-muted-foreground border border-dashed">{cell.label || cell.cell_type}</div>;
                             }
                             const seatNum = cell.seat_number;
                             const booking = getBookingForSeat(seatNum);
@@ -661,11 +660,13 @@ export default function SeatBookings() {
                             const typeName: Record<string, string> = { online: 'Online', agent: 'Agent', self: 'Self', sonu: 'Sonu', royal: 'Royal', return: 'Return' };
                             const typeBg: Record<string, string> = { online: 'bg-blue-500', agent: 'bg-amber-500', self: 'bg-green-500', sonu: 'bg-pink-500', royal: 'bg-orange-500', return: 'bg-purple-500' };
                             return (
-                              <button
+                              <Button
+                                variant="outline"
                                 key={key}
+                                style={position}
                                 onClick={() => handleSeatClick(seatNum)}
                                 className={cn(
-                                  'h-12 rounded-md flex flex-col items-center justify-center text-xs font-semibold relative active:scale-95 transition-all',
+                                  'h-full p-1 gap-0 rounded-md flex flex-col items-center justify-center text-xs font-semibold relative active:scale-95 transition-all',
                                   booking ? `${typeBg[booking.bookingType]} text-white shadow-sm` :
                                   isSelected ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1' :
                                   cell.deck === 'upper' ? 'bg-secondary border text-foreground/80' : 'bg-background border text-foreground/80'
@@ -676,9 +677,8 @@ export default function SeatBookings() {
                                 {booking && ['agent', 'sonu', 'royal'].includes(booking.bookingType) && booking.agentCollectionStatus === 'pending' && (
                                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
                                 )}
-                              </button>
+                              </Button>
                             );
-                          });
                         })}
                       </div>
                       {(() => {

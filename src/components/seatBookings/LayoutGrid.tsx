@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { layoutPositions } from '@/lib/layoutPositions';
 
 export interface LayoutCell {
   id?: string;
@@ -8,6 +10,7 @@ export interface LayoutCell {
   deck: string | null;
   label: string | null;
   seat_number: number | null;
+  row_span?: number;
 }
 
 /** Draws a seat layout from data. renderBerth lets callers customise booked berths. */
@@ -19,30 +22,30 @@ export function LayoutGrid({
   onCellClick?: (c: LayoutCell) => void;
   renderBerth?: (c: LayoutCell) => React.ReactNode;
 }) {
-  const rows = Math.max(0, ...cells.map((c) => c.grid_row));
+  const rows = Math.max(0, ...cells.map((c) => c.grid_row + (c.row_span || 1) - 1));
   const minRow = Math.min(...cells.map((c) => c.grid_row), 1);
-  const grid: (LayoutCell | undefined)[][] = [];
-  for (let r = minRow; r <= rows; r++) {
-    grid.push(Array.from({ length: cols }, (_, c) => cells.find((x) => x.grid_row === r && x.grid_col === c)));
-  }
+  const grid = layoutPositions(cells, rows - minRow + 1, cols);
   return (
     <div className="inline-block rounded-xl border bg-card p-3">
       <div className="mb-2 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
         <span>Front</span><span>Driver</span>
       </div>
-      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(2.5rem, 1fr))` }}>
-        {grid.flat().map((c, i) => {
-          if (!c || c.cell_type === 'empty') return <div key={i} className="h-11" />;
+      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(2.5rem, 1fr))`, gridAutoRows: '2.75rem' }}>
+        {grid.map(({ cell: c, row, col }, i) => {
+          const position = { gridRow: `${row} / span ${c?.row_span || 1}`, gridColumn: col };
+          if (!c || c.cell_type === 'empty') return <div key={i} style={position} />;
           if (c.cell_type === 'toilet' || c.cell_type === 'driver') {
-            return <div key={i} className="h-11 rounded-md bg-muted text-[10px] flex items-center justify-center text-muted-foreground">{c.label || c.cell_type}</div>;
+            return <div key={i} style={position} className="h-full rounded-md bg-muted text-[10px] flex items-center justify-center text-muted-foreground">{c.label || c.cell_type}</div>;
           }
           return (
-            <button
+            <Button
               type="button"
+              variant="outline"
               key={i}
+              style={position}
               onClick={() => onCellClick?.(c)}
               className={cn(
-                'h-11 rounded-md border text-xs font-medium flex flex-col items-center justify-center',
+                'h-full px-1 gap-0 rounded-md border text-xs font-medium flex flex-col items-center justify-center',
                 c.deck === 'upper' ? 'bg-secondary' : 'bg-background'
               )}
             >
@@ -52,7 +55,7 @@ export function LayoutGrid({
                   {c.deck && <span className="text-[9px] text-muted-foreground">{c.deck === 'upper' ? 'U' : 'L'}</span>}
                 </>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>

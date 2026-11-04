@@ -919,6 +919,7 @@ export type Database = {
           id: string
           label: string | null
           layout_id: string
+          row_span: number
           seat_number: number | null
         }
         Insert: {
@@ -929,6 +930,7 @@ export type Database = {
           id?: string
           label?: string | null
           layout_id: string
+          row_span?: number
           seat_number?: number | null
         }
         Update: {
@@ -939,6 +941,7 @@ export type Database = {
           id?: string
           label?: string | null
           layout_id?: string
+          row_span?: number
           seat_number?: number | null
         }
         Relationships: [
